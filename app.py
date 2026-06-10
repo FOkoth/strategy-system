@@ -15,6 +15,7 @@ HELB_GREEN = "#00843D"      # HELB Green - Primary
 HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
 HELB_BLUE = "#00529B"        # HELB Blue - Secondary
 HELB_DARK = "#1F2937"        # Dark text
+HELB_BLACK = "#000000"       # Black text for inputs
 HELB_WHITE = "#FFFFFF"       # White background
 HELB_GRAY = "#F3F4F6"        # Light gray for cards
 HELB_LIGHT_GREEN = "#E8F5E9"  # Very light green for accents
@@ -107,13 +108,23 @@ st.markdown(f"""
         background-color: {HELB_WHITE} !important;
     }}
     
+    /* Make all text dark/black by default */
+    .stApp, .stApp p, .stApp span, .stApp div, .stApp label {{
+        color: {HELB_BLACK} !important;
+    }}
+    
     /* Sidebar - Solid Green */
     [data-testid="stSidebar"] {{
         background-color: {HELB_GREEN} !important;
         padding-top: 1rem;
     }}
     
+    /* Sidebar text should be white */
     [data-testid="stSidebar"] * {{
+        color: white !important;
+    }}
+    
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div, [data-testid="stSidebar"] label {{
         color: white !important;
     }}
     
@@ -154,8 +165,34 @@ st.markdown(f"""
         background-color: rgba(255,255,255,0.3) !important;
     }}
     
+    /* Input Labels - Black/dark */
+    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {{
+        color: {HELB_BLACK} !important;
+        font-weight: 500 !important;
+    }}
+    
+    /* Input fields - Black text on white background */
+    .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input {{
+        background-color: white !important;
+        color: {HELB_BLACK} !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 6px !important;
+    }}
+    
+    .stTextInput input:focus, .stSelectbox div:focus, .stDateInput input:focus, .stNumberInput input:focus {{
+        border-color: {HELB_GREEN} !important;
+        box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
+    }}
+    
+    /* Text area */
+    .stTextArea textarea {{
+        background-color: white !important;
+        color: {HELB_BLACK} !important;
+        border: 1px solid #D1D5DB !important;
+    }}
+    
     /* Headers - Light theme */
-    h1, h2, h3 {{
+    h1, h2, h3, h4, h5, h6 {{
         color: {HELB_GREEN} !important;
         font-weight: 600 !important;
     }}
@@ -229,10 +266,10 @@ st.markdown(f"""
     /* Login form inputs */
     .login-container .stTextInput input {{
         border-radius: 8px;
-        border: 1px solid #E5E7EB !important;
+        border: 1px solid #D1D5DB !important;
         padding: 10px;
         background-color: white !important;
-        color: {HELB_DARK} !important;
+        color: {HELB_BLACK} !important;
     }}
     
     .login-container .stButton button {{
@@ -281,6 +318,11 @@ st.markdown(f"""
         line-height: 1.2;
     }}
     
+    /* KPI card text should be white */
+    .kpi-card .kpi-label, .kpi-card .kpi-value {{
+        color: white !important;
+    }}
+    
     .progress-bar {{
         height: 4px;
         background: rgba(255,255,255,0.3);
@@ -310,6 +352,10 @@ st.markdown(f"""
         transform: translateY(-3px);
         box-shadow: 0 5px 20px rgba(0,0,0,0.12);
     }}
+    
+    .metric-card b, .metric-card span {{
+        color: {HELB_BLACK} !important;
+    }
     
     /* Status Badges */
     .badge-active {{
@@ -402,6 +448,10 @@ st.markdown(f"""
         border: 1px solid #E5E7EB !important;
     }}
     
+    .streamlit-expanderHeader p {{
+        color: {HELB_GREEN} !important;
+    }}
+    
     /* Footer - Light theme */
     .footer {{
         text-align: center;
@@ -424,23 +474,18 @@ st.markdown(f"""
         padding: 10px !important;
     }}
     
-    /* Input fields - Light theme */
-    .stTextInput input, .stSelectbox div, .stDateInput input {{
-        background-color: white !important;
-        color: {HELB_DARK} !important;
-        border: 1px solid #E5E7EB !important;
-        border-radius: 6px !important;
-    }}
-    
-    .stTextInput input:focus, .stSelectbox div:focus, .stDateInput input:focus {{
-        border-color: {HELB_GREEN} !important;
-        box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
+    .dataframe td {{
+        color: {HELB_BLACK} !important;
     }}
     
     /* Success/Error/Warning messages - Light theme */
     .stAlert {{
         background-color: {HELB_GRAY} !important;
         border-left: 4px solid {HELB_GOLD} !important;
+    }}
+    
+    .stAlert p {{
+        color: {HELB_BLACK} !important;
     }}
     
     /* Progress bars */
@@ -454,16 +499,54 @@ st.markdown(f"""
         border-left-color: {HELB_GREEN} !important;
     }}
     
-    /* Number input */
-    .stNumberInput input {{
-        background-color: white !important;
-        color: {HELB_DARK} !important;
-        border: 1px solid #E5E7EB !important;
+    .stInfo p {{
+        color: {HELB_BLACK} !important;
     }}
     
     /* Main content area background */
     .block-container {{
         background-color: {HELB_WHITE} !important;
+    }}
+    
+    /* Slider */
+    .stSlider label {{
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Selectbox dropdown */
+    .stSelectbox div[data-baseweb="select"] div {{
+        background-color: white !important;
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Radio buttons */
+    .stRadio label {{
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Checkbox */
+    .stCheckbox label {{
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Success message text */
+    .stSuccess p {{
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Error message text */
+    .stError p {{
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Warning message text */
+    .stWarning p {{
+        color: {HELB_BLACK} !important;
+    }}
+    
+    /* Caption text */
+    .stCaption, caption {{
+        color: #6B7280 !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -783,7 +866,8 @@ if choice == "📊 Dashboard":
             plot_bgcolor=HELB_WHITE,
             paper_bgcolor=HELB_WHITE,
             title_font_color=HELB_GREEN,
-            title_font_size=16
+            title_font_size=16,
+            font_color=HELB_BLACK
         )
         st.plotly_chart(fig, use_container_width=True)
     
