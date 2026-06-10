@@ -81,10 +81,19 @@ st.write("---")
 st.write("### What to do next:")
 
 if response.status_code == 200 and len(response.json()) == 0:
-    st.warning("""
-    **Your connection works but the users table is EMPTY.**
-    
-    Run this SQL in your Supabase SQL Editor:
-    ```sql
+    st.warning("Your connection works but the users table is EMPTY. Run this SQL in Supabase:")
+    st.code("""
     INSERT INTO users (username, full_name, password_hash, role, department_id) 
     VALUES ('admin', 'System Administrator', 'admin123', 'admin', NULL);
+    """)
+    
+elif response.status_code != 200:
+    st.error(f"Your connection is FAILING. Status code: {response.status_code}")
+    st.write("Possible issues:")
+    st.write("1. Wrong SUPABASE_URL - should be: https://YOUR_PROJECT.supabase.co")
+    st.write("2. Wrong SUPABASE_KEY - use the 'anon public' key, NOT the 'secret' key")
+    st.write("3. Table doesn't exist - run the database setup script first")
+    st.write(f"Your current URL: {URL}")
+    
+elif response.status_code == 200 and len(response.json()) > 0:
+    st.success("Your connection works and you have users! Try logging in with the usernames shown above.")
