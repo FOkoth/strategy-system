@@ -11,98 +11,19 @@ import requests
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
-HELB_GREEN = "#00843D"
-HELB_GOLD = "#FFB81C"
-HELB_BLUE = "#00529B"
-HELB_DARK = "#1F2937"
-HELB_WHITE = "#FFFFFF"
-
-# Page config
-st.set_page_config(
-    page_title="HELB Strategy Performance System",
-    page_icon="🏦",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+HELB_GREEN = "#00843D"      # HELB Green - Primary
+HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
+HELB_BLUE = "#00529B"        # HELB Blue - Secondary
+HELB_DARK = "#1F2937"        # Dark text
+HELB_WHITE = "#FFFFFF"       # White background
+HELB_GRAY = "#F9FAFB"        # Light gray for cards
+HELB_BORDER = "#00843D"      # Green border for inputs
 
 # ============================================
-# FIXED CSS - ONLY VISIBILITY FIXES, NO FUNCTIONALITY CHANGES
-# ============================================
-st.markdown("""
-<style>
-    /* Force input boxes - white background, green border, black text */
-    .stTextInput input, 
-    .stSelectbox select, 
-    .stTextArea textarea, 
-    .stNumberInput input,
-    .stDateInput input {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 2px solid #00843D !important;
-        border-radius: 8px !important;
-    }
-    
-    /* Force labels to be black and visible */
-    label, .stTextInput label, .stSelectbox label, .stTextArea label, .stNumberInput label {
-        color: #000000 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Force dropdown options to have black text on white background */
-    ul[role="listbox"] li {
-        color: #000000 !important;
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Force all buttons to have white text on green gradient */
-    .stButton button {
-        color: white !important;
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
-        border: none !important;
-        border-radius: 8px !important;
-    }
-    
-    /* Login button specific */
-    .login-container .stButton button {
-        background: #FFB81C !important;
-        color: #00843D !important;
-    }
-    
-    /* Expander header styling */
-    .streamlit-expanderHeader {
-        background-color: #F0F2F6 !important;
-        color: #00843D !important;
-        border-radius: 8px !important;
-    }
-    
-    /* Ensure main content text is dark */
-    .stMarkdown, .stMarkdown p {
-        color: #1F2937 !important;
-    }
-    
-    /* Keep sidebar styling */
-    [data-testid="stSidebar"] {
-        background-color: #00843D !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    
-    /* Sidebar navigation items - gold background */
-    [data-testid="stSidebar"] div[role="radiogroup"] label {
-        background-color: #FFB81C !important;
-        color: #00843D !important;
-        border-radius: 8px !important;
-        padding: 10px 15px !important;
-        font-weight: 600 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ============================================
-# LOAD HELB LOGO
+# LOAD HELB LOGO FOR FAVICON AND DISPLAY
 # ============================================
 def get_logo_base64():
+    """Load HELB logo from URL or local file"""
     logo_url = st.secrets.get("HELB_LOGO_URL", "")
     
     if logo_url:
@@ -130,7 +51,410 @@ def get_logo_base64():
     except:
         return None
 
+def get_favicon_base64():
+    """Get small logo for favicon"""
+    logo_url = st.secrets.get("HELB_LOGO_URL", "")
+    
+    if logo_url:
+        try:
+            response = requests.get(logo_url, timeout=10)
+            if response.status_code == 200:
+                img = Image.open(BytesIO(response.content))
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                img.thumbnail((32, 32), Image.Resampling.LANCZOS)
+                buffered = BytesIO()
+                img.save(buffered, format="PNG")
+                return base64.b64encode(buffered.getvalue()).decode()
+        except:
+            pass
+    
+    try:
+        img = Image.open("HELB Logo.png")
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        img.thumbnail((32, 32), Image.Resampling.LANCZOS)
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode()
+    except:
+        return None
+
 LOGO_LARGE = get_logo_base64()
+FAVICON = get_favicon_base64()
+
+# Set favicon
+if FAVICON:
+    favicon_html = f'<link rel="icon" type="image/png" href="data:image/png;base64,{FAVICON}">'
+    st.markdown(favicon_html, unsafe_allow_html=True)
+
+# Page config with custom icon
+st.set_page_config(
+    page_title="HELB Strategy Performance System",
+    page_icon="🏦",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============================================
+# CUSTOM CSS - Clean Professional Light Theme
+# ============================================
+st.markdown("""
+<style>
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppDeployButton {display: none;}
+    
+    /* Main container - White background */
+    .stApp, .main {
+        background-color: #FFFFFF !important;
+    }
+    
+    /* All text - Black/Dark gray */
+    p, li, div, span, label, .stMarkdown, .stText {
+        color: #1F2937 !important;
+    }
+    
+    /* Headers - HELB Green */
+    h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #00843D !important;
+        font-weight: 600 !important;
+    }
+    
+    h1 {
+        border-bottom: 3px solid #FFB81C;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+    }
+    
+    /* Sidebar - HELB Green */
+    [data-testid="stSidebar"] {
+        background-color: #00843D !important;
+        padding-top: 1rem;
+    }
+    
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    
+    /* Sidebar user info */
+    .sidebar-user-info {
+        background: rgba(255,255,255,0.15);
+        padding: 0.8rem;
+        border-radius: 10px;
+        margin: 0.5rem 0;
+        text-align: center;
+    }
+    
+    /* Navigation radio buttons - Gold */
+    [data-testid="stSidebar"] div[role="radiogroup"] label {
+        background-color: #FFB81C !important;
+        color: #00843D !important;
+        border-radius: 8px !important;
+        padding: 10px 15px !important;
+        margin: 5px 0 !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+        transform: translateX(5px);
+        filter: brightness(1.05);
+    }
+    
+    /* Sidebar button */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+    }
+    
+    /* Dashboard Header */
+    .dashboard-header {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .dashboard-header h1 {
+        color: white !important;
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-bottom: none;
+    }
+    
+    .dashboard-header p {
+        color: rgba(255,255,255,0.85);
+        margin: 0;
+        font-size: 0.7rem;
+    }
+    
+    /* Login Container */
+    .login-container {
+        background-color: #00843D;
+        border-radius: 20px;
+        padding: 2.5rem;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    .login-title {
+        color: white !important;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .login-subtitle {
+        color: rgba(255,255,255,0.85) !important;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+    
+    /* Input fields - White background, green border, black text */
+    .stTextInput input, .stSelectbox select, .stTextArea textarea, .stNumberInput input {
+        background-color: #FFFFFF !important;
+        border: 2px solid #00843D !important;
+        border-radius: 8px !important;
+        color: #1F2937 !important;
+        padding: 8px 12px !important;
+    }
+    
+    .stTextInput input:focus, .stSelectbox select:focus, .stTextArea textarea:focus {
+        border-color: #FFB81C !important;
+        box-shadow: 0 0 0 2px rgba(255,184,28,0.2) !important;
+        outline: none !important;
+    }
+    
+    /* Labels - Black text */
+    .stTextInput label, .stSelectbox label, .stTextArea label, .stNumberInput label {
+        color: #1F2937 !important;
+        font-weight: 500 !important;
+        margin-bottom: 4px !important;
+    }
+    
+    /* KPI Cards */
+    .kpi-card {
+        background: #00843D;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .kpi-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #FFB81C !important;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0.3rem 0;
+        color: white !important;
+        line-height: 1.2;
+    }
+    
+    .progress-bar {
+        height: 4px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: #FFB81C;
+        border-radius: 2px;
+    }
+    
+    /* Metric Cards */
+    .metric-card {
+        background: #FFFFFF;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        border-left: 4px solid #FFB81C;
+        transition: all 0.3s ease;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-card b, .metric-card span {
+        color: #1F2937 !important;
+    }
+    
+    /* Status Badges */
+    .badge-active {
+        background-color: #00843D;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .badge-expiring {
+        background-color: #FFB81C;
+        color: #00843D;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .badge-expired {
+        background-color: #dc2626;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+        background: #F3F4F6;
+        padding: 0.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: #1F2937 !important;
+        white-space: nowrap;
+        transition: all 0.2s;
+        background-color: #F3F4F6;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #FFB81C !important;
+        color: #00843D !important;
+        font-weight: 600;
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background-color: #F3F4F6 !important;
+        border-radius: 8px !important;
+        color: #00843D !important;
+        font-weight: 600 !important;
+        border: 1px solid #E5E7EB !important;
+    }
+    
+    /* Dataframe */
+    .dataframe {
+        font-size: 0.8rem;
+        background-color: #FFFFFF !important;
+    }
+    
+    .dataframe th {
+        background-color: #00843D !important;
+        color: white !important;
+        padding: 10px !important;
+    }
+    
+    .dataframe td {
+        color: #1F2937 !important;
+    }
+    
+    /* Success/Info/Warning messages */
+    .stSuccess {
+        background-color: #E8F5E9 !important;
+        border-left: 4px solid #00843D !important;
+        color: #1F2937 !important;
+    }
+    
+    .stInfo {
+        background-color: #EFF6FF !important;
+        border-left: 4px solid #00529B !important;
+        color: #1F2937 !important;
+    }
+    
+    .stWarning {
+        background-color: #FEF3C7 !important;
+        border-left: 4px solid #FFB81C !important;
+        color: #1F2937 !important;
+    }
+    
+    .stError {
+        background-color: #FEE2E2 !important;
+        border-left: 4px solid #DC2626 !important;
+        color: #1F2937 !important;
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 1.5rem;
+        color: #6B7280 !important;
+        font-size: 0.7rem;
+        border-top: 1px solid #E5E7EB;
+        margin-top: 2rem;
+    }
+    
+    /* Slider */
+    .stSlider div {
+        color: #1F2937 !important;
+    }
+    
+    /* Checkbox */
+    .stCheckbox label {
+        color: #1F2937 !important;
+    }
+    
+    /* Radio */
+    .stRadio label {
+        color: #1F2937 !important;
+    }
+    
+    /* Date input */
+    .stDateInput input {
+        background-color: #FFFFFF !important;
+        border: 2px solid #00843D !important;
+        border-radius: 8px !important;
+        color: #1F2937 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================
 # SUPABASE CONNECTION
@@ -235,10 +559,10 @@ if not st.session_state.authenticated:
             logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
         
         st.markdown(f"""
-        <div style='background-color:#00843D; border-radius:20px; padding:2.5rem; text-align:center;'>
+        <div class='login-container'>
             <div>{logo_html}</div>
-            <h1 style='color:white; font-size:1.5rem;'>HIGHER EDUCATION LOANS BOARD</h1>
-            <p style='color:rgba(255,255,255,0.85);'>Strategy Performance Management System</p>
+            <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
+            <p class='login-subtitle'>Strategy Performance Management System</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -284,36 +608,36 @@ with col_header:
         logo_html = '<span style="font-size: 1.3rem;">🏦</span>'
     
     st.markdown(f"""
-    <div style='background:linear-gradient(135deg, #00843D 0%, #00529B 100%); padding:0.8rem 1.5rem; border-radius:12px; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between;'>
-        <div style='display:flex; align-items:center; gap:1rem;'>
+    <div class='dashboard-header'>
+        <div class='header-left' style="display: flex; align-items: center; gap: 1rem;">
             {logo_html}
             <div>
-                <h1 style='color:white; margin:0; font-size:1.2rem;'>HELB Strategy Performance Management System</h1>
-                <p style='color:rgba(255,255,255,0.85); margin:0; font-size:0.7rem;'>Real-time monitoring | Action plans | Contracts | Policies</p>
+                <h1>HELB Strategy Performance Management System</h1>
+                <p>Real-time monitoring | Action plans | Contracts | Policies</p>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 with col_refresh:
-    if st.button("Refresh", key="global_refresh"):
+    if st.button("🔄 Refresh", key="global_refresh"):
         st.rerun()
 
 # Sidebar
 with st.sidebar:
     if LOGO_LARGE:
-        st.markdown(f'<div style="text-align:center; padding:0.5rem 0;"><img src="data:image/png;base64,{LOGO_LARGE}" style="width:100px; height:auto;"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_LARGE}" style="width: 100px; height: auto;"></div>', unsafe_allow_html=True)
     else:
         st.markdown("""
-        <div style='text-align:center; padding:0.5rem 0;'>
-            <div style='font-size:2rem;'>🏦</div>
-            <p style='color:white; font-weight:700;'>HELB</p>
+        <div style='text-align: center; padding: 0.5rem 0;'>
+            <div style='font-size: 2rem;'>🏦</div>
+            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
         </div>
         """, unsafe_allow_html=True)
     
     st.markdown(f"""
-    <div style='background:rgba(255,255,255,0.15); padding:0.8rem; border-radius:10px; margin:0.5rem 0; text-align:center;'>
+    <div class='sidebar-user-info'>
         <strong>{st.session_state.user_fullname}</strong><br>
-        <span style='font-size:0.7rem;'>{st.session_state.user_role.replace('_', ' ').title()}</span>
+        <span style='font-size: 0.7rem;'>{st.session_state.user_role.replace('_', ' ').title()}</span>
     </div>
     """, unsafe_allow_html=True)
     
@@ -351,17 +675,17 @@ if choice == "Dashboard":
             total = len(plans)
             avg_progress = sum(p.get("progress_percent", 0) for p in plans) / total if total > 0 else 0
             st.markdown(f"""
-            <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-                <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>ACTION PLANS</div>
-                <div style='font-size:1.8rem; font-weight:700; color:white;'>{completed}/{total}</div>
-                <div style='height:4px; background:rgba(255,255,255,0.3); border-radius:2px; margin-top:0.5rem;'><div style='height:100%; width:{avg_progress}%; background:#FFB81C; border-radius:2px;'></div></div>
+            <div class='kpi-card'>
+                <div class='kpi-label'>ACTION PLANS</div>
+                <div class='kpi-value'>{completed}/{total}</div>
+                <div class='progress-bar'><div class='progress-fill' style='width:{avg_progress}%;'></div></div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-                <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>ACTION PLANS</div>
-                <div style='font-size:1.8rem; font-weight:700; color:white;'>0/0</div>
+            <div class='kpi-card'>
+                <div class='kpi-label'>ACTION PLANS</div>
+                <div class='kpi-value'>0/0</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -369,17 +693,17 @@ if choice == "Dashboard":
         if contracts:
             expiring = sum(1 for c in contracts if c.get("status") == "expiring_soon")
             st.markdown(f"""
-            <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-                <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>CONTRACTS</div>
-                <div style='font-size:1.8rem; font-weight:700; color:white;'>{expiring}</div>
-                <div style='font-size:0.6rem; color:#FFB81C;'>expiring within 30 days</div>
+            <div class='kpi-card'>
+                <div class='kpi-label'>CONTRACTS</div>
+                <div class='kpi-value'>{expiring}</div>
+                <div class='kpi-label' style='font-size:0.6rem;'>expiring within 30 days</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-                <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>CONTRACTS</div>
-                <div style='font-size:1.8rem; font-weight:700; color:white;'>0</div>
+            <div class='kpi-card'>
+                <div class='kpi-label'>CONTRACTS</div>
+                <div class='kpi-value'>0</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -394,26 +718,26 @@ if choice == "Dashboard":
                 except:
                     pass
             st.markdown(f"""
-            <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-                <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>POLICIES</div>
-                <div style='font-size:1.8rem; font-weight:700; color:white;'>{expiring_policies}</div>
-                <div style='font-size:0.6rem; color:#FFB81C;'>expiring within 90 days</div>
+            <div class='kpi-card'>
+                <div class='kpi-label'>POLICIES</div>
+                <div class='kpi-value'>{expiring_policies}</div>
+                <div class='kpi-label' style='font-size:0.6rem;'>expiring within 90 days</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-                <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>POLICIES</div>
-                <div style='font-size:1.8rem; font-weight:700; color:white;'>0</div>
+            <div class='kpi-card'>
+                <div class='kpi-label'>POLICIES</div>
+                <div class='kpi-value'>0</div>
             </div>
             """, unsafe_allow_html=True)
     
     with col4:
         users_count = len(supabase.table("users").select("*").execute().data)
         st.markdown(f"""
-        <div style='background:#00843D; border-radius:12px; padding:1rem;'>
-            <div style='font-size:0.7rem; text-transform:uppercase; color:#FFB81C;'>ACTIVE USERS</div>
-            <div style='font-size:1.8rem; font-weight:700; color:white;'>{users_count}</div>
+        <div class='kpi-card'>
+            <div class='kpi-label'>ACTIVE USERS</div>
+            <div class='kpi-value'>{users_count}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -426,18 +750,18 @@ if choice == "Dashboard":
             df["department"] = df["department_id"].map(dept_map)
             fig = px.bar(df, x="task_name", y="progress_percent", color="department", 
                         title="Action Plan Progress by Task",
-                        color_discrete_sequence=["#00843D", "#FFB81C", "#00529B"])
+                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         else:
             fig = px.bar(df, x="task_name", y="progress_percent", color="status",
                         title="My Department's Action Plan Progress",
-                        color_discrete_sequence=["#00843D", "#FFB81C", "#00529B"])
+                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         
         fig.update_layout(
             barmode='group', 
             bargap=0.3, 
-            plot_bgcolor="#FFFFFF",
-            paper_bgcolor="#FFFFFF",
-            title_font_color="#00843D",
+            plot_bgcolor=HELB_WHITE,
+            paper_bgcolor=HELB_WHITE,
+            title_font_color=HELB_GREEN,
             title_font_size=16
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -485,7 +809,7 @@ elif choice == "Action Plans":
                 col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
                     st.markdown(f"**{plan['task_name']}**")
-                    st.caption(f"📅 Due: {plan['due_date']} ({days_left} days left)")
+                    st.caption(f"Due: {plan['due_date']} ({days_left} days left)")
                 with col2:
                     st.progress(plan["progress_percent"] / 100)
                     st.caption(f"{plan['progress_percent']}%")
@@ -548,22 +872,22 @@ elif choice == "Contracts":
             
             if days_left > 30:
                 color = "🟢"
-                badge = '<span style="background:#00843D; color:white; padding:4px 12px; border-radius:20px; font-size:12px;">Active</span>'
+                badge = '<span class="badge-active">Active</span>'
             elif days_left > 0:
                 color = "🟡"
-                badge = '<span style="background:#FFB81C; color:#00843D; padding:4px 12px; border-radius:20px; font-size:12px;">Expiring Soon</span>'
+                badge = '<span class="badge-expiring">Expiring Soon</span>'
             else:
                 color = "🔴"
-                badge = '<span style="background:#dc2626; color:white; padding:4px 12px; border-radius:20px; font-size:12px;">Expired</span>'
+                badge = '<span class="badge-expired">Expired</span>'
             
             st.markdown(f"""
-            <div style='background:white; border-radius:12px; padding:1rem; box-shadow:0 2px 10px rgba(0,0,0,0.08); border-left:4px solid #FFB81C; margin-bottom:0.5rem;'>
+            <div class='metric-card'>
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
                         <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
-                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
-                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
-                        <span style='color:#666;'>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                        <span>Vendor: {contract['vendor_name']}</span><br>
+                        <span>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -604,18 +928,18 @@ elif choice == "Policies":
             days_left = (expiry - datetime.now().date()).days
             
             if days_left > 90:
-                badge = '<span style="background:#00843D; color:white; padding:4px 12px; border-radius:20px; font-size:12px;">Active</span>'
+                badge = '<span class="badge-active">Active</span>'
             elif days_left > 0:
-                badge = '<span style="background:#FFB81C; color:#00843D; padding:4px 12px; border-radius:20px; font-size:12px;">Expiring Soon</span>'
+                badge = '<span class="badge-expiring">Expiring Soon</span>'
             else:
-                badge = '<span style="background:#dc2626; color:white; padding:4px 12px; border-radius:20px; font-size:12px;">Expired</span>'
+                badge = '<span class="badge-expired">Expired</span>'
             
             st.markdown(f"""
-            <div style='background:white; border-radius:12px; padding:1rem; box-shadow:0 2px 10px rgba(0,0,0,0.08); border-left:4px solid #FFB81C; margin-bottom:0.5rem;'>
+            <div class='metric-card'>
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
                         <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
-                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                        <span>Expires: {policy['expiry_date']} ({days_left} days left)</span>
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -634,7 +958,7 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
     dept_options = {d["name"]: d["id"] for d in depts}
     users = get_all_users()
     
-    tab1, tab2, tab3 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User"])
+    tab1, tab2, tab3 = st.tabs(["Create New User", "Edit User Role", "Delete User"])
     
     with tab1:
         with st.form("create_user_form"):
@@ -711,7 +1035,7 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
     
     with tab3:
         st.markdown("### Delete User")
-        st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
+        st.warning("Deleting a user is permanent and cannot be undone!")
         
         if users:
             delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
@@ -782,7 +1106,7 @@ elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "ma
         df = pd.DataFrame(performance_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
     
-    tabs = st.tabs(["📋 All Action Plans", "📄 All Contracts", "📋 All Policies"])
+    tabs = st.tabs(["All Action Plans", "All Contracts", "All Policies"])
     
     with tabs[0]:
         all_plans = supabase.table("action_plans").select("*").execute().data
@@ -816,7 +1140,7 @@ elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "ma
 # ============================================
 st.markdown("---")
 st.markdown("""
-<div style='text-align:center; padding:1.5rem; color:#6B7280; font-size:0.7rem; border-top:1px solid #E5E7EB; margin-top:2rem;'>
+<div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
     <p>Powered by Streamlit | Secure & Real-time</p>
 </div>
