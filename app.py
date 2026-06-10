@@ -27,36 +27,55 @@ st.set_page_config(
 )
 
 # ============================================
-# LOAD HELB LOGO
+# LOAD HELB LOGO FROM URL
 # ============================================
-def load_logo():
-    """Load HELB logo from GitHub or local"""
+def get_logo_base64():
+    """Load HELB logo from URL and convert to base64"""
     try:
-        # Try to load from GitHub - replace with your actual raw URL
-        github_url = "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png"
-        response = requests.get(github_url, timeout=5)
+        # Get logo URL from secrets or use default
+        logo_url = st.secrets.get("HELB_LOGO_URL", "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png")
+        response = requests.get(logo_url, timeout=10)
         if response.status_code == 200:
-            return Image.open(BytesIO(response.content))
-    except:
-        pass
+            # Open image from bytes
+            img = Image.open(BytesIO(response.content))
+            # Resize for different uses while maintaining aspect ratio
+            return {
+                "large": resize_and_encode(img, 250, 100),
+                "medium": resize_and_encode(img, 150, 60),
+                "small": resize_and_encode(img, 80, 32),
+                "original": base64.b64encode(response.content).decode()
+            }
+    except Exception as e:
+        st.warning(f"Could not load logo from URL: {e}")
     
+    # Fallback to local file
     try:
-        # Try local file
-        logo = Image.open("HELB Logo.png")
-        return logo
+        img = Image.open("HELB Logo.png")
+        return {
+            "large": resize_and_encode(img, 250, 100),
+            "medium": resize_and_encode(img, 150, 60),
+            "small": resize_and_encode(img, 80, 32),
+            "original": None
+        }
     except:
         return None
 
-def get_logo_base64():
-    """Convert logo to base64 for HTML embedding"""
-    logo = load_logo()
-    if logo:
-        # Resize logo for better display
-        logo = logo.resize((200, 80))
-        buffered = BytesIO()
-        logo.save(buffered, format="PNG")
-        return base64.b64encode(buffered.getvalue()).decode()
-    return None
+def resize_and_encode(img, width, height):
+    """Resize image maintaining aspect ratio and return base64"""
+    # Calculate new size maintaining aspect ratio
+    img_copy = img.copy()
+    img_copy.thumbnail((width, height), Image.Resampling.LANCZOS)
+    
+    # Convert to RGB if necessary
+    if img_copy.mode in ('RGBA', 'P'):
+        img_copy = img_copy.convert('RGB')
+    
+    buffered = BytesIO()
+    img_copy.save(buffered, format="PNG", optimize=True)
+    return base64.b64encode(buffered.getvalue()).decode()
+
+# Load logo once
+LOGO_BASE64 = get_logo_base64()
 
 # ============================================
 # CUSTOM CSS - Professional HELB Design
@@ -80,10 +99,6 @@ st.markdown(f"""
     }}
     
     [data-testid="stSidebar"] * {{
-        color: white !important;
-    }}
-    
-    [data-testid="stSidebar"] .stMarkdown {{
         color: white !important;
     }}
     
@@ -117,10 +132,6 @@ st.markdown(f"""
         background-color: rgba(255,255,255,0.2) !important;
         color: white !important;
         border: 1px solid rgba(255,255,255,0.3) !important;
-    }}
-    
-    [data-testid="stSidebar"] .stButton > button:hover {{
-        background-color: rgba(255,255,255,0.3) !important;
     }}
     
     /* Headers */
@@ -166,7 +177,7 @@ st.markdown(f"""
         font-size: 0.7rem;
     }}
     
-    /* Login Container - Solid Green (no gradient) */
+    /* Login Container - Solid Green */
     .login-container {{
         background-color: {HELB_GREEN};
         border-radius: 20px;
@@ -206,11 +217,6 @@ st.markdown(f"""
         border: none !important;
         border-radius: 8px !important;
         padding: 10px !important;
-    }}
-    
-    .login-container .stButton button:hover {{
-        background-color: #e6a800 !important;
-        transform: translateY(-2px);
     }}
     
     /* KPI Cards */
@@ -318,9 +324,9 @@ st.markdown(f"""
         transition: all 0.3s ease !important;
     }}
     
-    .stButton > button:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    /* Danger button */
+    div[data-testid="column"]:has(button[key*="delete"]) button {{
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
     }}
     
     /* Tabs */
@@ -350,11 +356,6 @@ st.markdown(f"""
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }}
     
-    .stTabs [data-baseweb="tab"]:hover {{
-        background-color: rgba(255,184,28,0.2);
-        color: {HELB_GOLD};
-    }}
-    
     /* Expander */
     .streamlit-expanderHeader {{
         background-color: {HELB_GRAY} !important;
@@ -371,6 +372,17 @@ st.markdown(f"""
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
+    }}
+    
+    /* Dataframe */
+    .dataframe {{
+        font-size: 0.8rem;
+    }}
+    
+    .dataframe th {{
+        background-color: {HELB_GREEN} !important;
+        color: white !important;
+        padding: 10px !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -416,23 +428,76 @@ def get_filtered_data(table_name):
     else:
         return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
 
+def get_all_users():
+    """Get all users for admin management"""
+    try:
+        result = supabase.table("users").select("*").execute()
+        return result.data
+    except:
+        return []
+
+def delete_user(username):
+    """Delete a user"""
+    try:
+        supabase.table("users").delete().eq("username", username).execute()
+        return True
+    except:
+        return False
+
+def update_user_role(username, new_role, department_id):
+    """Update user role and department"""
+    try:
+        supabase.table("users").update({
+            "role": new_role,
+            "department_id": department_id if department_id != "None" else None
+        }).eq("username", username).execute()
+        return True
+    except:
+        return False
+
+def reset_user_password(username, new_password):
+    """Reset user password"""
+    try:
+        supabase.table("users").update({
+            "password_hash": new_password
+        }).eq("username", username).execute()
+        return True
+    except:
+        return False
+
+def create_new_user(username, full_name, password, role, department_id):
+    """Create a new user"""
+    try:
+        existing = supabase.table("users").select("*").eq("username", username.lower()).execute()
+        if existing.data:
+            return False, "Username already exists"
+        
+        supabase.table("users").insert({
+            "username": username.lower(),
+            "full_name": full_name,
+            "password_hash": password,
+            "role": role,
+            "department_id": department_id if department_id != "None" else None
+        }).execute()
+        return True, "User created successfully"
+    except Exception as e:
+        return False, str(e)
+
 # ============================================
 # LOGIN PAGE
 # ============================================
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Get logo base64 for embedding
-        logo_base64 = get_logo_base64()
-        
-        if logo_base64:
-            logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width: 180px; height: auto; margin-bottom: 1rem;">'
+        # Display logo
+        if LOGO_BASE64 and LOGO_BASE64.get("large"):
+            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["large"]}" style="width: 200px; height: auto; margin-bottom: 1rem;">'
         else:
             logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
         
         st.markdown(f"""
         <div class='login-container'>
-            {logo_html}
+            <div class='login-logo'>{logo_html}</div>
             <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
             <p class='login-subtitle'>Strategy Performance Management System</p>
         </div>
@@ -471,13 +536,11 @@ if not st.session_state.authenticated:
 # MAIN APPLICATION (LOGGED IN)
 # ============================================
 
-# Dashboard Header
+# Dashboard Header with logo
 col_header, col_refresh = st.columns([6, 1])
 with col_header:
-    # Get logo for header
-    logo_base64 = get_logo_base64()
-    if logo_base64:
-        logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width: 40px; height: auto;">'
+    if LOGO_BASE64 and LOGO_BASE64.get("small"):
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["small"]}" style="width: 40px; height: auto;">'
     else:
         logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
     
@@ -496,11 +559,10 @@ with col_refresh:
     if st.button("🔄 Refresh", key="global_refresh"):
         st.rerun()
 
-# Sidebar
+# Sidebar with logo
 with st.sidebar:
-    # Logo in sidebar
-    if logo_base64:
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{logo_base64}" style="width: 120px; height: auto;"></div>', unsafe_allow_html=True)
+    if LOGO_BASE64 and LOGO_BASE64.get("medium"):
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64["medium"]}" style="width: 120px; height: auto;"></div>', unsafe_allow_html=True)
     else:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
@@ -537,12 +599,13 @@ with st.sidebar:
 # DASHBOARD
 # ============================================
 if choice == "📊 Dashboard":
+    st.subheader("Dashboard Overview")
+    
     plans = get_filtered_data("action_plans")
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
     
     # KPI Cards
-    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -609,13 +672,13 @@ if choice == "📊 Dashboard":
             """, unsafe_allow_html=True)
     
     with col4:
+        users_count = len(supabase.table("users").select("*").execute().data)
         st.markdown(f"""
         <div class='kpi-card'>
             <div class='kpi-label'>👥 ACTIVE USERS</div>
-            <div class='kpi-value'>{len(supabase.table("users").select("*").execute().data)}</div>
+            <div class='kpi-value'>{users_count}</div>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
     
     # Progress Chart
     if plans and len(plans) > 0:
@@ -825,63 +888,142 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# ENHANCED USER MANAGEMENT (ADMIN ONLY)
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
-    st.subheader("User Management")
+    st.subheader("User Management - Admin Panel")
     
-    tab1, tab2 = st.tabs(["Create New User", "Existing Users"])
+    # Get all departments for dropdown
+    depts = supabase.table("departments").select("id,name").execute().data
+    dept_options = {d["name"]: d["id"] for d in depts}
+    
+    # Get all users
+    users = get_all_users()
+    
+    tab1, tab2, tab3 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User"])
     
     with tab1:
-        with st.form("create_user"):
+        with st.form("create_user_form"):
+            st.markdown("### Create New User Account")
             col1, col2 = st.columns(2)
             with col1:
-                username = st.text_input("Username*")
-                full_name = st.text_input("Full Name*")
+                new_username = st.text_input("Username*")
+                new_full_name = st.text_input("Full Name*")
             with col2:
-                role = st.selectbox("Role*", ["department_champion", "management", "admin"])
-                depts = supabase.table("departments").select("id,name").execute().data
-                dept_options = {d["name"]: d["id"] for d in depts}
-                department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
+                new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
+                new_department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
             
-            password = st.text_input("Password*", type="password")
+            new_password = st.text_input("Password*", type="password")
             confirm_password = st.text_input("Confirm Password*", type="password")
             
             if st.form_submit_button("Create User", use_container_width=True):
-                if password != confirm_password:
+                if new_password != confirm_password:
                     st.error("Passwords don't match")
-                elif not all([username, full_name, password]):
+                elif not all([new_username, new_full_name, new_password]):
                     st.error("Please fill all required fields")
                 else:
-                    existing = supabase.table("users").select("*").eq("username", username.lower()).execute()
-                    if existing.data:
-                        st.error("Username already exists")
-                    else:
-                        supabase.table("users").insert({
-                            "username": username.lower(),
-                            "full_name": full_name,
-                            "password_hash": password,
-                            "role": role,
-                            "department_id": dept_options.get(department) if department != "None" else None
-                        }).execute()
-                        st.success(f"✅ User {username} created successfully!")
-                        st.info(f"**Username:** {username} | **Password:** {password}")
+                    dept_id = dept_options.get(new_department) if new_department != "None" else None
+                    success, message = create_new_user(new_username, new_full_name, new_password, new_role, dept_id)
+                    if success:
+                        st.success(f"✅ {message}")
+                        st.info(f"Username: {new_username} | Password: {new_password}")
                         st.rerun()
+                    else:
+                        st.error(f"❌ {message}")
     
     with tab2:
-        users = supabase.table("users").select("*").execute().data
+        st.markdown("### Edit User Role and Department")
         if users:
-            user_data = []
-            for user in users:
-                dept_name = get_department_name(user["department_id"]) if user["department_id"] else "N/A"
-                user_data.append({
-                    "Username": user["username"],
-                    "Full Name": user["full_name"],
-                    "Role": user["role"].replace("_", " ").title(),
-                    "Department": dept_name
-                })
-            df = pd.DataFrame(user_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            user_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
+            if user_options:
+                selected_user_str = st.selectbox("Select User to Edit", user_options)
+                selected_username = selected_user_str.split(" - ")[0]
+                
+                # Get current user data
+                current_user = next((u for u in users if u['username'] == selected_username), None)
+                if current_user:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], 
+                                               index=["department_champion", "management", "admin"].index(current_user['role']))
+                    with col2:
+                        current_dept = get_department_name(current_user['department_id'])
+                        dept_list = ["None"] + list(dept_options.keys())
+                        default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
+                        new_department = st.selectbox("Department", dept_list, index=default_index)
+                    
+                    # Password reset option
+                    reset_password = st.checkbox("Reset Password")
+                    new_password = None
+                    if reset_password:
+                        new_password = st.text_input("New Password", type="password")
+                        confirm_new = st.text_input("Confirm New Password", type="password")
+                    
+                    if st.button("Save Changes", use_container_width=True):
+                        # Update role and department
+                        dept_id = dept_options.get(new_department) if new_department != "None" else None
+                        if update_user_role(selected_username, new_role, dept_id):
+                            st.success(f"✅ Role and department updated for {selected_username}")
+                        else:
+                            st.error("Failed to update role/department")
+                        
+                        # Reset password if requested
+                        if reset_password and new_password:
+                            if new_password == confirm_new and len(new_password) >= 4:
+                                if reset_user_password(selected_username, new_password):
+                                    st.success(f"✅ Password reset for {selected_username}")
+                                    st.info(f"New password: {new_password}")
+                                else:
+                                    st.error("Failed to reset password")
+                            else:
+                                st.error("Passwords don't match or are too short")
+                        st.rerun()
+            else:
+                st.info("No other users to edit")
+        else:
+            st.info("No users found")
+    
+    with tab3:
+        st.markdown("### Delete User")
+        st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
+        
+        if users:
+            delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
+            if delete_options:
+                user_to_delete = st.selectbox("Select User to Delete", delete_options)
+                delete_username = user_to_delete.split(" - ")[0]
+                
+                confirm = st.checkbox(f"I understand that this will permanently delete user '{delete_username}'")
+                
+                if st.button("🗑️ Delete User", use_container_width=True):
+                    if confirm:
+                        if delete_user(delete_username):
+                            st.success(f"✅ User '{delete_username}' has been deleted!")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed to delete user '{delete_username}'")
+                    else:
+                        st.error("Please confirm deletion by checking the box")
+            else:
+                st.info("No other users to delete")
+        else:
+            st.info("No users found")
+    
+    # Display current users table
+    st.markdown("---")
+    st.markdown("### Current Users")
+    if users:
+        user_display = []
+        for user in users:
+            dept_name = get_department_name(user['department_id']) if user['department_id'] else "N/A"
+            user_display.append({
+                "Username": user['username'],
+                "Full Name": user['full_name'],
+                "Role": user['role'].replace("_", " ").title(),
+                "Department": dept_name
+            })
+        df_users = pd.DataFrame(user_display)
+        st.dataframe(df_users, use_container_width=True, hide_index=True)
 
 # ============================================
 # ENTERPRISE VIEW
