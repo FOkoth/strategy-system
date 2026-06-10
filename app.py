@@ -3,7 +3,6 @@ from supabase import create_client
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
-from PIL import Image
 import base64
 from io import BytesIO
 import requests
@@ -11,12 +10,12 @@ import requests
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
-HELB_GREEN = "#006B3E"      # HELB Green - Primary
-HELB_GOLD = "#F5A623"        # HELB Gold - Accent
-HELB_BLUE = "#1E3A8A"        # HELB Blue - Secondary
-HELB_DARK = "#1A1A1A"        # Dark text
+HELB_GREEN = "#00843D"      # HELB Green - Primary (from reference)
+HELB_GOLD = "#FFB81C"        # HELB Gold - Accent (from reference)
+HELB_BLUE = "#00529B"        # HELB Blue - Secondary (from reference)
+HELB_DARK = "#1F2937"        # Dark text
 HELB_WHITE = "#FFFFFF"       # White background
-HELB_GRAY = "#F8F9FA"        # Light gray for cards
+HELB_GRAY = "#F9FAFB"        # Light gray for cards
 
 # Page config
 st.set_page_config(
@@ -26,9 +25,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for HELB branding - White background, Green sidebar
+# Custom CSS - Professional HELB Design
 st.markdown(f"""
 <style>
+    /* Hide Streamlit branding */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    .stAppDeployButton {{display: none;}}
+    
     /* Main container - White background */
     .main {{
         background-color: {HELB_WHITE} !important;
@@ -36,7 +40,8 @@ st.markdown(f"""
     
     /* Sidebar - HELB Green */
     [data-testid="stSidebar"] {{
-        background-color: {HELB_GREEN} !important;
+        background: linear-gradient(180deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+        padding-top: 1rem;
     }}
     
     [data-testid="stSidebar"] * {{
@@ -45,6 +50,15 @@ st.markdown(f"""
     
     [data-testid="stSidebar"] .stMarkdown {{
         color: white !important;
+    }}
+    
+    /* Sidebar user info */
+    .sidebar-user-info {{
+        background: rgba(255,255,255,0.15);
+        padding: 0.8rem;
+        border-radius: 10px;
+        margin: 0.5rem 0;
+        text-align: center;
     }}
     
     /* Navigation radio buttons - Gold background */
@@ -67,6 +81,17 @@ st.markdown(f"""
         background-color: {HELB_GOLD} !important;
     }}
     
+    /* Logout button */
+    [data-testid="stSidebar"] .stButton > button {{
+        background-color: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+    }}
+    
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background-color: rgba(255,255,255,0.3) !important;
+    }}
+    
     /* Headers */
     h1, h2, h3 {{
         color: {HELB_GREEN} !important;
@@ -79,39 +104,104 @@ st.markdown(f"""
         margin-bottom: 25px;
     }}
     
-    /* Buttons */
-    .stButton > button {{
-        background-color: {HELB_GREEN} !important;
+    /* Dashboard Header */
+    .dashboard-header {{
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }}
+    
+    .header-left {{
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }}
+    
+    .dashboard-header h1 {{
         color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 10px 20px !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-bottom: none;
     }}
     
-    .stButton > button:hover {{
-        background-color: {HELB_BLUE} !important;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    .dashboard-header p {{
+        color: rgba(255,255,255,0.85);
+        margin: 0;
+        font-size: 0.7rem;
     }}
     
-    /* Cards */
+    /* KPI Cards - Solid Green Background (from reference) */
+    .kpi-grid {{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }}
+    
+    .kpi-card {{
+        background: {HELB_GREEN};
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }}
+    
+    .kpi-card:hover {{
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }}
+    
+    .kpi-label {{
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: {HELB_GOLD};
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }}
+    
+    .kpi-value {{
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0.3rem 0;
+        color: white;
+        line-height: 1.2;
+    }}
+    
+    .progress-bar {{
+        height: 4px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }}
+    
+    .progress-fill {{
+        height: 100%;
+        background: {HELB_GOLD};
+        border-radius: 2px;
+    }}
+    
+    /* Secondary Cards */
     .metric-card {{
         background: {HELB_WHITE};
         border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         border-left: 4px solid {HELB_GOLD};
         transition: all 0.3s ease;
     }}
     
     .metric-card:hover {{
-        transform: translateY(-5px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
     }}
     
-    /* Status badges */
+    /* Status Badges */
     .badge-active {{
         background-color: {HELB_GREEN};
         color: white;
@@ -123,7 +213,7 @@ st.markdown(f"""
     
     .badge-expiring {{
         background-color: {HELB_GOLD};
-        color: white;
+        color: {HELB_DARK};
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
@@ -139,14 +229,52 @@ st.markdown(f"""
         font-weight: 600;
     }}
     
-    /* Login container */
-    .login-container {{
-        background: {HELB_WHITE};
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        text-align: center;
-        border-top: 5px solid {HELB_GOLD};
+    /* Buttons */
+    .stButton > button {{
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }}
+    
+    .stButton > button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }}
+    
+    /* Tabs - Gold Selected, Grey Unselected (from reference) */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 0.5rem;
+        background: {HELB_GRAY};
+        padding: 0.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: {HELB_DARK};
+        white-space: nowrap;
+        transition: all 0.2s;
+        background-color: {HELB_GRAY};
+    }}
+    
+    .stTabs [aria-selected="true"] {{
+        background-color: {HELB_GOLD} !important;
+        color: {HELB_DARK} !important;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }}
+    
+    .stTabs [data-baseweb="tab"]:hover {{
+        background-color: rgba(255,184,28,0.2);
+        color: {HELB_GOLD};
     }}
     
     /* Expander */
@@ -157,60 +285,60 @@ st.markdown(f"""
         font-weight: 600 !important;
     }}
     
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 8px;
+    /* Login Container */
+    .login-container {{
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+        border-radius: 20px;
+        padding: 2.5rem;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }}
     
-    .stTabs [data-baseweb="tab"] {{
-        background-color: {HELB_GRAY};
-        border-radius: 8px 8px 0 0;
-        padding: 10px 20px;
-        font-weight: 600;
-        color: {HELB_DARK};
+    .login-logo {{
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
     }}
     
-    .stTabs [aria-selected="true"] {{
-        background-color: {HELB_GREEN} !important;
-        color: white !important;
+    .login-title {{
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }}
+    
+    .login-subtitle {{
+        color: rgba(255,255,255,0.8);
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }}
+    
+    /* Info/Warning boxes */
+    .info-card {{
+        background: {HELB_GRAY};
+        border-left: 3px solid {HELB_GREEN};
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        font-size: 0.8rem;
+    }}
+    
+    .warning-card {{
+        background: #FEF2F2;
+        border-left: 3px solid #DC2626;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        font-size: 0.8rem;
     }}
     
     /* Footer */
     .footer {{
         text-align: center;
-        padding: 20px;
-        color: #666;
-        font-size: 12px;
-        border-top: 1px solid #ddd;
-        margin-top: 40px;
-    }}
-    
-    /* Dataframes */
-    .dataframe {{
-        border-radius: 10px;
-        overflow: hidden;
-    }}
-    
-    .dataframe th {{
-        background-color: {HELB_GREEN} !important;
-        color: white !important;
-        padding: 12px;
-    }}
-    
-    /* Sidebar text */
-    .sidebar-welcome {{
-        font-size: 14px;
-        margin-bottom: 5px;
-    }}
-    
-    .sidebar-name {{
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }}
-    
-    hr {{
-        border-color: rgba(255,255,255,0.2);
+        padding: 1.5rem;
+        color: #6B7280;
+        font-size: 0.7rem;
+        border-top: 1px solid #E5E7EB;
+        margin-top: 2rem;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -219,31 +347,17 @@ st.markdown(f"""
 # LOAD HELB LOGO
 # ============================================
 def load_logo():
-    """Load HELB logo from GitHub or local"""
     try:
-        # Try to load from GitHub - replace with your actual raw URL
-        github_url = "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png"
-        response = requests.get(github_url, timeout=5)
+        response = requests.get("https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png", timeout=5)
         if response.status_code == 200:
             return Image.open(BytesIO(response.content))
     except:
         pass
-    
     try:
-        # Try local file
         logo = Image.open("HELB Logo.png")
         return logo
     except:
         return None
-
-def get_logo_base64():
-    """Convert logo to base64 for HTML embedding"""
-    logo = load_logo()
-    if logo:
-        buffered = BytesIO()
-        logo.save(buffered, format="PNG")
-        return base64.b64encode(buffered.getvalue()).decode()
-    return None
 
 # ============================================
 # SUPABASE CONNECTION
@@ -259,8 +373,8 @@ supabase = init_supabase()
 # ============================================
 # SESSION STATE
 # ============================================
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
     st.session_state.user = None
     st.session_state.user_role = None
     st.session_state.user_dept = None
@@ -289,21 +403,16 @@ def get_filtered_data(table_name):
 # ============================================
 # LOGIN PAGE
 # ============================================
-if not st.session_state.logged_in:
+if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
-    
     with col2:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        
-        # Display HELB Logo
-        logo = load_logo()
-        if logo:
-            st.image(logo, width=180)
-        else:
-            st.markdown(f'<h1 style="color:{HELB_GREEN}; text-align:center;">🏦 HELB</h1>', unsafe_allow_html=True)
-        
-        st.markdown(f'<h3 style="color:{HELB_GREEN}; text-align:center;">Strategy Performance Management System</h3>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class='login-container'>
+            <div class='login-logo'>🏦</div>
+            <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
+            <p class='login-subtitle'>Strategy Performance Management System</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username")
@@ -313,11 +422,10 @@ if not st.session_state.logged_in:
             if submitted:
                 if username and password:
                     result = supabase.table("users").select("*").eq("username", username.lower()).execute()
-                    
                     if result.data:
                         user = result.data[0]
                         if password == user["password_hash"]:
-                            st.session_state.logged_in = True
+                            st.session_state.authenticated = True
                             st.session_state.user = user
                             st.session_state.user_role = user["role"]
                             st.session_state.user_dept = user["department_id"]
@@ -331,97 +439,92 @@ if not st.session_state.logged_in:
                         st.error("❌ User not found")
                 else:
                     st.warning("Please enter both username and password")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-    
     st.stop()
 
 # ============================================
 # MAIN APPLICATION (LOGGED IN)
 # ============================================
 
-# Sidebar with HELB branding
-with st.sidebar:
-    # HELB Logo in sidebar
-    logo = load_logo()
-    if logo:
-        st.image(logo, width=140)
-    else:
-        st.markdown(f'<h2 style="color:white; text-align:center;">HELB</h2>', unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    st.markdown(f'<p class="sidebar-welcome">Welcome,</p>', unsafe_allow_html=True)
-    st.markdown(f'<p class="sidebar-name">{st.session_state.user_fullname}</p>', unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown(f"**Username:** {st.session_state.user_name}")
-    
-    if st.session_state.user_role == "department_champion":
-        dept_name = get_department_name(st.session_state.user_dept)
-        st.markdown(f"**Department:** {dept_name}")
-    
-    st.markdown(f"**Role:** {st.session_state.user_role.replace('_', ' ').title()}")
-    st.markdown("---")
-    
-    # Navigation with gold backgrounds
-    st.markdown("### Navigation")
-    
-    menu_options = ["Dashboard", "Action Plans", "Contracts", "Policies"]
-    
-    if st.session_state.user_role == "admin":
-        menu_options.append("User Management")
-    
-    if st.session_state.user_role in ["admin", "management"]:
-        menu_options.append("Enterprise View")
-    
-    choice = st.radio("", menu_options, label_visibility="collapsed")
-    
-    st.markdown("---")
-    
-    if st.button("Logout", use_container_width=True):
-        st.session_state.clear()
+# Dashboard Header
+col_header, col_refresh = st.columns([6, 1])
+with col_header:
+    st.markdown(f"""
+    <div class='dashboard-header'>
+        <div class='header-left'>
+            <div style='font-size: 1.5rem;'>🏦</div>
+            <div>
+                <h1>HELB Strategy Performance Management System</h1>
+                <p>Real-time monitoring | Action plans | Contracts | Policies</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_refresh:
+    if st.button("🔄 Refresh", key="global_refresh"):
         st.rerun()
 
-# Main content area - Display HELB Logo in header
-col1, col2, col3 = st.columns([1, 3, 1])
-with col2:
-    logo = load_logo()
-    if logo:
-        st.image(logo, width=200)
-    st.markdown(f'<h1 style="text-align:center;">HELB Strategy Performance Management System</h1>', unsafe_allow_html=True)
-
-st.markdown("---")
+# Sidebar
+with st.sidebar:
+    st.markdown("""
+    <div style='text-align: center; padding: 0.5rem 0;'>
+        <div style='font-size: 2rem;'>🏦</div>
+        <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div class='sidebar-user-info'>
+        <strong>{st.session_state.user_fullname}</strong><br>
+        <span style='font-size: 0.7rem;'>{st.session_state.user_role.replace('_', ' ').title()}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Navigation menu
+    menu_options = ["📊 Dashboard", "✅ Action Plans", "📄 Contracts", "📋 Policies"]
+    if st.session_state.user_role == "admin":
+        menu_options.append("👥 User Management")
+    if st.session_state.user_role in ["admin", "management"]:
+        menu_options.append("🏢 Enterprise View")
+    
+    choice = st.radio("📋 Navigation", menu_options, label_visibility="collapsed")
+    
+    st.markdown("---")
+    
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.clear()
+        st.rerun()
 
 # ============================================
 # DASHBOARD
 # ============================================
-if choice == "Dashboard":
-    st.subheader("Dashboard Overview")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
+if choice == "📊 Dashboard":
     plans = get_filtered_data("action_plans")
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
+    
+    # KPI Cards
+    st.markdown("<div class='kpi-grid'>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         if plans:
             completed = sum(1 for p in plans if p.get("status") == "completed")
             total = len(plans)
+            avg_progress = sum(p.get("progress_percent", 0) for p in plans) / total if total > 0 else 0
             st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="margin:0; color:{HELB_GREEN}">📋 Action Plans</h3>
-                <p style="font-size:32px; font-weight:bold; margin:10px 0;">{completed}/{total}</p>
-                <p style="color:#666;">tasks completed</p>
+            <div class='kpi-card'>
+                <div class='kpi-label'>📋 ACTION PLANS</div>
+                <div class='kpi-value'>{completed}/{total}</div>
+                <div class='progress-bar'><div class='progress-fill' style='width:{avg_progress}%;'></div></div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="margin:0; color:{HELB_GREEN}">📋 Action Plans</h3>
-                <p style="font-size:32px; font-weight:bold; margin:10px 0;">0/0</p>
-                <p style="color:#666;">No data</p>
+            <div class='kpi-card'>
+                <div class='kpi-label'>📋 ACTION PLANS</div>
+                <div class='kpi-value'>0/0</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -429,18 +532,17 @@ if choice == "Dashboard":
         if contracts:
             expiring = sum(1 for c in contracts if c.get("status") == "expiring_soon")
             st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="margin:0; color:{HELB_GREEN}">📄 Contracts</h3>
-                <p style="font-size:32px; font-weight:bold; margin:10px 0;">{expiring}</p>
-                <p style="color:#666;">expiring within 30 days</p>
+            <div class='kpi-card'>
+                <div class='kpi-label'>📄 CONTRACTS</div>
+                <div class='kpi-value'>{expiring}</div>
+                <div class='kpi-label' style='font-size:0.6rem;'>expiring within 30 days</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="margin:0; color:{HELB_GREEN}">📄 Contracts</h3>
-                <p style="font-size:32px; font-weight:bold; margin:10px 0;">0</p>
-                <p style="color:#666;">No data</p>
+            <div class='kpi-card'>
+                <div class='kpi-label'>📄 CONTRACTS</div>
+                <div class='kpi-value'>0</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -455,35 +557,32 @@ if choice == "Dashboard":
                 except:
                     pass
             st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="margin:0; color:{HELB_GREEN}">📜 Policies</h3>
-                <p style="font-size:32px; font-weight:bold; margin:10px 0;">{expiring_policies}</p>
-                <p style="color:#666;">expiring within 90 days</p>
+            <div class='kpi-card'>
+                <div class='kpi-label'>📜 POLICIES</div>
+                <div class='kpi-value'>{expiring_policies}</div>
+                <div class='kpi-label' style='font-size:0.6rem;'>expiring within 90 days</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="margin:0; color:{HELB_GREEN}">📜 Policies</h3>
-                <p style="font-size:32px; font-weight:bold; margin:10px 0;">0</p>
-                <p style="color:#666;">No data</p>
+            <div class='kpi-card'>
+                <div class='kpi-label'>📜 POLICIES</div>
+                <div class='kpi-value'>0</div>
             </div>
             """, unsafe_allow_html=True)
     
     with col4:
         st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="margin:0; color:{HELB_GREEN}">👥 Active Users</h3>
-            <p style="font-size:32px; font-weight:bold; margin:10px 0;">{len(supabase.table("users").select("*").execute().data)}</p>
-            <p style="color:#666;">in the system</p>
+        <div class='kpi-card'>
+            <div class='kpi-label'>👥 ACTIVE USERS</div>
+            <div class='kpi-value'>{len(supabase.table("users").select("*").execute().data)}</div>
         </div>
         """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    # Progress chart
+    # Progress Chart
     if plans and len(plans) > 0:
-        st.markdown("---")
-        st.subheader("Department Performance Overview")
-        
+        st.subheader("📈 Department Performance Overview")
         df = pd.DataFrame(plans)
         if st.session_state.user_role in ["admin", "management"]:
             depts = supabase.table("departments").select("id,name").execute().data
@@ -497,13 +596,21 @@ if choice == "Dashboard":
                         title="My Department's Action Plan Progress",
                         color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         
-        fig.update_layout(barmode='group', bargap=0.3, plot_bgcolor=HELB_WHITE)
+        fig.update_layout(
+            barmode='group', 
+            bargap=0.3, 
+            plot_bgcolor=HELB_WHITE,
+            title_font_color=HELB_GREEN,
+            title_font_size=16
+        )
         st.plotly_chart(fig, use_container_width=True)
+    
+    st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
 # ACTION PLANS
 # ============================================
-elif choice == "Action Plans":
+elif choice == "✅ Action Plans":
     st.subheader("Action Plan Monitor")
     
     with st.expander("➕ Add New Action Item", expanded=False):
@@ -546,7 +653,7 @@ elif choice == "Action Plans":
                     st.progress(plan["progress_percent"] / 100)
                     st.caption(f"{plan['progress_percent']}%")
                 with col3:
-                    new_progress = st.number_input("Progress %", 0, 100, plan["progress_percent"], key=f"p_{plan['id']}", label_visibility="collapsed")
+                    new_progress = st.number_input("Update %", 0, 100, plan["progress_percent"], key=f"p_{plan['id']}", label_visibility="collapsed")
                     if st.button(f"Update", key=f"u_{plan['id']}"):
                         new_status = "completed" if new_progress == 100 else "in progress" if new_progress > 0 else "not started"
                         supabase.table("action_plans").update({
@@ -562,7 +669,7 @@ elif choice == "Action Plans":
 # ============================================
 # CONTRACTS
 # ============================================
-elif choice == "Contracts":
+elif choice == "📄 Contracts":
     st.subheader("Contract Tracker")
     
     with st.expander("➕ Add New Contract", expanded=False):
@@ -613,20 +720,15 @@ elif choice == "Contracts":
                 badge = '<span class="badge-expired">Expired</span>'
             
             st.markdown(f"""
-            <div style="border:1px solid #e0e0e0; padding:15px; margin:10px 0; border-radius:10px; background:white;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
-                        <b style="font-size:16px;">{color} {contract['contract_title']}</b>
-                        <br>
-                        <span style="color:#666;">Vendor: {contract['vendor_name']}</span>
-                        <br>
-                        <span style="color:#666;">End Date: {contract['end_date']} | {days_left} days remaining</span>
-                        <br>
+                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
                         <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
                     </div>
-                    <div>
-                        {badge}
-                    </div>
+                    <div>{badge}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -636,7 +738,7 @@ elif choice == "Contracts":
 # ============================================
 # POLICIES
 # ============================================
-elif choice == "Policies":
+elif choice == "📋 Policies":
     st.subheader("Policy Monitor")
     
     with st.expander("➕ Add New Policy", expanded=False):
@@ -672,16 +774,13 @@ elif choice == "Policies":
                 badge = '<span class="badge-expired">Expired</span>'
             
             st.markdown(f"""
-            <div style="border:1px solid #e0e0e0; padding:15px; margin:10px 0; border-radius:10px; background:white;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
-                        <b style="font-size:16px;">📜 {policy['policy_name']}</b>
-                        <br>
-                        <span style="color:#666;">Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
                     </div>
-                    <div>
-                        {badge}
-                    </div>
+                    <div>{badge}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -691,7 +790,7 @@ elif choice == "Policies":
 # ============================================
 # USER MANAGEMENT (ADMIN ONLY)
 # ============================================
-elif choice == "User Management" and st.session_state.user_role == "admin":
+elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management")
     
     tab1, tab2 = st.tabs(["Create New User", "Existing Users"])
@@ -750,7 +849,7 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
 # ============================================
 # ENTERPRISE VIEW
 # ============================================
-elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "management"]:
+elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
     st.markdown("### Cross-Department Performance Overview")
     
@@ -819,8 +918,8 @@ elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "ma
 # ============================================
 st.markdown("---")
 st.markdown(f"""
-<div class="footer">
+<div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
-    <p style="font-size:10px;">All Rights Reserved | Secure & Real-time</p>
+    <p>Powered by Streamlit | Secure & Real-time</p>
 </div>
 """, unsafe_allow_html=True)
