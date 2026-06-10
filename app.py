@@ -16,7 +16,8 @@ HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
 HELB_BLUE = "#00529B"        # HELB Blue - Secondary
 HELB_DARK = "#1F2937"        # Dark text
 HELB_WHITE = "#FFFFFF"       # White background
-HELB_GRAY = "#F9FAFB"        # Light gray for cards
+HELB_GRAY = "#F3F4F6"        # Light gray for cards
+HELB_LIGHT_GREEN = "#E8F5E9"  # Very light green for accents
 
 # Page config - Light theme by default
 st.set_page_config(
@@ -97,51 +98,68 @@ st.markdown(f"""
     footer {{visibility: hidden;}}
     .stAppDeployButton {{display: none;}}
     
-    /* Main container - Light background */
+    /* Main container - White background */
     .main {{
         background-color: {HELB_WHITE} !important;
     }}
     
-    /* Light themed sidebar */
+    /* Sidebar - Light themed */
     [data-testid="stSidebar"] {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+        background-color: {HELB_WHITE} !important;
+        border-right: 1px solid #E5E7EB !important;
         padding-top: 1rem;
     }}
     
     [data-testid="stSidebar"] * {{
-        color: white !important;
+        color: {HELB_DARK} !important;
     }}
     
-    /* Sidebar user info */
+    /* Sidebar user info - Light theme */
     .sidebar-user-info {{
-        background: rgba(255,255,255,0.15);
+        background: linear-gradient(135deg, {HELB_LIGHT_GREEN} 0%, {HELB_WHITE} 100%);
         padding: 0.8rem;
         border-radius: 10px;
         margin: 0.5rem 0;
         text-align: center;
+        border: 1px solid {HELB_GREEN};
+        color: {HELB_DARK} !important;
     }}
     
-    /* Navigation radio buttons */
+    /* Navigation radio buttons - Light theme */
     [data-testid="stSidebar"] div[role="radiogroup"] label {{
-        background-color: {HELB_GOLD} !important;
+        background-color: {HELB_GRAY} !important;
         color: {HELB_DARK} !important;
         border-radius: 8px !important;
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
+        border: 1px solid #E5E7EB !important;
     }}
     
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
+        background-color: {HELB_GOLD} !important;
         transform: translateX(5px);
-        filter: brightness(1.05);
+        color: {HELB_DARK} !important;
     }}
     
-    /* Logout button */
+    /* Selected menu item */
+    [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
+        background-color: {HELB_GOLD} !important;
+        border-color: {HELB_GOLD} !important;
+    }}
+    
+    /* Logout button - Light theme */
     [data-testid="stSidebar"] .stButton > button {{
-        background-color: rgba(255,255,255,0.2) !important;
-        color: white !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
+        background-color: {HELB_GRAY} !important;
+        color: {HELB_DARK} !important;
+        border: 1px solid #E5E7EB !important;
+    }}
+    
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background-color: #FEE2E2 !important;
+        border-color: #DC2626 !important;
+        color: #DC2626 !important;
     }}
     
     /* Headers - Light theme */
@@ -156,16 +174,16 @@ st.markdown(f"""
         margin-bottom: 25px;
     }}
     
-    /* Dashboard Header - Light theme */
+    /* Dashboard Header - Light themed */
     .dashboard-header {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+        background: linear-gradient(135deg, {HELB_LIGHT_GREEN} 0%, {HELB_WHITE} 100%);
         padding: 0.8rem 1.5rem;
         border-radius: 12px;
         margin-bottom: 1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border: 1px solid #E5E7EB;
     }}
     
     .header-left {{
@@ -175,7 +193,7 @@ st.markdown(f"""
     }}
     
     .dashboard-header h1 {{
-        color: white !important;
+        color: {HELB_GREEN} !important;
         margin: 0;
         font-size: 1.2rem;
         font-weight: 600;
@@ -183,18 +201,20 @@ st.markdown(f"""
     }}
     
     .dashboard-header p {{
-        color: rgba(255,255,255,0.85);
+        color: {HELB_DARK} !important;
         margin: 0;
         font-size: 0.7rem;
+        opacity: 0.7;
     }}
     
-    /* Login Container - Light theme */
+    /* Login Container - Light themed */
     .login-container {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+        background: linear-gradient(135deg, {HELB_LIGHT_GREEN} 0%, {HELB_WHITE} 100%);
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 1px solid #E5E7EB;
     }}
     
     .login-logo {{
@@ -202,29 +222,31 @@ st.markdown(f"""
     }}
     
     .login-title {{
-        color: white;
+        color: {HELB_GREEN} !important;
         font-size: 1.5rem;
         font-weight: 700;
         margin: 0;
     }}
     
     .login-subtitle {{
-        color: rgba(255,255,255,0.85);
+        color: {HELB_DARK} !important;
         font-size: 0.85rem;
         margin-top: 0.5rem;
+        opacity: 0.7;
     }}
     
     /* Login form inputs */
     .login-container .stTextInput input {{
         border-radius: 8px;
-        border: none;
+        border: 1px solid #E5E7EB !important;
         padding: 10px;
-        background-color: white;
+        background-color: white !important;
+        color: {HELB_DARK} !important;
     }}
     
     .login-container .stButton button {{
-        background-color: {HELB_GOLD} !important;
-        color: {HELB_DARK} !important;
+        background-color: {HELB_GREEN} !important;
+        color: white !important;
         font-weight: 600 !important;
         border: none !important;
         border-radius: 8px !important;
@@ -233,11 +255,12 @@ st.markdown(f"""
     }}
     
     .login-container .stButton button:hover {{
+        background-color: {HELB_BLUE} !important;
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }}
     
-    /* KPI Cards - Light theme */
+    /* KPI Cards - Light themed */
     .kpi-grid {{
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -288,7 +311,7 @@ st.markdown(f"""
         border-radius: 2px;
     }}
     
-    /* Metric Cards - Light theme */
+    /* Metric Cards - Light themed */
     .metric-card {{
         background: {HELB_WHITE};
         border-radius: 12px;
@@ -296,6 +319,7 @@ st.markdown(f"""
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         border-left: 4px solid {HELB_GOLD};
         transition: all 0.3s ease;
+        border: 1px solid #E5E7EB;
     }}
     
     .metric-card:hover {{
@@ -333,7 +357,7 @@ st.markdown(f"""
     
     /* Buttons - Light theme */
     .stButton > button {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+        background-color: {HELB_GREEN} !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
@@ -343,22 +367,28 @@ st.markdown(f"""
     }}
     
     .stButton > button:hover {{
+        background-color: {HELB_BLUE} !important;
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }}
     
     /* Danger button */
     div[data-testid="column"]:has(button[key*="delete"]) button {{
-        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+        background-color: #dc2626 !important;
+    }}
+    
+    div[data-testid="column"]:has(button[key*="delete"]) button:hover {{
+        background-color: #b91c1c !important;
     }}
     
     /* Tabs - Light theme */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 0.5rem;
-        background: {HELB_GRAY};
+        background-color: {HELB_GRAY};
         padding: 0.5rem;
         border-radius: 12px;
         margin-bottom: 1rem;
+        border: 1px solid #E5E7EB;
     }}
     
     .stTabs [data-baseweb="tab"] {{
@@ -369,7 +399,7 @@ st.markdown(f"""
         color: {HELB_DARK};
         white-space: nowrap;
         transition: all 0.2s;
-        background-color: {HELB_GRAY};
+        background-color: transparent;
     }}
     
     .stTabs [aria-selected="true"] {{
@@ -385,6 +415,7 @@ st.markdown(f"""
         border-radius: 8px !important;
         color: {HELB_GREEN} !important;
         font-weight: 600 !important;
+        border: 1px solid #E5E7EB !important;
     }}
     
     /* Footer - Light theme */
@@ -413,6 +444,12 @@ st.markdown(f"""
         background-color: white !important;
         color: {HELB_DARK} !important;
         border: 1px solid #E5E7EB !important;
+        border-radius: 6px !important;
+    }}
+    
+    .stTextInput input:focus, .stSelectbox div:focus, .stDateInput input:focus {{
+        border-color: {HELB_GREEN} !important;
+        box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
     }}
     
     /* Success/Error/Warning messages - Light theme */
@@ -424,6 +461,19 @@ st.markdown(f"""
     /* Progress bars */
     .stProgress > div > div {{
         background-color: {HELB_GOLD} !important;
+    }}
+    
+    /* Info boxes */
+    .stInfo {{
+        background-color: {HELB_LIGHT_GREEN} !important;
+        border-left-color: {HELB_GREEN} !important;
+    }}
+    
+    /* Number input */
+    .stNumberInput input {{
+        background-color: white !important;
+        color: {HELB_DARK} !important;
+        border: 1px solid #E5E7EB !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -608,7 +658,7 @@ with st.sidebar:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
             <div style='font-size: 2rem;'>🏦</div>
-            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
+            <p style='color: #00843D; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
         </div>
         """, unsafe_allow_html=True)
     
