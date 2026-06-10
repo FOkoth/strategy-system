@@ -92,140 +92,131 @@ LOGO_BASE64 = get_logo_base64()
 # ============================================
 # CUSTOM CSS - Light Themed Professional HELB Design
 # ============================================
-st.markdown(f"""
+st.markdown("""
 <style>
     /* Hide Streamlit branding */
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    .stAppDeployButton {{display: none;}}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppDeployButton {display: none;}
     
     /* Force main background to white */
-    .stApp {{
-        background-color: {HELB_WHITE} !important;
-    }}
+    .stApp {
+        background-color: #FFFFFF !important;
+    }
     
-    .main {{
-        background-color: {HELB_WHITE} !important;
-    }}
+    .main {
+        background-color: #FFFFFF !important;
+    }
     
     /* Make all text dark/black by default */
-    .stApp, .stApp p, .stApp span, .stApp div, .stApp label {{
-        color: {HELB_BLACK} !important;
-    }}
+    .stApp, .stApp p, .stApp span, .stApp div, .stApp label {
+        color: #000000 !important;
+    }
     
     /* Sidebar - Solid Green */
-    [data-testid="stSidebar"] {{
-        background-color: {HELB_GREEN} !important;
+    [data-testid="stSidebar"] {
+        background-color: #00843D !important;
         padding-top: 1rem;
-    }}
+    }
     
     /* Sidebar text should be white */
-    [data-testid="stSidebar"] * {{
+    [data-testid="stSidebar"] * {
         color: white !important;
-    }}
+    }
     
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div, [data-testid="stSidebar"] label {{
-        color: white !important;
-    }}
-    
-    /* Sidebar user info - White text on green */
-    .sidebar-user-info {{
+    /* Sidebar user info */
+    .sidebar-user-info {
         background-color: rgba(255,255,255,0.15) !important;
         padding: 0.8rem;
         border-radius: 10px;
         margin: 0.5rem 0;
         text-align: center;
         border: 1px solid rgba(255,255,255,0.2);
-    }}
+    }
     
-    /* Navigation radio buttons - Gold on green */
-    [data-testid="stSidebar"] div[role="radiogroup"] label {{
-        background-color: {HELB_GOLD} !important;
-        color: {HELB_DARK} !important;
+    /* Navigation radio buttons */
+    [data-testid="stSidebar"] div[role="radiogroup"] label {
+        background-color: #FFB81C !important;
+        color: #1F2937 !important;
         border-radius: 8px !important;
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
-    }}
+    }
     
-    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
+    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
         transform: translateX(5px);
         filter: brightness(1.05);
-    }}
+    }
     
-    /* Logout button - Light theme */
-    [data-testid="stSidebar"] .stButton > button {{
+    /* Logout button */
+    [data-testid="stSidebar"] .stButton > button {
         background-color: rgba(255,255,255,0.2) !important;
         color: white !important;
         border: 1px solid rgba(255,255,255,0.3) !important;
-    }}
+    }
     
-    [data-testid="stSidebar"] .stButton > button:hover {{
-        background-color: rgba(255,255,255,0.3) !important;
-    }}
-    
-    /* Expander styling - Light theme */
-    .streamlit-expanderHeader {{
-        background-color: {HELB_GRAY} !important;
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background-color: #F3F4F6 !important;
         border-radius: 8px !important;
-        color: {HELB_GREEN} !important;
+        color: #00843D !important;
         font-weight: 600 !important;
         border: 1px solid #E5E7EB !important;
-    }}
+    }
     
-    .streamlit-expanderHeader p {{
-        color: {HELB_GREEN} !important;
-    }}
+    /* CRITICAL FIX: Force expander content to white background */
+    .streamlit-expanderContent div, 
+    .streamlit-expanderContent .stMarkdown,
+    .streamlit-expanderContent .stForm,
+    .streamlit-expanderContent [data-testid="stForm"],
+    .streamlit-expanderContent .stTextInput,
+    .streamlit-expanderContent .stSelectbox,
+    .streamlit-expanderContent .stDateInput,
+    .streamlit-expanderContent .stNumberInput,
+    .streamlit-expanderContent .stSlider,
+    .streamlit-expanderContent .stCheckbox,
+    .streamlit-expanderContent .stButton {
+        background-color: #FFFFFF !important;
+    }
     
-    /* Expander content area - Force white background */
-    .streamlit-expanderContent {{
-        background-color: {HELB_WHITE} !important;
-        padding: 1rem !important;
-        border-radius: 0 0 8px 8px !important;
-    }}
-    
-    /* Input Labels - Black/dark */
-    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {{
-        color: {HELB_BLACK} !important;
+    /* Input Labels - Black */
+    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {
+        color: #000000 !important;
         font-weight: 500 !important;
-    }}
+    }
     
-    /* Input fields - Black text on white background */
-    .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input {{
+    /* Input fields - White background, black text */
+    .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input {
         background-color: white !important;
-        color: {HELB_BLACK} !important;
+        color: #000000 !important;
         border: 1px solid #D1D5DB !important;
         border-radius: 6px !important;
-    }}
+    }
     
-    .stTextInput input:focus, .stSelectbox div:focus, .stDateInput input:focus, .stNumberInput input:focus {{
-        border-color: {HELB_GREEN} !important;
-        box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
-    }}
+    /* Form background white */
+    .stForm {
+        background-color: #FFFFFF !important;
+        padding: 1rem !important;
+        border-radius: 8px !important;
+    }
     
-    /* Text area */
-    .stTextArea textarea {{
-        background-color: white !important;
-        color: {HELB_BLACK} !important;
-        border: 1px solid #D1D5DB !important;
-    }}
-    
-    /* Headers - Light theme */
-    h1, h2, h3, h4, h5, h6 {{
-        color: {HELB_GREEN} !important;
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {
+        color: #00843D !important;
         font-weight: 600 !important;
-    }}
+    }
     
-    h1 {{
-        border-bottom: 3px solid {HELB_GOLD};
+    h1 {
+        border-bottom: 3px solid #FFB81C;
         padding-bottom: 15px;
         margin-bottom: 25px;
-    }}
+    }
     
-    /* Dashboard Header - Light themed */
-    .dashboard-header {{
-        background-color: {HELB_WHITE} !important;
+    /* Dashboard Header */
+    .dashboard-header {
+        background-color: #FFFFFF !important;
         padding: 0.8rem 1.5rem;
         border-radius: 12px;
         margin-bottom: 1.5rem;
@@ -234,349 +225,159 @@ st.markdown(f"""
         justify-content: space-between;
         border: 1px solid #E5E7EB;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }}
+    }
     
-    .header-left {{
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }}
-    
-    .dashboard-header h1 {{
-        color: {HELB_GREEN} !important;
-        margin: 0;
-        font-size: 1.2rem;
-        font-weight: 600;
-        border-bottom: none;
-    }}
-    
-    .dashboard-header p {{
-        color: #6B7280 !important;
-        margin: 0;
-        font-size: 0.7rem;
-    }}
-    
-    /* Login Container - Light themed */
-    .login-container {{
-        background-color: {HELB_WHITE} !important;
+    /* Login Container */
+    .login-container {
+        background-color: #FFFFFF !important;
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
         box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         border: 1px solid #E5E7EB;
-    }}
+    }
     
-    .login-logo {{
-        margin-bottom: 1rem;
-    }}
-    
-    .login-title {{
-        color: {HELB_GREEN} !important;
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0;
-    }}
-    
-    .login-subtitle {{
-        color: #6B7280 !important;
-        font-size: 0.85rem;
-        margin-top: 0.5rem;
-    }}
-    
-    /* Login form inputs */
-    .login-container .stTextInput input {{
-        border-radius: 8px;
-        border: 1px solid #D1D5DB !important;
-        padding: 10px;
-        background-color: white !important;
-        color: {HELB_BLACK} !important;
-    }}
-    
-    .login-container .stButton button {{
-        background-color: {HELB_GREEN} !important;
-        color: white !important;
-        font-weight: 600 !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 10px !important;
-        transition: all 0.3s ease !important;
-    }}
-    
-    .login-container .stButton button:hover {{
-        background-color: {HELB_BLUE} !important;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }}
-    
-    /* KPI Cards - Green gradient */
-    .kpi-card {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+    /* KPI Cards */
+    .kpi-card {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
-    }}
+    }
     
-    .kpi-card:hover {{
-        transform: translateY(-3px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    }}
-    
-    .kpi-label {{
+    .kpi-label {
         font-size: 0.7rem;
         text-transform: uppercase;
-        color: {HELB_GOLD};
+        color: #FFB81C;
         font-weight: 600;
         letter-spacing: 0.5px;
-    }}
+    }
     
-    .kpi-value {{
+    .kpi-value {
         font-size: 1.8rem;
         font-weight: 700;
         margin: 0.3rem 0;
         color: white;
         line-height: 1.2;
-    }}
+    }
     
-    /* KPI card text should be white */
-    .kpi-card .kpi-label, .kpi-card .kpi-value {{
-        color: white !important;
-    }}
-    
-    .progress-bar {{
+    .progress-bar {
         height: 4px;
         background: rgba(255,255,255,0.3);
         border-radius: 2px;
         overflow: hidden;
         margin-top: 0.5rem;
-    }}
+    }
     
-    .progress-fill {{
+    .progress-fill {
         height: 100%;
-        background: {HELB_GOLD};
+        background: #FFB81C;
         border-radius: 2px;
-    }}
+    }
     
-    /* Metric Cards - White background */
-    .metric-card {{
-        background: {HELB_WHITE};
+    /* Metric Cards */
+    .metric-card {
+        background: #FFFFFF;
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        border-left: 4px solid {HELB_GOLD};
+        border-left: 4px solid #FFB81C;
         transition: all 0.3s ease;
         border: 1px solid #E5E7EB;
-    }}
-    
-    .metric-card:hover {{
-        transform: translateY(-3px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
-    }}
-    
-    .metric-card b, .metric-card span {{
-        color: {HELB_BLACK} !important;
-    }}
+    }
     
     /* Status Badges */
-    .badge-active {{
-        background-color: {HELB_GREEN};
+    .badge-active {
+        background-color: #00843D;
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-    }}
+    }
     
-    .badge-expiring {{
-        background-color: {HELB_GOLD};
-        color: {HELB_DARK};
+    .badge-expiring {
+        background-color: #FFB81C;
+        color: #1F2937;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-    }}
+    }
     
-    .badge-expired {{
+    .badge-expired {
         background-color: #dc2626;
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-    }}
+    }
     
-    /* Buttons - Light theme */
-    .stButton > button {{
-        background-color: {HELB_GREEN} !important;
+    /* Buttons */
+    .stButton > button {
+        background-color: #00843D !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 10px 20px !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
-    }}
+    }
     
-    .stButton > button:hover {{
-        background-color: {HELB_BLUE} !important;
+    .stButton > button:hover {
+        background-color: #00529B !important;
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }}
+    }
     
-    /* Danger button */
-    div[data-testid="column"]:has(button[key*="delete"]) button {{
-        background-color: #dc2626 !important;
-    }}
-    
-    div[data-testid="column"]:has(button[key*="delete"]) button:hover {{
-        background-color: #b91c1c !important;
-    }}
-    
-    /* Tabs - Light theme */
-    .stTabs [data-baseweb="tab-list"] {{
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
-        background-color: {HELB_GRAY};
+        background-color: #F3F4F6;
         padding: 0.5rem;
         border-radius: 12px;
         margin-bottom: 1rem;
         border: 1px solid #E5E7EB;
-    }}
+    }
     
-    .stTabs [data-baseweb="tab"] {{
-        border-radius: 8px;
-        padding: 0.5rem 1.2rem;
-        font-weight: 500;
-        font-size: 0.8rem;
-        color: {HELB_DARK};
-        white-space: nowrap;
-        transition: all 0.2s;
-        background-color: transparent;
-    }}
-    
-    .stTabs [aria-selected="true"] {{
-        background-color: {HELB_GOLD} !important;
-        color: {HELB_DARK} !important;
+    .stTabs [aria-selected="true"] {
+        background-color: #FFB81C !important;
+        color: #1F2937 !important;
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }}
+    }
     
-    /* Footer - Light theme */
-    .footer {{
+    /* Footer */
+    .footer {
         text-align: center;
         padding: 1.5rem;
         color: #6B7280;
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
-        background-color: {HELB_WHITE};
-    }}
+        background-color: #FFFFFF;
+    }
     
-    /* Dataframe - Light theme */
-    .dataframe {{
-        font-size: 0.8rem;
-    }}
+    /* Main content area */
+    .block-container {
+        background-color: #FFFFFF !important;
+    }
     
-    .dataframe th {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-        color: white !important;
-        padding: 10px !important;
-    }}
-    
-    .dataframe td {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Success/Error/Warning messages - Light theme */
-    .stAlert {{
-        background-color: {HELB_GRAY} !important;
-        border-left: 4px solid {HELB_GOLD} !important;
-    }}
-    
-    .stAlert p {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Progress bars */
-    .stProgress > div > div {{
-        background-color: {HELB_GOLD} !important;
-    }}
-    
-    /* Info boxes */
-    .stInfo {{
-        background-color: {HELB_LIGHT_GREEN} !important;
-        border-left-color: {HELB_GREEN} !important;
-    }}
-    
-    .stInfo p {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Main content area background */
-    .block-container {{
-        background-color: {HELB_WHITE} !important;
-    }}
-    
-    /* Slider */
-    .stSlider label {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Selectbox dropdown */
-    .stSelectbox div[data-baseweb="select"] div {{
-        background-color: white !important;
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Radio buttons */
-    .stRadio label {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Checkbox */
-    .stCheckbox label {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Success message text */
-    .stSuccess p {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Error message text */
-    .stError p {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Warning message text */
-    .stWarning p {{
-        color: {HELB_BLACK} !important;
-    }}
-    
-    /* Caption text */
-    .stCaption, caption {{
-        color: #6B7280 !important;
-    }}
-    
-    /* Form container */
-    .stForm {{
-        background-color: {HELB_WHITE} !important;
-    }}
-    
-    /* All containers inside main area */
-    .element-container, .stMarkdown, .stAlert, .stSuccess, .stError, .stWarning, .stInfo {{
+    /* All containers should be white */
+    .element-container, .stMarkdown, .stAlert, .stSuccess, .stError, .stWarning, .stInfo {
         background-color: transparent !important;
-    }}
+    }
     
-    /* Number input specific */
-    .stNumberInput input {{
-        background-color: white !important;
-        color: {HELB_BLACK} !important;
-        border: 1px solid #D1D5DB !important;
-    }}
+    /* Column backgrounds */
+    div[data-testid="column"] {
+        background-color: transparent !important;
+    }
     
-    /* Selectbox in main area */
-    .stSelectbox [data-baseweb="select"] {{
-        background-color: white !important;
-    }}
+    /* Specific fix for expander content area */
+    div[data-testid="stExpander"] div[data-testid="stExpanderContent"] {
+        background-color: #FFFFFF !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1291,7 +1092,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
 # FOOTER
 # ============================================
 st.markdown("---")
-st.markdown(f"""
+st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
     <p>Powered by Streamlit | Secure & Real-time</p>
