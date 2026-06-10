@@ -16,7 +16,6 @@ HELB_GOLD = "#FFB81C"
 HELB_BLUE = "#00529B"
 HELB_DARK = "#1F2937"
 HELB_WHITE = "#FFFFFF"
-HELB_GRAY = "#F9FAFB"
 
 # ============================================
 # LOAD HELB LOGO
@@ -49,40 +48,7 @@ def get_logo_base64():
     except:
         return None
 
-def get_favicon_base64():
-    logo_url = st.secrets.get("HELB_LOGO_URL", "")
-    
-    if logo_url:
-        try:
-            response = requests.get(logo_url, timeout=10)
-            if response.status_code == 200:
-                img = Image.open(BytesIO(response.content))
-                if img.mode in ('RGBA', 'P'):
-                    img = img.convert('RGB')
-                img.thumbnail((32, 32), Image.Resampling.LANCZOS)
-                buffered = BytesIO()
-                img.save(buffered, format="PNG")
-                return base64.b64encode(buffered.getvalue()).decode()
-        except:
-            pass
-    
-    try:
-        img = Image.open("HELB Logo.png")
-        if img.mode in ('RGBA', 'P'):
-            img = img.convert('RGB')
-        img.thumbnail((32, 32), Image.Resampling.LANCZOS)
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        return base64.b64encode(buffered.getvalue()).decode()
-    except:
-        return None
-
 LOGO_LARGE = get_logo_base64()
-FAVICON = get_favicon_base64()
-
-if FAVICON:
-    favicon_html = f'<link rel="icon" type="image/png" href="data:image/png;base64,{FAVICON}">'
-    st.markdown(favicon_html, unsafe_allow_html=True)
 
 st.set_page_config(
     page_title="HELB Strategy Performance System",
@@ -92,7 +58,7 @@ st.set_page_config(
 )
 
 # ============================================
-# COMPLETE CSS - LOGIN BUTTON FIXED
+# COMPLETE CSS - EVERYTHING VISIBLE
 # ============================================
 st.markdown("""
 <style>
@@ -101,26 +67,25 @@ st.markdown("""
     footer {visibility: hidden;}
     .stAppDeployButton {display: none;}
     
-    /* Main container - White background */
-    .stApp, .main {
+    /* Force white background everywhere */
+    .stApp, .main, .block-container {
         background-color: #FFFFFF !important;
     }
     
-    /* All text - Black */
-    p, li, div, span, label, .stMarkdown, .stText {
+    /* Force all text to be black */
+    p, li, div, span, label, .stMarkdown, .stText, .stCaption, small, .st-emotion-cache-10trblm {
         color: #1F2937 !important;
     }
     
-    /* Headers - HELB Green */
+    /* Headers - Green */
     h1, h2, h3, h4 {
         color: #00843D !important;
         font-weight: 600 !important;
     }
     
-    /* Sidebar - HELB Green */
+    /* Sidebar - Green */
     [data-testid="stSidebar"] {
         background-color: #00843D !important;
-        padding-top: 1rem;
     }
     [data-testid="stSidebar"] * {
         color: white !important;
@@ -134,7 +99,7 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Navigation radio buttons - Gold */
+    /* Navigation - Gold background, green text */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         background-color: #FFB81C !important;
         color: #00843D !important;
@@ -160,11 +125,6 @@ st.markdown("""
         font-size: 1.2rem;
         border-bottom: none;
     }
-    .dashboard-header p {
-        color: rgba(255,255,255,0.85);
-        margin: 0;
-        font-size: 0.7rem;
-    }
     
     /* Login Container */
     .login-container {
@@ -182,9 +142,36 @@ st.markdown("""
         color: rgba(255,255,255,0.85) !important;
     }
     
-    /* ============================================ */
-    /* FIXED: Input fields - White background, black text, green border */
-    /* ============================================ */
+    /* LOGIN BUTTON - GOLD BACKGROUND, GREEN TEXT */
+    .login-container .stButton button {
+        background-color: #FFB81C !important;
+        color: #00843D !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        padding: 10px 20px !important;
+        width: 100% !important;
+    }
+    .login-container .stButton button:hover {
+        background-color: #E6A800 !important;
+        color: #00843D !important;
+    }
+    
+    /* ALL OTHER BUTTONS - Green gradient, white text */
+    .stButton button {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 8px 16px !important;
+    }
+    .stButton button:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* ALL INPUT FIELDS - White background, green border, black text */
     .stTextInput input, 
     .stSelectbox select, 
     .stTextArea textarea, 
@@ -196,52 +183,16 @@ st.markdown("""
         color: #000000 !important;
     }
     
-    /* ============================================ */
-    /* FIXED: Dropdown options - Black text on white */
-    /* ============================================ */
+    /* Dropdown options - White background, black text */
     ul[role="listbox"] li {
         color: #000000 !important;
         background-color: #FFFFFF !important;
     }
-    
-    /* ============================================ */
-    /* FIXED: LOGIN BUTTON - SOLID GOLD with DARK GREEN TEXT */
-    /* ============================================ */
-    .login-container .stButton button {
-        background-color: #FFB81C !important;
-        color: #00843D !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
-        padding: 10px 20px !important;
-        width: 100% !important;
+    ul[role="listbox"] li:hover {
+        background-color: #F0F2F6 !important;
     }
     
-    .login-container .stButton button:hover {
-        background-color: #e6a800 !important;
-        color: #00843D !important;
-        transform: translateY(-2px);
-    }
-    
-    /* ============================================ */
-    /* FIXED: All other buttons - White text on green gradient */
-    /* ============================================ */
-    .stButton button {
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-    }
-    
-    .stButton button:hover {
-        transform: translateY(-2px);
-    }
-    
-    /* ============================================ */
-    /* FIXED: Expander header */
-    /* ============================================ */
+    /* Expander header */
     .streamlit-expanderHeader {
         background-color: #F0F2F6 !important;
         border-radius: 8px !important;
@@ -250,37 +201,30 @@ st.markdown("""
         border: 1px solid #E5E7EB !important;
     }
     
-    /* ============================================ */
-    /* FIXED: Progress bar labels */
-    /* ============================================ */
+    /* Progress bar */
     .stProgress label {
         color: #1F2937 !important;
     }
+    .stProgress > div > div > div > div {
+        background-color: #00843D !important;
+    }
     
-    /* ============================================ */
-    /* FIXED: Slider text */
-    /* ============================================ */
+    /* Slider */
     .stSlider div {
         color: #1F2937 !important;
     }
     
-    /* ============================================ */
-    /* FIXED: Checkbox */
-    /* ============================================ */
+    /* Checkbox */
     .stCheckbox label {
         color: #1F2937 !important;
     }
     
-    /* ============================================ */
-    /* FIXED: Radio buttons */
-    /* ============================================ */
+    /* Radio */
     .stRadio label {
         color: #1F2937 !important;
     }
     
-    /* ============================================ */
-    /* FIXED: Tabs */
-    /* ============================================ */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
         background: #F3F4F6;
@@ -306,7 +250,6 @@ st.markdown("""
         background: #00843D;
         border-radius: 12px;
         padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     .kpi-label {
         font-size: 0.7rem;
@@ -388,6 +331,24 @@ st.markdown("""
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
+    }
+    
+    /* Info/Success/Warning messages */
+    .stSuccess {
+        background-color: #E8F5E9 !important;
+        color: #1F2937 !important;
+    }
+    .stInfo {
+        background-color: #EFF6FF !important;
+        color: #1F2937 !important;
+    }
+    .stWarning {
+        background-color: #FEF3C7 !important;
+        color: #1F2937 !important;
+    }
+    .stError {
+        background-color: #FEE2E2 !important;
+        color: #1F2937 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -714,10 +675,10 @@ elif choice == "Action Plans":
         with st.form("new_action"):
             col1, col2 = st.columns(2)
             with col1:
-                task_name = st.text_input("Task Name*")
-                due_date = st.date_input("Due Date*")
+                task_name = st.text_input("Task Name")
+                due_date = st.date_input("Due Date")
             with col2:
-                status = st.selectbox("Status*", ["not started", "in progress", "completed", "delayed"])
+                status = st.selectbox("Status", ["not started", "in progress", "completed", "delayed"])
                 progress = st.slider("Progress %", 0, 100)
             
             if st.form_submit_button("Save Action Item", use_container_width=True):
@@ -773,10 +734,10 @@ elif choice == "Contracts":
         with st.form("new_contract"):
             col1, col2 = st.columns(2)
             with col1:
-                title = st.text_input("Contract Title*")
-                vendor = st.text_input("Vendor*")
+                title = st.text_input("Contract Title")
+                vendor = st.text_input("Vendor")
             with col2:
-                end_date = st.date_input("End Date*")
+                end_date = st.date_input("End Date")
                 auto_renew = st.checkbox("Auto-renewal")
             
             if st.form_submit_button("Save Contract", use_container_width=True):
@@ -840,8 +801,8 @@ elif choice == "Policies":
     
     with st.expander("➕ Add New Policy", expanded=False):
         with st.form("new_policy"):
-            policy_name = st.text_input("Policy Name*")
-            expiry_date = st.date_input("Expiry Date*")
+            policy_name = st.text_input("Policy Name")
+            expiry_date = st.date_input("Expiry Date")
             is_global = st.checkbox("Global Policy (applies to all departments)")
             
             if st.form_submit_button("Save Policy", use_container_width=True):
@@ -901,14 +862,14 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
             st.markdown("### Create New User Account")
             col1, col2 = st.columns(2)
             with col1:
-                new_username = st.text_input("Username*")
-                new_full_name = st.text_input("Full Name*")
+                new_username = st.text_input("Username")
+                new_full_name = st.text_input("Full Name")
             with col2:
-                new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
+                new_role = st.selectbox("Role", ["department_champion", "management", "admin"])
                 new_department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
             
-            new_password = st.text_input("Password*", type="password")
-            confirm_password = st.text_input("Confirm Password*", type="password")
+            new_password = st.text_input("Password", type="password")
+            confirm_password = st.text_input("Confirm Password", type="password")
             
             if st.form_submit_button("Create User", use_container_width=True):
                 if new_password != confirm_password:
