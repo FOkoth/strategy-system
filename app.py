@@ -98,68 +98,60 @@ st.markdown(f"""
     footer {{visibility: hidden;}}
     .stAppDeployButton {{display: none;}}
     
-    /* Main container - White background */
+    /* Force main background to white */
+    .stApp {{
+        background-color: {HELB_WHITE} !important;
+    }}
+    
     .main {{
         background-color: {HELB_WHITE} !important;
     }}
     
-    /* Sidebar - Light themed */
+    /* Sidebar - Solid Green */
     [data-testid="stSidebar"] {{
-        background-color: {HELB_WHITE} !important;
-        border-right: 1px solid #E5E7EB !important;
+        background-color: {HELB_GREEN} !important;
         padding-top: 1rem;
     }}
     
     [data-testid="stSidebar"] * {{
-        color: {HELB_DARK} !important;
+        color: white !important;
     }}
     
-    /* Sidebar user info - Light theme */
+    /* Sidebar user info - White text on green */
     .sidebar-user-info {{
-        background: linear-gradient(135deg, {HELB_LIGHT_GREEN} 0%, {HELB_WHITE} 100%);
+        background-color: rgba(255,255,255,0.15) !important;
         padding: 0.8rem;
         border-radius: 10px;
         margin: 0.5rem 0;
         text-align: center;
-        border: 1px solid {HELB_GREEN};
-        color: {HELB_DARK} !important;
+        border: 1px solid rgba(255,255,255,0.2);
     }}
     
-    /* Navigation radio buttons - Light theme */
+    /* Navigation radio buttons - Gold on green */
     [data-testid="stSidebar"] div[role="radiogroup"] label {{
-        background-color: {HELB_GRAY} !important;
+        background-color: {HELB_GOLD} !important;
         color: {HELB_DARK} !important;
         border-radius: 8px !important;
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
-        border: 1px solid #E5E7EB !important;
     }}
     
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
-        background-color: {HELB_GOLD} !important;
         transform: translateX(5px);
-        color: {HELB_DARK} !important;
-    }}
-    
-    /* Selected menu item */
-    [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-        background-color: {HELB_GOLD} !important;
-        border-color: {HELB_GOLD} !important;
+        filter: brightness(1.05);
     }}
     
     /* Logout button - Light theme */
     [data-testid="stSidebar"] .stButton > button {{
-        background-color: {HELB_GRAY} !important;
-        color: {HELB_DARK} !important;
-        border: 1px solid #E5E7EB !important;
+        background-color: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
     }}
     
     [data-testid="stSidebar"] .stButton > button:hover {{
-        background-color: #FEE2E2 !important;
-        border-color: #DC2626 !important;
-        color: #DC2626 !important;
+        background-color: rgba(255,255,255,0.3) !important;
     }}
     
     /* Headers - Light theme */
@@ -176,7 +168,7 @@ st.markdown(f"""
     
     /* Dashboard Header - Light themed */
     .dashboard-header {{
-        background: linear-gradient(135deg, {HELB_LIGHT_GREEN} 0%, {HELB_WHITE} 100%);
+        background-color: {HELB_WHITE} !important;
         padding: 0.8rem 1.5rem;
         border-radius: 12px;
         margin-bottom: 1.5rem;
@@ -184,6 +176,7 @@ st.markdown(f"""
         align-items: center;
         justify-content: space-between;
         border: 1px solid #E5E7EB;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }}
     
     .header-left {{
@@ -201,15 +194,14 @@ st.markdown(f"""
     }}
     
     .dashboard-header p {{
-        color: {HELB_DARK} !important;
+        color: #6B7280 !important;
         margin: 0;
         font-size: 0.7rem;
-        opacity: 0.7;
     }}
     
     /* Login Container - Light themed */
     .login-container {{
-        background: linear-gradient(135deg, {HELB_LIGHT_GREEN} 0%, {HELB_WHITE} 100%);
+        background-color: {HELB_WHITE} !important;
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
@@ -229,10 +221,9 @@ st.markdown(f"""
     }}
     
     .login-subtitle {{
-        color: {HELB_DARK} !important;
+        color: #6B7280 !important;
         font-size: 0.85rem;
         margin-top: 0.5rem;
-        opacity: 0.7;
     }}
     
     /* Login form inputs */
@@ -260,14 +251,7 @@ st.markdown(f"""
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }}
     
-    /* KPI Cards - Light themed */
-    .kpi-grid {{
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }}
-    
+    /* KPI Cards - Green gradient */
     .kpi-card {{
         background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
         border-radius: 12px;
@@ -311,7 +295,7 @@ st.markdown(f"""
         border-radius: 2px;
     }}
     
-    /* Metric Cards - Light themed */
+    /* Metric Cards - White background */
     .metric-card {{
         background: {HELB_WHITE};
         border-radius: 12px;
@@ -426,6 +410,7 @@ st.markdown(f"""
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
+        background-color: {HELB_WHITE};
     }}
     
     /* Dataframe - Light theme */
@@ -474,6 +459,11 @@ st.markdown(f"""
         background-color: white !important;
         color: {HELB_DARK} !important;
         border: 1px solid #E5E7EB !important;
+    }}
+    
+    /* Main content area background */
+    .block-container {{
+        background-color: {HELB_WHITE} !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -658,7 +648,7 @@ with st.sidebar:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
             <div style='font-size: 2rem;'>🏦</div>
-            <p style='color: #00843D; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
+            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
         </div>
         """, unsafe_allow_html=True)
     
