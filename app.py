@@ -92,7 +92,7 @@ st.set_page_config(
 )
 
 # ============================================
-# COMPLETE CSS - ALL VISIBILITY ISSUES FIXED
+# COMPLETE CSS - LOGIN BUTTON FIXED
 # ============================================
 st.markdown("""
 <style>
@@ -205,14 +205,23 @@ st.markdown("""
     }
     
     /* ============================================ */
-    /* FIXED: Login button - Gold background, green text */
+    /* FIXED: LOGIN BUTTON - SOLID GOLD with DARK GREEN TEXT */
     /* ============================================ */
     .login-container .stButton button {
-        background: #FFB81C !important;
+        background-color: #FFB81C !important;
         color: #00843D !important;
         border: none !important;
         border-radius: 8px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        padding: 10px 20px !important;
+        width: 100% !important;
+    }
+    
+    .login-container .stButton button:hover {
+        background-color: #e6a800 !important;
+        color: #00843D !important;
+        transform: translateY(-2px);
     }
     
     /* ============================================ */
@@ -226,8 +235,12 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
+    .stButton button:hover {
+        transform: translateY(-2px);
+    }
+    
     /* ============================================ */
-    /* FIXED: Expander header - White background, green text */
+    /* FIXED: Expander header */
     /* ============================================ */
     .streamlit-expanderHeader {
         background-color: #F0F2F6 !important;
@@ -235,13 +248,6 @@ st.markdown("""
         color: #00843D !important;
         font-weight: 600 !important;
         border: 1px solid #E5E7EB !important;
-    }
-    
-    /* ============================================ */
-    /* FIXED: Action Plan Monitor - White background for container */
-    /* ============================================ */
-    .stContainer, .stMarkdown, .element-container {
-        background-color: transparent !important;
     }
     
     /* ============================================ */
@@ -501,7 +507,7 @@ if not st.session_state.authenticated:
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username")
             password = st.text_input("Password", type="password", placeholder="Enter your password")
-            submitted = st.form_submit_button("Login", use_container_width=True)
+            submitted = st.form_submit_button("LOGIN", use_container_width=True)
             
             if submitted:
                 if username and password:
