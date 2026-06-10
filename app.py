@@ -165,6 +165,26 @@ st.markdown(f"""
         background-color: rgba(255,255,255,0.3) !important;
     }}
     
+    /* Expander styling - Light theme */
+    .streamlit-expanderHeader {{
+        background-color: {HELB_GRAY} !important;
+        border-radius: 8px !important;
+        color: {HELB_GREEN} !important;
+        font-weight: 600 !important;
+        border: 1px solid #E5E7EB !important;
+    }}
+    
+    .streamlit-expanderHeader p {{
+        color: {HELB_GREEN} !important;
+    }}
+    
+    /* Expander content area - Force white background */
+    .streamlit-expanderContent {{
+        background-color: {HELB_WHITE} !important;
+        padding: 1rem !important;
+        border-radius: 0 0 8px 8px !important;
+    }}
+    
     /* Input Labels - Black/dark */
     .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {{
         color: {HELB_BLACK} !important;
@@ -439,19 +459,6 @@ st.markdown(f"""
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }}
     
-    /* Expander - Light theme */
-    .streamlit-expanderHeader {{
-        background-color: {HELB_GRAY} !important;
-        border-radius: 8px !important;
-        color: {HELB_GREEN} !important;
-        font-weight: 600 !important;
-        border: 1px solid #E5E7EB !important;
-    }}
-    
-    .streamlit-expanderHeader p {{
-        color: {HELB_GREEN} !important;
-    }}
-    
     /* Footer - Light theme */
     .footer {{
         text-align: center;
@@ -547,6 +554,28 @@ st.markdown(f"""
     /* Caption text */
     .stCaption, caption {{
         color: #6B7280 !important;
+    }}
+    
+    /* Form container */
+    .stForm {{
+        background-color: {HELB_WHITE} !important;
+    }}
+    
+    /* All containers inside main area */
+    .element-container, .stMarkdown, .stAlert, .stSuccess, .stError, .stWarning, .stInfo {{
+        background-color: transparent !important;
+    }}
+    
+    /* Number input specific */
+    .stNumberInput input {{
+        background-color: white !important;
+        color: {HELB_BLACK} !important;
+        border: 1px solid #D1D5DB !important;
+    }}
+    
+    /* Selectbox in main area */
+    .stSelectbox [data-baseweb="select"] {{
+        background-color: white !important;
     }}
 </style>
 """, unsafe_allow_html=True)
