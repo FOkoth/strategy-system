@@ -3,6 +3,7 @@ from supabase import create_client
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
+from PIL import Image
 import base64
 from io import BytesIO
 import requests
@@ -10,9 +11,9 @@ import requests
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
-HELB_GREEN = "#00843D"      # HELB Green - Primary (from reference)
-HELB_GOLD = "#FFB81C"        # HELB Gold - Accent (from reference)
-HELB_BLUE = "#00529B"        # HELB Blue - Secondary (from reference)
+HELB_GREEN = "#00843D"      # HELB Green - Primary
+HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
+HELB_BLUE = "#00529B"        # HELB Blue - Secondary
 HELB_DARK = "#1F2937"        # Dark text
 HELB_WHITE = "#FFFFFF"       # White background
 HELB_GRAY = "#F9FAFB"        # Light gray for cards
@@ -25,7 +26,41 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS - Professional HELB Design
+# ============================================
+# LOAD HELB LOGO
+# ============================================
+def load_logo():
+    """Load HELB logo from GitHub or local"""
+    try:
+        # Try to load from GitHub - replace with your actual raw URL
+        github_url = "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png"
+        response = requests.get(github_url, timeout=5)
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
+    except:
+        pass
+    
+    try:
+        # Try local file
+        logo = Image.open("HELB Logo.png")
+        return logo
+    except:
+        return None
+
+def get_logo_base64():
+    """Convert logo to base64 for HTML embedding"""
+    logo = load_logo()
+    if logo:
+        # Resize logo for better display
+        logo = logo.resize((200, 80))
+        buffered = BytesIO()
+        logo.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode()
+    return None
+
+# ============================================
+# CUSTOM CSS - Professional HELB Design
+# ============================================
 st.markdown(f"""
 <style>
     /* Hide Streamlit branding */
@@ -40,7 +75,7 @@ st.markdown(f"""
     
     /* Sidebar - HELB Green */
     [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+        background-color: {HELB_GREEN} !important;
         padding-top: 1rem;
     }}
     
@@ -75,10 +110,6 @@ st.markdown(f"""
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
         transform: translateX(5px);
         filter: brightness(1.05);
-    }}
-    
-    [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"] {{
-        background-color: {HELB_GOLD} !important;
     }}
     
     /* Logout button */
@@ -135,7 +166,54 @@ st.markdown(f"""
         font-size: 0.7rem;
     }}
     
-    /* KPI Cards - Solid Green Background (from reference) */
+    /* Login Container - Solid Green (no gradient) */
+    .login-container {{
+        background-color: {HELB_GREEN};
+        border-radius: 20px;
+        padding: 2.5rem;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }}
+    
+    .login-logo {{
+        margin-bottom: 1rem;
+    }}
+    
+    .login-title {{
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }}
+    
+    .login-subtitle {{
+        color: rgba(255,255,255,0.85);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }}
+    
+    /* Login form inputs */
+    .login-container .stTextInput input {{
+        border-radius: 8px;
+        border: none;
+        padding: 10px;
+    }}
+    
+    .login-container .stButton button {{
+        background-color: {HELB_GOLD} !important;
+        color: {HELB_DARK} !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+    }}
+    
+    .login-container .stButton button:hover {{
+        background-color: #e6a800 !important;
+        transform: translateY(-2px);
+    }}
+    
+    /* KPI Cards */
     .kpi-grid {{
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -186,7 +264,7 @@ st.markdown(f"""
         border-radius: 2px;
     }}
     
-    /* Secondary Cards */
+    /* Metric Cards */
     .metric-card {{
         background: {HELB_WHITE};
         border-radius: 12px;
@@ -245,7 +323,7 @@ st.markdown(f"""
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }}
     
-    /* Tabs - Gold Selected, Grey Unselected (from reference) */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 0.5rem;
         background: {HELB_GRAY};
@@ -285,52 +363,6 @@ st.markdown(f"""
         font-weight: 600 !important;
     }}
     
-    /* Login Container */
-    .login-container {{
-        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
-        border-radius: 20px;
-        padding: 2.5rem;
-        text-align: center;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }}
-    
-    .login-logo {{
-        font-size: 3rem;
-        margin-bottom: 0.5rem;
-    }}
-    
-    .login-title {{
-        color: white;
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0;
-    }}
-    
-    .login-subtitle {{
-        color: rgba(255,255,255,0.8);
-        font-size: 0.8rem;
-        margin-top: 0.25rem;
-    }}
-    
-    /* Info/Warning boxes */
-    .info-card {{
-        background: {HELB_GRAY};
-        border-left: 3px solid {HELB_GREEN};
-        padding: 0.6rem 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        font-size: 0.8rem;
-    }}
-    
-    .warning-card {{
-        background: #FEF2F2;
-        border-left: 3px solid #DC2626;
-        padding: 0.6rem 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        font-size: 0.8rem;
-    }}
-    
     /* Footer */
     .footer {{
         text-align: center;
@@ -342,22 +374,6 @@ st.markdown(f"""
     }}
 </style>
 """, unsafe_allow_html=True)
-
-# ============================================
-# LOAD HELB LOGO
-# ============================================
-def load_logo():
-    try:
-        response = requests.get("https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png", timeout=5)
-        if response.status_code == 200:
-            return Image.open(BytesIO(response.content))
-    except:
-        pass
-    try:
-        logo = Image.open("HELB Logo.png")
-        return logo
-    except:
-        return None
 
 # ============================================
 # SUPABASE CONNECTION
@@ -406,13 +422,23 @@ def get_filtered_data(table_name):
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Get logo base64 for embedding
+        logo_base64 = get_logo_base64()
+        
+        if logo_base64:
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width: 180px; height: auto; margin-bottom: 1rem;">'
+        else:
+            logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
+        
         st.markdown(f"""
         <div class='login-container'>
-            <div class='login-logo'>🏦</div>
+            {logo_html}
             <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
             <p class='login-subtitle'>Strategy Performance Management System</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username")
@@ -448,10 +474,17 @@ if not st.session_state.authenticated:
 # Dashboard Header
 col_header, col_refresh = st.columns([6, 1])
 with col_header:
+    # Get logo for header
+    logo_base64 = get_logo_base64()
+    if logo_base64:
+        logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width: 40px; height: auto;">'
+    else:
+        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
+    
     st.markdown(f"""
     <div class='dashboard-header'>
         <div class='header-left'>
-            <div style='font-size: 1.5rem;'>🏦</div>
+            {logo_html}
             <div>
                 <h1>HELB Strategy Performance Management System</h1>
                 <p>Real-time monitoring | Action plans | Contracts | Policies</p>
@@ -465,12 +498,16 @@ with col_refresh:
 
 # Sidebar
 with st.sidebar:
-    st.markdown("""
-    <div style='text-align: center; padding: 0.5rem 0;'>
-        <div style='font-size: 2rem;'>🏦</div>
-        <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Logo in sidebar
+    if logo_base64:
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{logo_base64}" style="width: 120px; height: auto;"></div>', unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='text-align: center; padding: 0.5rem 0;'>
+            <div style='font-size: 2rem;'>🏦</div>
+            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class='sidebar-user-info'>
