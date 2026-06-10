@@ -14,7 +14,6 @@ import requests
 HELB_GREEN = "#00843D"
 HELB_GOLD = "#FFB81C"
 HELB_BLUE = "#00529B"
-HELB_DARK = "#1F2937"
 HELB_WHITE = "#FFFFFF"
 
 # ============================================
@@ -58,22 +57,17 @@ st.set_page_config(
 )
 
 # ============================================
-# COMPLETE CSS - EVERYTHING VISIBLE
+# FIXED CSS - EVERYTHING VISIBLE
 # ============================================
 st.markdown("""
 <style>
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stAppDeployButton {display: none;}
-    
     /* Force white background everywhere */
     .stApp, .main, .block-container {
         background-color: #FFFFFF !important;
     }
     
-    /* Force all text to be black */
-    p, li, div, span, label, .stMarkdown, .stText, .stCaption, small, .st-emotion-cache-10trblm {
+    /* Force all text to black */
+    p, li, div, span, label, .stMarkdown, .stText, .stCaption, small {
         color: #1F2937 !important;
     }
     
@@ -91,6 +85,7 @@ st.markdown("""
         color: white !important;
     }
     
+    /* Sidebar user info */
     .sidebar-user-info {
         background: rgba(255,255,255,0.15);
         padding: 0.8rem;
@@ -125,6 +120,11 @@ st.markdown("""
         font-size: 1.2rem;
         border-bottom: none;
     }
+    .dashboard-header p {
+        color: rgba(255,255,255,0.85);
+        margin: 0;
+        font-size: 0.7rem;
+    }
     
     /* Login Container */
     .login-container {
@@ -155,7 +155,6 @@ st.markdown("""
     }
     .login-container .stButton button:hover {
         background-color: #E6A800 !important;
-        color: #00843D !important;
     }
     
     /* ALL OTHER BUTTONS - Green gradient, white text */
@@ -183,6 +182,16 @@ st.markdown("""
         color: #000000 !important;
     }
     
+    /* Labels - Black */
+    .stTextInput label, 
+    .stSelectbox label, 
+    .stTextArea label, 
+    .stNumberInput label,
+    .stDateInput label {
+        color: #000000 !important;
+        font-weight: 500 !important;
+    }
+    
     /* Dropdown options - White background, black text */
     ul[role="listbox"] li {
         color: #000000 !important;
@@ -204,9 +213,6 @@ st.markdown("""
     /* Progress bar */
     .stProgress label {
         color: #1F2937 !important;
-    }
-    .stProgress > div > div > div > div {
-        background-color: #00843D !important;
     }
     
     /* Slider */
@@ -333,7 +339,7 @@ st.markdown("""
         margin-top: 2rem;
     }
     
-    /* Info/Success/Warning messages */
+    /* Messages */
     .stSuccess {
         background-color: #E8F5E9 !important;
         color: #1F2937 !important;
