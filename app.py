@@ -11,15 +11,60 @@ import requests
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
-HELB_GREEN = "#00843D"
-HELB_GOLD = "#FFB81C"
-HELB_BLUE = "#00529B"
-HELB_WHITE = "#FFFFFF"
+HELB_GREEN = "#00843D"      # HELB Green - Primary
+HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
+HELB_BLUE = "#00529B"        # HELB Blue - Secondary
+HELB_DARK = "#1F2937"        # Dark text for light backgrounds
+HELB_WHITE = "#FFFFFF"       # White background
+HELB_GRAY = "#F8FAFC"        # Light gray for cards
+HELB_BORDER = "#E5E7EB"      # Border color
+
+# Page config
+st.set_page_config(
+    page_title="HELB Strategy Performance System",
+    page_icon="🏦",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # ============================================
 # LOAD HELB LOGO
 # ============================================
 def get_logo_base64():
+    """Load HELB logo from URL or local file"""
+    # First try to get from secrets
+    logo_url = st.secrets.get("HELB_LOGO_URL", "")
+    
+    if logo_url:
+        try:
+            response = requests.get(logo_url, timeout=10)
+            if response.status_code == 200:
+                img = Image.open(BytesIO(response.content))
+                # Convert to RGB to ensure clean display
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                # Resize while maintaining aspect ratio
+                img.thumbnail((250, 100), Image.Resampling.LANCZOS)
+                buffered = BytesIO()
+                img.save(buffered, format="PNG")
+                return base64.b64encode(buffered.getvalue()).decode()
+        except Exception as e:
+            pass
+    
+    # Fallback to local file
+    try:
+        img = Image.open("HELB Logo.png")
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        img.thumbnail((250, 100), Image.Resampling.LANCZOS)
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode()
+    except:
+        return None
+
+def get_logo_small():
+    """Get smaller version of logo"""
     logo_url = st.secrets.get("HELB_LOGO_URL", "")
     
     if logo_url:
@@ -29,7 +74,7 @@ def get_logo_base64():
                 img = Image.open(BytesIO(response.content))
                 if img.mode in ('RGBA', 'P'):
                     img = img.convert('RGB')
-                img.thumbnail((200, 80), Image.Resampling.LANCZOS)
+                img.thumbnail((100, 40), Image.Resampling.LANCZOS)
                 buffered = BytesIO()
                 img.save(buffered, format="PNG")
                 return base64.b64encode(buffered.getvalue()).decode()
@@ -40,7 +85,7 @@ def get_logo_base64():
         img = Image.open("HELB Logo.png")
         if img.mode in ('RGBA', 'P'):
             img = img.convert('RGB')
-        img.thumbnail((200, 80), Image.Resampling.LANCZOS)
+        img.thumbnail((100, 40), Image.Resampling.LANCZOS)
         buffered = BytesIO()
         img.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode()
@@ -48,40 +93,37 @@ def get_logo_base64():
         return None
 
 LOGO_LARGE = get_logo_base64()
-
-st.set_page_config(
-    page_title="HELB Strategy Performance System",
-    page_icon="🏦",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+LOGO_SMALL = get_logo_small()
 
 # ============================================
-# FIXED CSS - EVERYTHING VISIBLE
+# CUSTOM CSS - Light Theme
 # ============================================
 st.markdown("""
 <style>
-    /* Force white background everywhere */
-    .stApp, .main, .block-container {
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppDeployButton {display: none;}
+    
+    /* Main container - White background */
+    .stApp {
         background-color: #FFFFFF !important;
     }
     
-    /* Force all text to black */
-    p, li, div, span, label, .stMarkdown, .stText, .stCaption, small {
-        color: #1F2937 !important;
+    /* Main content area */
+    .main {
+        background-color: #FFFFFF !important;
     }
     
-    /* Headers - Green */
-    h1, h2, h3, h4 {
-        color: #00843D !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Sidebar - Green */
+    /* Sidebar - HELB Green */
     [data-testid="stSidebar"] {
         background-color: #00843D !important;
+        padding-top: 1rem;
     }
-    [data-testid="stSidebar"] * {
+    
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] div {
         color: white !important;
     }
     
@@ -94,7 +136,12 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Navigation - Gold background, green text */
+    .sidebar-user-info strong,
+    .sidebar-user-info span {
+        color: white !important;
+    }
+    
+    /* Navigation radio buttons - Gold background with dark text */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         background-color: #FFB81C !important;
         color: #00843D !important;
@@ -102,6 +149,31 @@ st.markdown("""
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+        transform: translateX(5px);
+        filter: brightness(1.05);
+    }
+    
+    /* Sidebar logout button */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+    }
+    
+    /* Headers - Green */
+    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #00843D !important;
+        font-weight: 600 !important;
+    }
+    
+    h1 {
+        border-bottom: 3px solid #FFB81C;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
     }
     
     /* Dashboard Header */
@@ -114,182 +186,144 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
     }
+    
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
     .dashboard-header h1 {
         color: white !important;
         margin: 0;
         font-size: 1.2rem;
+        font-weight: 600;
         border-bottom: none;
     }
+    
     .dashboard-header p {
         color: rgba(255,255,255,0.85);
         margin: 0;
         font-size: 0.7rem;
     }
     
-    /* Login Container */
+    /* Refresh button */
+    .refresh-button button {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Login Container - Solid Green */
     .login-container {
         background-color: #00843D;
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
+    
     .login-title {
         color: white !important;
         font-size: 1.5rem;
         font-weight: 700;
-    }
-    .login-subtitle {
-        color: rgba(255,255,255,0.85) !important;
+        margin: 0;
     }
     
-    /* LOGIN BUTTON - GOLD BACKGROUND, GREEN TEXT */
+    .login-subtitle {
+        color: rgba(255,255,255,0.85) !important;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+    
+    /* Login form inputs */
+    .login-container .stTextInput input {
+        border-radius: 8px;
+        border: none;
+        padding: 10px;
+        background-color: white;
+        color: #1F2937 !important;
+    }
+    
     .login-container .stButton button {
         background-color: #FFB81C !important;
         color: #00843D !important;
+        font-weight: 600 !important;
         border: none !important;
         border-radius: 8px !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
-        padding: 10px 20px !important;
-        width: 100% !important;
-    }
-    .login-container .stButton button:hover {
-        background-color: #E6A800 !important;
+        padding: 10px !important;
     }
     
-    /* ALL OTHER BUTTONS - Green gradient, white text */
-    .stButton button {
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        padding: 8px 16px !important;
-    }
-    .stButton button:hover {
-        transform: translateY(-2px);
+    /* KPI Cards - Solid Green */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
     }
     
-    /* ALL INPUT FIELDS - White background, green border, black text */
-    .stTextInput input, 
-    .stSelectbox select, 
-    .stTextArea textarea, 
-    .stNumberInput input,
-    .stDateInput input {
-        background-color: #FFFFFF !important;
-        border: 2px solid #00843D !important;
-        border-radius: 8px !important;
-        color: #000000 !important;
-    }
-    
-    /* Labels - Black */
-    .stTextInput label, 
-    .stSelectbox label, 
-    .stTextArea label, 
-    .stNumberInput label,
-    .stDateInput label {
-        color: #000000 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Dropdown options - White background, black text */
-    ul[role="listbox"] li {
-        color: #000000 !important;
-        background-color: #FFFFFF !important;
-    }
-    ul[role="listbox"] li:hover {
-        background-color: #F0F2F6 !important;
-    }
-    
-    /* Expander header */
-    .streamlit-expanderHeader {
-        background-color: #F0F2F6 !important;
-        border-radius: 8px !important;
-        color: #00843D !important;
-        font-weight: 600 !important;
-        border: 1px solid #E5E7EB !important;
-    }
-    
-    /* Progress bar */
-    .stProgress label {
-        color: #1F2937 !important;
-    }
-    
-    /* Slider */
-    .stSlider div {
-        color: #1F2937 !important;
-    }
-    
-    /* Checkbox */
-    .stCheckbox label {
-        color: #1F2937 !important;
-    }
-    
-    /* Radio */
-    .stRadio label {
-        color: #1F2937 !important;
-    }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0.5rem;
-        background: #F3F4F6;
-        padding: 0.5rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 0.5rem 1.2rem;
-        font-weight: 500;
-        color: #1F2937 !important;
-        background-color: #F3F4F6;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FFB81C !important;
-        color: #00843D !important;
-        font-weight: 600;
-    }
-    
-    /* KPI Cards */
     .kpi-card {
         background: #00843D;
         border-radius: 12px;
         padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
     }
+    
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
     .kpi-label {
         font-size: 0.7rem;
         text-transform: uppercase;
-        color: #FFB81C !important;
+        color: #FFB81C;
         font-weight: 600;
+        letter-spacing: 0.5px;
     }
+    
     .kpi-value {
         font-size: 1.8rem;
         font-weight: 700;
         margin: 0.3rem 0;
-        color: white !important;
+        color: white;
+        line-height: 1.2;
     }
+    
     .progress-bar {
         height: 4px;
         background: rgba(255,255,255,0.3);
         border-radius: 2px;
+        overflow: hidden;
         margin-top: 0.5rem;
     }
+    
     .progress-fill {
         height: 100%;
         background: #FFB81C;
         border-radius: 2px;
     }
     
-    /* Metric Cards */
+    /* Metric Cards - White with left gold border */
     .metric-card {
         background: #FFFFFF;
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         border-left: 4px solid #FFB81C;
+        transition: all 0.3s ease;
         margin-bottom: 0.5rem;
     }
+    
+    .metric-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+    }
+    
     .metric-card b, .metric-card span {
         color: #1F2937 !important;
     }
@@ -301,31 +335,143 @@ st.markdown("""
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
+        font-weight: 600;
         display: inline-block;
     }
+    
     .badge-expiring {
         background-color: #FFB81C;
         color: #00843D;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
+        font-weight: 600;
         display: inline-block;
     }
+    
     .badge-expired {
         background-color: #dc2626;
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
+        font-weight: 600;
         display: inline-block;
     }
     
+    /* Main buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+        background: #F8FAFC;
+        padding: 0.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: #1F2937;
+        white-space: nowrap;
+        transition: all 0.2s;
+        background-color: #F8FAFC;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #FFB81C !important;
+        color: #00843D !important;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: rgba(255,184,28,0.2);
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background-color: #F8FAFC !important;
+        border-radius: 8px !important;
+        color: #00843D !important;
+        font-weight: 600 !important;
+        border: 1px solid #E5E7EB !important;
+    }
+    
     /* Dataframe */
+    .dataframe {
+        font-size: 0.8rem;
+        background-color: #FFFFFF !important;
+    }
+    
     .dataframe th {
         background-color: #00843D !important;
         color: white !important;
+        padding: 10px !important;
     }
+    
     .dataframe td {
+        color: #1F2937 !important;
+    }
+    
+    /* Text colors */
+    .stMarkdown, .stText, p, li {
+        color: #1F2937 !important;
+    }
+    
+    /* Input fields */
+    .stTextInput input, .stSelectbox select, .stTextArea textarea, .stNumberInput input {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
+        border-radius: 8px !important;
+        color: #1F2937 !important;
+    }
+    
+    /* Labels */
+    .stTextInput label, .stSelectbox label, .stTextArea label, .stNumberInput label {
+        color: #1F2937 !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Success/Info/Warning messages */
+    .stSuccess {
+        background-color: #E8F5E9 !important;
+        border-left: 4px solid #00843D !important;
+        color: #1F2937 !important;
+    }
+    
+    .stInfo {
+        background-color: #EFF6FF !important;
+        border-left: 4px solid #00529B !important;
+        color: #1F2937 !important;
+    }
+    
+    .stWarning {
+        background-color: #FEF3C7 !important;
+        border-left: 4px solid #FFB81C !important;
+        color: #1F2937 !important;
+    }
+    
+    .stError {
+        background-color: #FEE2E2 !important;
+        border-left: 4px solid #DC2626 !important;
         color: #1F2937 !important;
     }
     
@@ -337,24 +483,6 @@ st.markdown("""
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
-    }
-    
-    /* Messages */
-    .stSuccess {
-        background-color: #E8F5E9 !important;
-        color: #1F2937 !important;
-    }
-    .stInfo {
-        background-color: #EFF6FF !important;
-        color: #1F2937 !important;
-    }
-    .stWarning {
-        background-color: #FEF3C7 !important;
-        color: #1F2937 !important;
-    }
-    .stError {
-        background-color: #FEE2E2 !important;
-        color: #1F2937 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -457,9 +585,9 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if LOGO_LARGE:
-            logo_html = f'<img src="data:image/png;base64,{LOGO_LARGE}" style="width: 180px; height: auto; margin-bottom: 1rem;">'
+            logo_html = f'<img src="data:image/png;base64,{LOGO_LARGE}" style="width: 200px; height: auto; margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">'
         else:
-            logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
+            logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🏦</div>'
         
         st.markdown(f"""
         <div class='login-container'>
@@ -474,7 +602,7 @@ if not st.session_state.authenticated:
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username")
             password = st.text_input("Password", type="password", placeholder="Enter your password")
-            submitted = st.form_submit_button("LOGIN", use_container_width=True)
+            submitted = st.form_submit_button("Login", use_container_width=True)
             
             if submitted:
                 if username and password:
@@ -499,20 +627,20 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ============================================
-# MAIN APPLICATION
+# MAIN APPLICATION (LOGGED IN)
 # ============================================
 
 # Dashboard Header
 col_header, col_refresh = st.columns([6, 1])
 with col_header:
-    if LOGO_LARGE:
-        logo_html = f'<img src="data:image/png;base64,{LOGO_LARGE}" style="width: 35px; height: auto;">'
+    if LOGO_SMALL:
+        logo_html = f'<img src="data:image/png;base64,{LOGO_SMALL}" style="width: 35px; height: auto;">'
     else:
-        logo_html = '<span style="font-size: 1.3rem;">🏦</span>'
+        logo_html = '<div style="font-size: 1.3rem;">🏦</div>'
     
     st.markdown(f"""
     <div class='dashboard-header'>
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class='header-left'>
             {logo_html}
             <div>
                 <h1>HELB Strategy Performance Management System</h1>
@@ -522,13 +650,13 @@ with col_header:
     </div>
     """, unsafe_allow_html=True)
 with col_refresh:
-    if st.button("🔄 Refresh", key="global_refresh"):
+    if st.button("Refresh", key="global_refresh"):
         st.rerun()
 
 # Sidebar
 with st.sidebar:
-    if LOGO_LARGE:
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_LARGE}" style="width: 100px; height: auto;"></div>', unsafe_allow_html=True)
+    if LOGO_SMALL:
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_SMALL}" style="width: 100px; height: auto;"></div>', unsafe_allow_html=True)
     else:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
@@ -653,18 +781,18 @@ if choice == "Dashboard":
             df["department"] = df["department_id"].map(dept_map)
             fig = px.bar(df, x="task_name", y="progress_percent", color="department", 
                         title="Action Plan Progress by Task",
-                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
+                        color_discrete_sequence=["#00843D", "#FFB81C", "#00529B"])
         else:
             fig = px.bar(df, x="task_name", y="progress_percent", color="status",
                         title="My Department's Action Plan Progress",
-                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
+                        color_discrete_sequence=["#00843D", "#FFB81C", "#00529B"])
         
         fig.update_layout(
             barmode='group', 
             bargap=0.3, 
-            plot_bgcolor=HELB_WHITE,
-            paper_bgcolor=HELB_WHITE,
-            title_font_color=HELB_GREEN,
+            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#FFFFFF",
+            title_font_color="#00843D",
             title_font_size=16
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -677,14 +805,14 @@ if choice == "Dashboard":
 elif choice == "Action Plans":
     st.subheader("Action Plan Monitor")
     
-    with st.expander("➕ Add New Action Item", expanded=False):
+    with st.expander("Add New Action Item", expanded=False):
         with st.form("new_action"):
             col1, col2 = st.columns(2)
             with col1:
-                task_name = st.text_input("Task Name")
-                due_date = st.date_input("Due Date")
+                task_name = st.text_input("Task Name*")
+                due_date = st.date_input("Due Date*")
             with col2:
-                status = st.selectbox("Status", ["not started", "in progress", "completed", "delayed"])
+                status = st.selectbox("Status*", ["not started", "in progress", "completed", "delayed"])
                 progress = st.slider("Progress %", 0, 100)
             
             if st.form_submit_button("Save Action Item", use_container_width=True):
@@ -736,14 +864,14 @@ elif choice == "Action Plans":
 elif choice == "Contracts":
     st.subheader("Contract Tracker")
     
-    with st.expander("➕ Add New Contract", expanded=False):
+    with st.expander("Add New Contract", expanded=False):
         with st.form("new_contract"):
             col1, col2 = st.columns(2)
             with col1:
-                title = st.text_input("Contract Title")
-                vendor = st.text_input("Vendor")
+                title = st.text_input("Contract Title*")
+                vendor = st.text_input("Vendor*")
             with col2:
-                end_date = st.date_input("End Date")
+                end_date = st.date_input("End Date*")
                 auto_renew = st.checkbox("Auto-renewal")
             
             if st.form_submit_button("Save Contract", use_container_width=True):
@@ -805,10 +933,10 @@ elif choice == "Contracts":
 elif choice == "Policies":
     st.subheader("Policy Monitor")
     
-    with st.expander("➕ Add New Policy", expanded=False):
+    with st.expander("Add New Policy", expanded=False):
         with st.form("new_policy"):
-            policy_name = st.text_input("Policy Name")
-            expiry_date = st.date_input("Expiry Date")
+            policy_name = st.text_input("Policy Name*")
+            expiry_date = st.date_input("Expiry Date*")
             is_global = st.checkbox("Global Policy (applies to all departments)")
             
             if st.form_submit_button("Save Policy", use_container_width=True):
@@ -868,14 +996,14 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
             st.markdown("### Create New User Account")
             col1, col2 = st.columns(2)
             with col1:
-                new_username = st.text_input("Username")
-                new_full_name = st.text_input("Full Name")
+                new_username = st.text_input("Username*")
+                new_full_name = st.text_input("Full Name*")
             with col2:
-                new_role = st.selectbox("Role", ["department_champion", "management", "admin"])
+                new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
                 new_department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
             
-            new_password = st.text_input("Password", type="password")
-            confirm_password = st.text_input("Confirm Password", type="password")
+            new_password = st.text_input("Password*", type="password")
+            confirm_password = st.text_input("Confirm Password*", type="password")
             
             if st.form_submit_button("Create User", use_container_width=True):
                 if new_password != confirm_password:
@@ -904,8 +1032,8 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
                 if current_user:
                     col1, col2 = st.columns(2)
                     with col1:
-                        current_role_index = ["department_champion", "management", "admin"].index(current_user["role"])
-                        new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], index=current_role_index)
+                        new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], 
+                                               index=["department_champion", "management", "admin"].index(current_user["role"]))
                     with col2:
                         current_dept = get_department_name(current_user["department_id"])
                         dept_list = ["None"] + list(dept_options.keys())
