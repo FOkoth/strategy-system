@@ -18,7 +18,7 @@ HELB_DARK = "#1F2937"        # Dark text
 HELB_WHITE = "#FFFFFF"       # White background
 HELB_GRAY = "#F9FAFB"        # Light gray for cards
 
-# Page config
+# Page config - Light theme by default
 st.set_page_config(
     page_title="HELB Strategy Performance System",
     page_icon="🏦",
@@ -30,7 +30,7 @@ st.set_page_config(
 # LOAD HELB LOGO FROM URL
 # ============================================
 def get_logo_base64():
-    """Load HELB logo from URL and convert to base64"""
+    """Load HELB logo from URL and convert to base64 with transparency"""
     try:
         # Get logo URL from secrets or use default
         logo_url = st.secrets.get("HELB_LOGO_URL", "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png")
@@ -38,11 +38,17 @@ def get_logo_base64():
         if response.status_code == 200:
             # Open image from bytes
             img = Image.open(BytesIO(response.content))
+            # Ensure image has transparency (RGBA mode)
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+            # Create transparent background
+            transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
+            transparent_img.paste(img, (0, 0), img if img.mode == 'RGBA' else None)
             # Resize for different uses while maintaining aspect ratio
             return {
-                "large": resize_and_encode(img, 250, 100),
-                "medium": resize_and_encode(img, 150, 60),
-                "small": resize_and_encode(img, 80, 32),
+                "large": resize_and_encode(transparent_img, 250, 100),
+                "medium": resize_and_encode(transparent_img, 150, 60),
+                "small": resize_and_encode(transparent_img, 80, 32),
                 "original": base64.b64encode(response.content).decode()
             }
     except Exception as e:
@@ -51,34 +57,38 @@ def get_logo_base64():
     # Fallback to local file
     try:
         img = Image.open("HELB Logo.png")
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        transparent_img.paste(img, (0, 0), img if img.mode == 'RGBA' else None)
         return {
-            "large": resize_and_encode(img, 250, 100),
-            "medium": resize_and_encode(img, 150, 60),
-            "small": resize_and_encode(img, 80, 32),
+            "large": resize_and_encode(transparent_img, 250, 100),
+            "medium": resize_and_encode(transparent_img, 150, 60),
+            "small": resize_and_encode(transparent_img, 80, 32),
             "original": None
         }
     except:
         return None
 
 def resize_and_encode(img, width, height):
-    """Resize image maintaining aspect ratio and return base64"""
+    """Resize image maintaining aspect ratio and return base64 with transparency"""
     # Calculate new size maintaining aspect ratio
     img_copy = img.copy()
     img_copy.thumbnail((width, height), Image.Resampling.LANCZOS)
     
-    # Convert to RGB if necessary
-    if img_copy.mode in ('RGBA', 'P'):
-        img_copy = img_copy.convert('RGB')
+    # Ensure RGBA mode for transparency
+    if img_copy.mode != 'RGBA':
+        img_copy = img_copy.convert('RGBA')
     
     buffered = BytesIO()
-    img_copy.save(buffered, format="PNG", optimize=True)
+    img_copy.save(buffered, format="PNG", optimize=True, transparency=None)
     return base64.b64encode(buffered.getvalue()).decode()
 
 # Load logo once
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# CUSTOM CSS - Professional HELB Design
+# CUSTOM CSS - Light Themed Professional HELB Design
 # ============================================
 st.markdown(f"""
 <style>
@@ -87,14 +97,14 @@ st.markdown(f"""
     footer {{visibility: hidden;}}
     .stAppDeployButton {{display: none;}}
     
-    /* Main container - White background */
+    /* Main container - Light background */
     .main {{
         background-color: {HELB_WHITE} !important;
     }}
     
-    /* Sidebar - HELB Green */
+    /* Light themed sidebar */
     [data-testid="stSidebar"] {{
-        background-color: {HELB_GREEN} !important;
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
         padding-top: 1rem;
     }}
     
@@ -111,7 +121,7 @@ st.markdown(f"""
         text-align: center;
     }}
     
-    /* Navigation radio buttons - Gold background */
+    /* Navigation radio buttons */
     [data-testid="stSidebar"] div[role="radiogroup"] label {{
         background-color: {HELB_GOLD} !important;
         color: {HELB_DARK} !important;
@@ -134,7 +144,7 @@ st.markdown(f"""
         border: 1px solid rgba(255,255,255,0.3) !important;
     }}
     
-    /* Headers */
+    /* Headers - Light theme */
     h1, h2, h3 {{
         color: {HELB_GREEN} !important;
         font-weight: 600 !important;
@@ -146,7 +156,7 @@ st.markdown(f"""
         margin-bottom: 25px;
     }}
     
-    /* Dashboard Header */
+    /* Dashboard Header - Light theme */
     .dashboard-header {{
         background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
         padding: 0.8rem 1.5rem;
@@ -155,6 +165,7 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }}
     
     .header-left {{
@@ -177,13 +188,13 @@ st.markdown(f"""
         font-size: 0.7rem;
     }}
     
-    /* Login Container - Solid Green */
+    /* Login Container - Light theme */
     .login-container {{
-        background-color: {HELB_GREEN};
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
     }}
     
     .login-logo {{
@@ -208,6 +219,7 @@ st.markdown(f"""
         border-radius: 8px;
         border: none;
         padding: 10px;
+        background-color: white;
     }}
     
     .login-container .stButton button {{
@@ -217,9 +229,15 @@ st.markdown(f"""
         border: none !important;
         border-radius: 8px !important;
         padding: 10px !important;
+        transition: all 0.3s ease !important;
     }}
     
-    /* KPI Cards */
+    .login-container .stButton button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }}
+    
+    /* KPI Cards - Light theme */
     .kpi-grid {{
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -228,7 +246,7 @@ st.markdown(f"""
     }}
     
     .kpi-card {{
-        background: {HELB_GREEN};
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -270,7 +288,7 @@ st.markdown(f"""
         border-radius: 2px;
     }}
     
-    /* Metric Cards */
+    /* Metric Cards - Light theme */
     .metric-card {{
         background: {HELB_WHITE};
         border-radius: 12px;
@@ -313,7 +331,7 @@ st.markdown(f"""
         font-weight: 600;
     }}
     
-    /* Buttons */
+    /* Buttons - Light theme */
     .stButton > button {{
         background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
         color: white !important;
@@ -324,12 +342,17 @@ st.markdown(f"""
         transition: all 0.3s ease !important;
     }}
     
+    .stButton > button:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }}
+    
     /* Danger button */
     div[data-testid="column"]:has(button[key*="delete"]) button {{
         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
     }}
     
-    /* Tabs */
+    /* Tabs - Light theme */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 0.5rem;
         background: {HELB_GRAY};
@@ -356,7 +379,7 @@ st.markdown(f"""
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }}
     
-    /* Expander */
+    /* Expander - Light theme */
     .streamlit-expanderHeader {{
         background-color: {HELB_GRAY} !important;
         border-radius: 8px !important;
@@ -364,7 +387,7 @@ st.markdown(f"""
         font-weight: 600 !important;
     }}
     
-    /* Footer */
+    /* Footer - Light theme */
     .footer {{
         text-align: center;
         padding: 1.5rem;
@@ -374,15 +397,33 @@ st.markdown(f"""
         margin-top: 2rem;
     }}
     
-    /* Dataframe */
+    /* Dataframe - Light theme */
     .dataframe {{
         font-size: 0.8rem;
     }}
     
     .dataframe th {{
-        background-color: {HELB_GREEN} !important;
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
         color: white !important;
         padding: 10px !important;
+    }}
+    
+    /* Input fields - Light theme */
+    .stTextInput input, .stSelectbox div, .stDateInput input {{
+        background-color: white !important;
+        color: {HELB_DARK} !important;
+        border: 1px solid #E5E7EB !important;
+    }}
+    
+    /* Success/Error/Warning messages - Light theme */
+    .stAlert {{
+        background-color: {HELB_GRAY} !important;
+        border-left: 4px solid {HELB_GOLD} !important;
+    }}
+    
+    /* Progress bars */
+    .stProgress > div > div {{
+        background-color: {HELB_GOLD} !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -489,9 +530,9 @@ def create_new_user(username, full_name, password, role, department_id):
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Display logo
+        # Display logo with transparent background
         if LOGO_BASE64 and LOGO_BASE64.get("large"):
-            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["large"]}" style="width: 200px; height: auto; margin-bottom: 1rem;">'
+            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["large"]}" style="width: 220px; height: auto; margin-bottom: 1rem; background: transparent;">'
         else:
             logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
         
@@ -540,7 +581,7 @@ if not st.session_state.authenticated:
 col_header, col_refresh = st.columns([6, 1])
 with col_header:
     if LOGO_BASE64 and LOGO_BASE64.get("small"):
-        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["small"]}" style="width: 40px; height: auto;">'
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["small"]}" style="width: 40px; height: auto; background: transparent;">'
     else:
         logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
     
@@ -562,7 +603,7 @@ with col_refresh:
 # Sidebar with logo
 with st.sidebar:
     if LOGO_BASE64 and LOGO_BASE64.get("medium"):
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64["medium"]}" style="width: 120px; height: auto;"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64["medium"]}" style="width: 130px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
     else:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
@@ -700,6 +741,7 @@ if choice == "📊 Dashboard":
             barmode='group', 
             bargap=0.3, 
             plot_bgcolor=HELB_WHITE,
+            paper_bgcolor=HELB_WHITE,
             title_font_color=HELB_GREEN,
             title_font_size=16
         )
