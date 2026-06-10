@@ -355,7 +355,7 @@ st.markdown(f"""
     
     .metric-card b, .metric-card span {{
         color: {HELB_BLACK} !important;
-    }
+    }}
     
     /* Status Badges */
     .badge-active {{
