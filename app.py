@@ -11,19 +11,17 @@ import requests
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
-HELB_GREEN = "#00843D"      # HELB Green - Primary
-HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
-HELB_BLUE = "#00529B"        # HELB Blue - Secondary
-HELB_DARK = "#1F2937"        # Dark text
-HELB_WHITE = "#FFFFFF"       # White background
-HELB_GRAY = "#F9FAFB"        # Light gray for cards
-HELB_BORDER = "#00843D"      # Green border for inputs
+HELB_GREEN = "#00843D"
+HELB_GOLD = "#FFB81C"
+HELB_BLUE = "#00529B"
+HELB_DARK = "#1F2937"
+HELB_WHITE = "#FFFFFF"
+HELB_GRAY = "#F9FAFB"
 
 # ============================================
-# LOAD HELB LOGO FOR FAVICON AND DISPLAY
+# LOAD HELB LOGO
 # ============================================
 def get_logo_base64():
-    """Load HELB logo from URL or local file"""
     logo_url = st.secrets.get("HELB_LOGO_URL", "")
     
     if logo_url:
@@ -52,7 +50,6 @@ def get_logo_base64():
         return None
 
 def get_favicon_base64():
-    """Get small logo for favicon"""
     logo_url = st.secrets.get("HELB_LOGO_URL", "")
     
     if logo_url:
@@ -83,12 +80,10 @@ def get_favicon_base64():
 LOGO_LARGE = get_logo_base64()
 FAVICON = get_favicon_base64()
 
-# Set favicon
 if FAVICON:
     favicon_html = f'<link rel="icon" type="image/png" href="data:image/png;base64,{FAVICON}">'
     st.markdown(favicon_html, unsafe_allow_html=True)
 
-# Page config with custom icon
 st.set_page_config(
     page_title="HELB Strategy Performance System",
     page_icon="🏦",
@@ -97,7 +92,7 @@ st.set_page_config(
 )
 
 # ============================================
-# CUSTOM CSS - Clean Professional Light Theme
+# COMPLETE CSS - ALL VISIBILITY ISSUES FIXED
 # ============================================
 st.markdown("""
 <style>
@@ -111,21 +106,15 @@ st.markdown("""
         background-color: #FFFFFF !important;
     }
     
-    /* All text - Black/Dark gray */
+    /* All text - Black */
     p, li, div, span, label, .stMarkdown, .stText {
         color: #1F2937 !important;
     }
     
     /* Headers - HELB Green */
-    h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    h1, h2, h3, h4 {
         color: #00843D !important;
         font-weight: 600 !important;
-    }
-    
-    h1 {
-        border-bottom: 3px solid #FFB81C;
-        padding-bottom: 15px;
-        margin-bottom: 25px;
     }
     
     /* Sidebar - HELB Green */
@@ -133,12 +122,10 @@ st.markdown("""
         background-color: #00843D !important;
         padding-top: 1rem;
     }
-    
     [data-testid="stSidebar"] * {
         color: white !important;
     }
     
-    /* Sidebar user info */
     .sidebar-user-info {
         background: rgba(255,255,255,0.15);
         padding: 0.8rem;
@@ -155,19 +142,6 @@ st.markdown("""
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-        transform: translateX(5px);
-        filter: brightness(1.05);
-    }
-    
-    /* Sidebar button */
-    [data-testid="stSidebar"] .stButton > button {
-        background-color: rgba(255,255,255,0.2) !important;
-        color: white !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
     }
     
     /* Dashboard Header */
@@ -180,15 +154,12 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
     }
-    
     .dashboard-header h1 {
         color: white !important;
         margin: 0;
         font-size: 1.2rem;
-        font-weight: 600;
         border-bottom: none;
     }
-    
     .dashboard-header p {
         color: rgba(255,255,255,0.85);
         margin: 0;
@@ -201,24 +172,18 @@ st.markdown("""
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
-    
     .login-title {
         color: white !important;
         font-size: 1.5rem;
         font-weight: 700;
-        margin: 0;
     }
-    
     .login-subtitle {
         color: rgba(255,255,255,0.85) !important;
-        font-size: 0.85rem;
-        margin-top: 0.5rem;
     }
     
     /* ============================================ */
-    /* FIXED INPUT FIELDS - White background, green border, black text */
+    /* FIXED: Input fields - White background, black text, green border */
     /* ============================================ */
     .stTextInput input, 
     .stSelectbox select, 
@@ -229,67 +194,40 @@ st.markdown("""
         border: 2px solid #00843D !important;
         border-radius: 8px !important;
         color: #000000 !important;
-        padding: 8px 12px !important;
     }
     
-    /* Input focus state */
-    .stTextInput input:focus, 
-    .stSelectbox select:focus, 
-    .stTextArea textarea:focus,
-    .stNumberInput input:focus,
-    .stDateInput input:focus {
-        border-color: #FFB81C !important;
-        box-shadow: 0 0 0 2px rgba(255,184,28,0.2) !important;
-        outline: none !important;
-    }
-    
-    /* Labels - Black text */
-    .stTextInput label, 
-    .stSelectbox label, 
-    .stTextArea label, 
-    .stNumberInput label,
-    .stDateInput label {
-        color: #1F2937 !important;
-        font-weight: 500 !important;
-        margin-bottom: 4px !important;
-    }
-    
-    /* Dropdown options - Black text on white */
+    /* ============================================ */
+    /* FIXED: Dropdown options - Black text on white */
+    /* ============================================ */
     ul[role="listbox"] li {
         color: #000000 !important;
         background-color: #FFFFFF !important;
     }
     
-    ul[role="listbox"] li:hover {
-        background-color: #F0F2F6 !important;
+    /* ============================================ */
+    /* FIXED: Login button - Gold background, green text */
+    /* ============================================ */
+    .login-container .stButton button {
+        background: #FFB81C !important;
+        color: #00843D !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
     }
     
     /* ============================================ */
-    /* FIXED BUTTONS - White text on green gradient */
+    /* FIXED: All other buttons - White text on green gradient */
     /* ============================================ */
-    .stButton > button {
+    .stButton button {
         background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
-        padding: 10px 20px !important;
         font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    
-    /* Login button specific */
-    .login-container .stButton > button {
-        background: #FFB81C !important;
-        color: #00843D !important;
     }
     
     /* ============================================ */
-    /* FIXED EXPANDER HEADER */
+    /* FIXED: Expander header - White background, green text */
     /* ============================================ */
     .streamlit-expanderHeader {
         background-color: #F0F2F6 !important;
@@ -300,124 +238,42 @@ st.markdown("""
     }
     
     /* ============================================ */
-    /* FIXED SLIDER - Black text */
+    /* FIXED: Action Plan Monitor - White background for container */
+    /* ============================================ */
+    .stContainer, .stMarkdown, .element-container {
+        background-color: transparent !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED: Progress bar labels */
+    /* ============================================ */
+    .stProgress label {
+        color: #1F2937 !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED: Slider text */
     /* ============================================ */
     .stSlider div {
         color: #1F2937 !important;
     }
     
     /* ============================================ */
-    /* FIXED CHECKBOX - Black label */
+    /* FIXED: Checkbox */
     /* ============================================ */
     .stCheckbox label {
         color: #1F2937 !important;
     }
     
     /* ============================================ */
-    /* FIXED RADIO BUTTONS - Black label */
+    /* FIXED: Radio buttons */
     /* ============================================ */
     .stRadio label {
         color: #1F2937 !important;
     }
     
     /* ============================================ */
-    /* FIXED KPI CARDS - Keep as is */
-    /* ============================================ */
-    .kpi-card {
-        background: #00843D;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .kpi-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    }
-    
-    .kpi-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        color: #FFB81C !important;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-    
-    .kpi-value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin: 0.3rem 0;
-        color: white !important;
-        line-height: 1.2;
-    }
-    
-    .progress-bar {
-        height: 4px;
-        background: rgba(255,255,255,0.3);
-        border-radius: 2px;
-        overflow: hidden;
-        margin-top: 0.5rem;
-    }
-    
-    .progress-fill {
-        height: 100%;
-        background: #FFB81C;
-        border-radius: 2px;
-    }
-    
-    /* ============================================ */
-    /* FIXED METRIC CARDS - White background */
-    /* ============================================ */
-    .metric-card {
-        background: #FFFFFF;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        border-left: 4px solid #FFB81C;
-        transition: all 0.3s ease;
-        margin-bottom: 0.5rem;
-    }
-    
-    .metric-card b, .metric-card span {
-        color: #1F2937 !important;
-    }
-    
-    /* ============================================ */
-    /* FIXED STATUS BADGES */
-    /* ============================================ */
-    .badge-active {
-        background-color: #00843D;
-        color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    .badge-expiring {
-        background-color: #FFB81C;
-        color: #00843D;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    .badge-expired {
-        background-color: #dc2626;
-        color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    /* ============================================ */
-    /* FIXED TABS */
+    /* FIXED: Tabs */
     /* ============================================ */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
@@ -426,66 +282,95 @@ st.markdown("""
         border-radius: 12px;
         margin-bottom: 1rem;
     }
-    
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 0.5rem 1.2rem;
         font-weight: 500;
-        font-size: 0.8rem;
         color: #1F2937 !important;
-        white-space: nowrap;
-        transition: all 0.2s;
         background-color: #F3F4F6;
     }
-    
     .stTabs [aria-selected="true"] {
         background-color: #FFB81C !important;
         color: #00843D !important;
         font-weight: 600;
     }
     
-    /* ============================================ */
-    /* FIXED DATAFRAME */
-    /* ============================================ */
-    .dataframe {
-        font-size: 0.8rem;
-        background-color: #FFFFFF !important;
+    /* KPI Cards */
+    .kpi-card {
+        background: #00843D;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .kpi-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #FFB81C !important;
+        font-weight: 600;
+    }
+    .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0.3rem 0;
+        color: white !important;
+    }
+    .progress-bar {
+        height: 4px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 2px;
+        margin-top: 0.5rem;
+    }
+    .progress-fill {
+        height: 100%;
+        background: #FFB81C;
+        border-radius: 2px;
     }
     
+    /* Metric Cards */
+    .metric-card {
+        background: #FFFFFF;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        border-left: 4px solid #FFB81C;
+        margin-bottom: 0.5rem;
+    }
+    .metric-card b, .metric-card span {
+        color: #1F2937 !important;
+    }
+    
+    /* Status Badges */
+    .badge-active {
+        background-color: #00843D;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: inline-block;
+    }
+    .badge-expiring {
+        background-color: #FFB81C;
+        color: #00843D;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: inline-block;
+    }
+    .badge-expired {
+        background-color: #dc2626;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: inline-block;
+    }
+    
+    /* Dataframe */
     .dataframe th {
         background-color: #00843D !important;
         color: white !important;
-        padding: 10px !important;
     }
-    
     .dataframe td {
-        color: #1F2937 !important;
-    }
-    
-    /* ============================================ */
-    /* FIXED MESSAGES */
-    /* ============================================ */
-    .stSuccess {
-        background-color: #E8F5E9 !important;
-        border-left: 4px solid #00843D !important;
-        color: #1F2937 !important;
-    }
-    
-    .stInfo {
-        background-color: #EFF6FF !important;
-        border-left: 4px solid #00529B !important;
-        color: #1F2937 !important;
-    }
-    
-    .stWarning {
-        background-color: #FEF3C7 !important;
-        border-left: 4px solid #FFB81C !important;
-        color: #1F2937 !important;
-    }
-    
-    .stError {
-        background-color: #FEE2E2 !important;
-        border-left: 4px solid #DC2626 !important;
         color: #1F2937 !important;
     }
     
@@ -654,7 +539,7 @@ with col_header:
     
     st.markdown(f"""
     <div class='dashboard-header'>
-        <div class='header-left' style="display: flex; align-items: center; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
             {logo_html}
             <div>
                 <h1>HELB Strategy Performance Management System</h1>
