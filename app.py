@@ -21,43 +21,22 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# DEBUG FUNCTION - Shows all users
+# HELPER FUNCTIONS
 # ============================================
-def show_debug_info():
-    st.subheader("🔧 Debug Information")
-    
+def get_department_name(dept_id):
+    if dept_id is None:
+        return "N/A"
     try:
-        # Get all users
-        result = supabase.table("users").select("*").execute()
-        
-        st.write(f"**Total users in database:** {len(result.data)}")
-        
-        if len(result.data) > 0:
-            st.write("**Users found:**")
-            for user in result.data:
-                st.write(f"- Username: '{user['username']}', Full Name: {user['full_name']}, Role: {user['role']}")
-        else:
-            st.error("No users found in database!")
-            
-        # Try to find admin specifically
-        admin_result = supabase.table("users").select("*").eq("username", "admin").execute()
-        st.write(f"\n**Searching for 'admin':** Found {len(admin_result.data)} user(s)")
-        
-        if len(admin_result.data) > 0:
-            st.success(f"Admin user exists with password_hash: {admin_result.data[0]['password_hash'][:20]}...")
-        else:
-            st.error("Admin user NOT found with exact match 'admin'")
-            
-            # Try case insensitive search
-            all_users = supabase.table("users").select("*").execute()
-            for user in all_users.data:
-                if user['username'].lower() == 'admin':
-                    st.warning(f"Found admin as '{user['username']}' (different case)")
-                    
-    except Exception as e:
-        st.error(f"Debug error: {str(e)}")
-    
-    st.markdown("---")
+        result = supabase.table("departments").select("name").eq("id", dept_id).execute()
+        return result.data[0]["name"] if result.data else "Unknown"
+    except:
+        return "Unknown"
+
+def get_filtered_data(table_name):
+    if st.session_state.user_role in ["admin", "management"]:
+        return supabase.table(table_name).select("*").execute().data
+    else:
+        return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
 
 # ============================================
 # AUTHENTICATION
@@ -76,13 +55,10 @@ def check_password():
     
     st.title("🔐 HELB Strategy Performance Management System")
     
-    # Show debug info at the top
-    show_debug_info()
-    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("### Login")
-        st.info("🔑 Try: admin | admin123")
+        st.info("🔑 Username: admin | Password: admin123")
         
         with st.form("login_form"):
             username = st.text_input("Username")
@@ -94,24 +70,10 @@ def check_password():
                     st.error("Please enter both username and password")
                 else:
                     try:
-                        # Try exact match first
-                        result = supabase.table("users").select("*").eq("username", username).execute()
+                        result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                         
-                        # If not found, try lowercase
-                        if len(result.data) == 0:
-                            st.warning(f"Username '{username}' not found. Trying lowercase...")
-                            result = supabase.table("users").select("*").eq("username", username.lower()).execute()
-                        
-                        # If still not found, try all users to show what's available
-                        if len(result.data) == 0:
-                            all_users = supabase.table("users").select("username").execute()
-                            available = [u['username'] for u in all_users.data]
-                            st.error(f"Username '{username}' not found. Available usernames: {', '.join(available)}")
-                        else:
+                        if result.data:
                             user = result.data[0]
-                            st.success(f"User found! Checking password...")
-                            
-                            # Simple password comparison
                             if password == user["password_hash"]:
                                 st.session_state.authenticated = True
                                 st.session_state.user_role = user["role"]
@@ -122,30 +84,13 @@ def check_password():
                                 st.success("Login successful! Redirecting...")
                                 st.rerun()
                             else:
-                                st.error(f"Invalid password. Stored hash: '{user['password_hash']}', Your password: '{password}'")
-                                
+                                st.error("Invalid password")
+                        else:
+                            st.error(f"Username '{username}' not found")
                     except Exception as e:
                         st.error(f"Login error: {str(e)}")
     
     return False
-
-# ============================================
-# HELPER FUNCTIONS
-# ============================================
-def get_department_name(dept_id):
-    if dept_id is None:
-        return "N/A"
-    try:
-        result = supabase.table("departments").select("name").eq("id", dept_id).execute()
-        return result.data[0]["name"] if result.data else "Unknown"
-    except:
-        return "Unknown"
-
-def get_filtered_data(table_name):
-    if st.session_state.user_role in ["admin", "management"]:
-        return supabase.table(table_name).select("*").execute().data
-    else:
-        return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
 
 # ============================================
 # DASHBOARD
@@ -260,15 +205,16 @@ def show_action_plans():
                 st.progress(plan["progress_percent"] / 100)
                 st.caption(f"{plan['progress_percent']}%")
             with col3:
-                new_progress = st.number_input("Update %", 0, 100, plan["progress_percent"], key=f"p_{plan['id']}")
-                if st.button(f"Save", key=f"s_{plan['id']}"):
-                    new_status = "completed" if new_progress == 100 else "in progress" if new_progress > 0 else "not started"
-                    supabase.table("action_plans").update({
-                        "progress_percent": new_progress,
-                        "status": new_status
-                    }).eq("id", plan["id"]).execute()
-                    st.success("Updated!")
-                    st.rerun()
+                if st.button(f"Update {plan['id']}", key=f"btn_{plan['id']}"):
+                    new_progress = st.number_input("New Progress %", 0, 100, plan["progress_percent"], key=f"num_{plan['id']}")
+                    if st.button(f"Save", key=f"save_{plan['id']}"):
+                        new_status = "completed" if new_progress == 100 else "in progress" if new_progress > 0 else "not started"
+                        supabase.table("action_plans").update({
+                            "progress_percent": new_progress,
+                            "status": new_status
+                        }).eq("id", plan["id"]).execute()
+                        st.success("Updated!")
+                        st.rerun()
             st.markdown("---")
     else:
         st.info("No action plans found")
@@ -333,7 +279,8 @@ def show_contracts():
             <b>{color} {contract['contract_title']}</b><br>
             Vendor: {contract['vendor_name']}{dept_info}<br>
             {status_text}<br>
-            End Date: {contract['end_date']}
+            End Date: {contract['end_date']}<br>
+            Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}
             </div>
             """, unsafe_allow_html=True)
     else:
@@ -375,12 +322,18 @@ def show_policies():
             else:
                 alert = "❌ Expired"
             
-            st.markdown(f"**{policy['policy_name']}** - Expires: {policy['expiry_date']} - {alert}")
+            dept_info = ""
+            if policy["department_id"] is None:
+                dept_info = " (Global Policy)"
+            elif st.session_state.user_role in ["admin", "management"]:
+                dept_info = f" ({get_department_name(policy['department_id'])})"
+            
+            st.markdown(f"**{policy['policy_name']}**{dept_info} - Expires: {policy['expiry_date']} - {alert}")
     else:
         st.info("No policies found")
 
 # ============================================
-# USER MANAGEMENT
+# USER MANAGEMENT (ADMIN ONLY)
 # ============================================
 def show_user_management():
     if st.session_state.user_role != "admin":
@@ -450,36 +403,42 @@ def show_management_view():
         st.error("Access denied")
         return
     
-    st.subheader("🏢 Enterprise View")
+    st.subheader("🏢 Enterprise Management View")
     
     depts = supabase.table("departments").select("*").execute().data
     dept_names = {d["id"]: d["name"] for d in depts}
     
-    tabs = st.tabs(["All Action Plans", "All Contracts", "All Policies"])
+    tabs = st.tabs(["📋 All Action Plans", "📄 All Contracts", "📋 All Policies"])
     
     with tabs[0]:
         all_plans = supabase.table("action_plans").select("*").execute().data
         if all_plans:
             df = pd.DataFrame(all_plans)
             df["department"] = df["department_id"].map(dept_names)
-            st.dataframe(df[["task_name", "department", "status", "progress_percent", "due_date"]])
+            st.dataframe(df[["task_name", "department", "status", "progress_percent", "due_date"]], use_container_width=True)
+        else:
+            st.info("No action plans")
     
     with tabs[1]:
         all_contracts = supabase.table("contracts").select("*").execute().data
         if all_contracts:
             df = pd.DataFrame(all_contracts)
             df["department"] = df["department_id"].map(dept_names)
-            st.dataframe(df[["contract_title", "vendor_name", "department", "end_date"]])
+            st.dataframe(df[["contract_title", "vendor_name", "department", "end_date", "status"]], use_container_width=True)
+        else:
+            st.info("No contracts")
     
     with tabs[2]:
         all_policies = supabase.table("policies").select("*").execute().data
         if all_policies:
             df = pd.DataFrame(all_policies)
             df["department"] = df["department_id"].map(dept_names).fillna("Global")
-            st.dataframe(df[["policy_name", "department", "expiry_date"]])
+            st.dataframe(df[["policy_name", "department", "expiry_date"]], use_container_width=True)
+        else:
+            st.info("No policies")
 
 # ============================================
-# MAIN
+# MAIN APPLICATION
 # ============================================
 def main():
     if not check_password():
@@ -489,7 +448,13 @@ def main():
         st.markdown("### HELB Strategy System")
         st.markdown("---")
         st.markdown(f"**Welcome, {st.session_state.user_fullname}**")
-        st.markdown(f"**Role:** {st.session_state.user_role}")
+        st.markdown(f"**Username:** {st.session_state.user_name}")
+        
+        if st.session_state.user_role == "department_champion":
+            dept_name = get_department_name(st.session_state.user_dept)
+            st.markdown(f"**Department:** {dept_name}")
+        
+        st.markdown(f"**Role:** {st.session_state.user_role.replace('_', ' ').title()}")
         st.markdown("---")
         
         if st.button("🚪 Logout"):
@@ -499,12 +464,14 @@ def main():
         st.markdown("---")
         
         menu_options = ["Dashboard", "Action Plans", "Contracts", "Policies"]
+        
         if st.session_state.user_role == "admin":
             menu_options.append("👥 User Management")
+        
         if st.session_state.user_role in ["admin", "management"]:
             menu_options.append("🏢 Enterprise View")
         
-        menu = st.radio("Navigation", menu_options)
+        menu = st.radio("📋 Navigation", menu_options)
     
     st.title("📊 HELB Strategy Performance Management System")
     
