@@ -14,10 +14,9 @@ import requests
 HELB_GREEN = "#00843D"      # HELB Green - Primary
 HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
 HELB_BLUE = "#00529B"        # HELB Blue - Secondary
-HELB_DARK = "#1F2937"        # Dark text for light backgrounds
+HELB_DARK = "#1F2937"        # Dark text
 HELB_WHITE = "#FFFFFF"       # White background
-HELB_GRAY = "#F8FAFC"        # Light gray for cards
-HELB_BORDER = "#E5E7EB"      # Border color
+HELB_GRAY = "#F9FAFB"        # Light gray for cards
 
 # Page config
 st.set_page_config(
@@ -28,462 +27,363 @@ st.set_page_config(
 )
 
 # ============================================
-# LOAD HELB LOGO
+# LOAD HELB LOGO FROM URL
 # ============================================
 def get_logo_base64():
-    """Load HELB logo from URL or local file"""
-    # First try to get from secrets
-    logo_url = st.secrets.get("HELB_LOGO_URL", "")
-    
-    if logo_url:
-        try:
-            response = requests.get(logo_url, timeout=10)
-            if response.status_code == 200:
-                img = Image.open(BytesIO(response.content))
-                # Convert to RGB to ensure clean display
-                if img.mode in ('RGBA', 'P'):
-                    img = img.convert('RGB')
-                # Resize while maintaining aspect ratio
-                img.thumbnail((250, 100), Image.Resampling.LANCZOS)
-                buffered = BytesIO()
-                img.save(buffered, format="PNG")
-                return base64.b64encode(buffered.getvalue()).decode()
-        except Exception as e:
-            pass
+    """Load HELB logo from URL and convert to base64"""
+    try:
+        # Get logo URL from secrets or use default
+        logo_url = st.secrets.get("HELB_LOGO_URL", "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png")
+        response = requests.get(logo_url, timeout=10)
+        if response.status_code == 200:
+            # Open image from bytes
+            img = Image.open(BytesIO(response.content))
+            # Resize for different uses while maintaining aspect ratio
+            return {
+                "large": resize_and_encode(img, 250, 100),
+                "medium": resize_and_encode(img, 150, 60),
+                "small": resize_and_encode(img, 80, 32),
+                "original": base64.b64encode(response.content).decode()
+            }
+    except Exception as e:
+        st.warning(f"Could not load logo from URL: {e}")
     
     # Fallback to local file
     try:
         img = Image.open("HELB Logo.png")
-        if img.mode in ('RGBA', 'P'):
-            img = img.convert('RGB')
-        img.thumbnail((250, 100), Image.Resampling.LANCZOS)
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        return base64.b64encode(buffered.getvalue()).decode()
+        return {
+            "large": resize_and_encode(img, 250, 100),
+            "medium": resize_and_encode(img, 150, 60),
+            "small": resize_and_encode(img, 80, 32),
+            "original": None
+        }
     except:
         return None
 
-def get_logo_small():
-    """Get smaller version of logo"""
-    logo_url = st.secrets.get("HELB_LOGO_URL", "")
+def resize_and_encode(img, width, height):
+    """Resize image maintaining aspect ratio and return base64"""
+    # Calculate new size maintaining aspect ratio
+    img_copy = img.copy()
+    img_copy.thumbnail((width, height), Image.Resampling.LANCZOS)
     
-    if logo_url:
-        try:
-            response = requests.get(logo_url, timeout=10)
-            if response.status_code == 200:
-                img = Image.open(BytesIO(response.content))
-                if img.mode in ('RGBA', 'P'):
-                    img = img.convert('RGB')
-                img.thumbnail((100, 40), Image.Resampling.LANCZOS)
-                buffered = BytesIO()
-                img.save(buffered, format="PNG")
-                return base64.b64encode(buffered.getvalue()).decode()
-        except:
-            pass
+    # Convert to RGB if necessary
+    if img_copy.mode in ('RGBA', 'P'):
+        img_copy = img_copy.convert('RGB')
     
-    try:
-        img = Image.open("HELB Logo.png")
-        if img.mode in ('RGBA', 'P'):
-            img = img.convert('RGB')
-        img.thumbnail((100, 40), Image.Resampling.LANCZOS)
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        return base64.b64encode(buffered.getvalue()).decode()
-    except:
-        return None
+    buffered = BytesIO()
+    img_copy.save(buffered, format="PNG", optimize=True)
+    return base64.b64encode(buffered.getvalue()).decode()
 
-LOGO_LARGE = get_logo_base64()
-LOGO_SMALL = get_logo_small()
+# Load logo once
+LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# CUSTOM CSS - Light Theme
+# CUSTOM CSS - Professional HELB Design
 # ============================================
-st.markdown("""
+st.markdown(f"""
 <style>
     /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stAppDeployButton {display: none;}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    .stAppDeployButton {{display: none;}}
     
     /* Main container - White background */
-    .stApp {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Main content area */
-    .main {
-        background-color: #FFFFFF !important;
-    }
+    .main {{
+        background-color: {HELB_WHITE} !important;
+    }}
     
     /* Sidebar - HELB Green */
-    [data-testid="stSidebar"] {
-        background-color: #00843D !important;
+    [data-testid="stSidebar"] {{
+        background-color: {HELB_GREEN} !important;
         padding-top: 1rem;
-    }
+    }}
     
-    [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] div {
+    [data-testid="stSidebar"] * {{
         color: white !important;
-    }
+    }}
     
     /* Sidebar user info */
-    .sidebar-user-info {
+    .sidebar-user-info {{
         background: rgba(255,255,255,0.15);
         padding: 0.8rem;
         border-radius: 10px;
         margin: 0.5rem 0;
         text-align: center;
-    }
+    }}
     
-    .sidebar-user-info strong,
-    .sidebar-user-info span {
-        color: white !important;
-    }
-    
-    /* Navigation radio buttons - Gold background with dark text */
-    [data-testid="stSidebar"] div[role="radiogroup"] label {
-        background-color: #FFB81C !important;
-        color: #00843D !important;
+    /* Navigation radio buttons - Gold background */
+    [data-testid="stSidebar"] div[role="radiogroup"] label {{
+        background-color: {HELB_GOLD} !important;
+        color: {HELB_DARK} !important;
         border-radius: 8px !important;
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
-    }
+    }}
     
-    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
         transform: translateX(5px);
         filter: brightness(1.05);
-    }
+    }}
     
-    /* Sidebar logout button */
-    [data-testid="stSidebar"] .stButton > button {
+    /* Logout button */
+    [data-testid="stSidebar"] .stButton > button {{
         background-color: rgba(255,255,255,0.2) !important;
         color: white !important;
         border: 1px solid rgba(255,255,255,0.3) !important;
-    }
+    }}
     
-    /* Headers - Green */
-    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        color: #00843D !important;
+    /* Headers */
+    h1, h2, h3 {{
+        color: {HELB_GREEN} !important;
         font-weight: 600 !important;
-    }
+    }}
     
-    h1 {
-        border-bottom: 3px solid #FFB81C;
+    h1 {{
+        border-bottom: 3px solid {HELB_GOLD};
         padding-bottom: 15px;
         margin-bottom: 25px;
-    }
+    }}
     
     /* Dashboard Header */
-    .dashboard-header {
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+    .dashboard-header {{
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
         padding: 0.8rem 1.5rem;
         border-radius: 12px;
         margin-bottom: 1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-    }
+    }}
     
-    .header-left {
+    .header-left {{
         display: flex;
         align-items: center;
         gap: 1rem;
-    }
+    }}
     
-    .dashboard-header h1 {
+    .dashboard-header h1 {{
         color: white !important;
         margin: 0;
         font-size: 1.2rem;
         font-weight: 600;
         border-bottom: none;
-    }
+    }}
     
-    .dashboard-header p {
+    .dashboard-header p {{
         color: rgba(255,255,255,0.85);
         margin: 0;
         font-size: 0.7rem;
-    }
-    
-    /* Refresh button */
-    .refresh-button button {
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 8px 16px !important;
-        font-weight: 600 !important;
-    }
+    }}
     
     /* Login Container - Solid Green */
-    .login-container {
-        background-color: #00843D;
+    .login-container {{
+        background-color: {HELB_GREEN};
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
         box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
+    }}
     
-    .login-title {
-        color: white !important;
+    .login-logo {{
+        margin-bottom: 1rem;
+    }}
+    
+    .login-title {{
+        color: white;
         font-size: 1.5rem;
         font-weight: 700;
         margin: 0;
-    }
+    }}
     
-    .login-subtitle {
-        color: rgba(255,255,255,0.85) !important;
+    .login-subtitle {{
+        color: rgba(255,255,255,0.85);
         font-size: 0.85rem;
         margin-top: 0.5rem;
-    }
+    }}
     
     /* Login form inputs */
-    .login-container .stTextInput input {
+    .login-container .stTextInput input {{
         border-radius: 8px;
         border: none;
         padding: 10px;
-        background-color: white;
-        color: #1F2937 !important;
-    }
+    }}
     
-    .login-container .stButton button {
-        background-color: #FFB81C !important;
-        color: #00843D !important;
+    .login-container .stButton button {{
+        background-color: {HELB_GOLD} !important;
+        color: {HELB_DARK} !important;
         font-weight: 600 !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 10px !important;
-    }
+    }}
     
-    /* KPI Cards - Solid Green */
-    .kpi-grid {
+    /* KPI Cards */
+    .kpi-grid {{
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 1rem;
         margin-bottom: 1.5rem;
-    }
+    }}
     
-    .kpi-card {
-        background: #00843D;
+    .kpi-card {{
+        background: {HELB_GREEN};
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
-    }
+    }}
     
-    .kpi-card:hover {
+    .kpi-card:hover {{
         transform: translateY(-3px);
         box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    }
+    }}
     
-    .kpi-label {
+    .kpi-label {{
         font-size: 0.7rem;
         text-transform: uppercase;
-        color: #FFB81C;
+        color: {HELB_GOLD};
         font-weight: 600;
         letter-spacing: 0.5px;
-    }
+    }}
     
-    .kpi-value {
+    .kpi-value {{
         font-size: 1.8rem;
         font-weight: 700;
         margin: 0.3rem 0;
         color: white;
         line-height: 1.2;
-    }
+    }}
     
-    .progress-bar {
+    .progress-bar {{
         height: 4px;
         background: rgba(255,255,255,0.3);
         border-radius: 2px;
         overflow: hidden;
         margin-top: 0.5rem;
-    }
+    }}
     
-    .progress-fill {
+    .progress-fill {{
         height: 100%;
-        background: #FFB81C;
+        background: {HELB_GOLD};
         border-radius: 2px;
-    }
+    }}
     
-    /* Metric Cards - White with left gold border */
-    .metric-card {
-        background: #FFFFFF;
+    /* Metric Cards */
+    .metric-card {{
+        background: {HELB_WHITE};
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        border-left: 4px solid #FFB81C;
+        border-left: 4px solid {HELB_GOLD};
         transition: all 0.3s ease;
-        margin-bottom: 0.5rem;
-    }
+    }}
     
-    .metric-card:hover {
+    .metric-card:hover {{
         transform: translateY(-3px);
         box-shadow: 0 5px 20px rgba(0,0,0,0.12);
-    }
-    
-    .metric-card b, .metric-card span {
-        color: #1F2937 !important;
-    }
+    }}
     
     /* Status Badges */
-    .badge-active {
-        background-color: #00843D;
+    .badge-active {{
+        background-color: {HELB_GREEN};
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        display: inline-block;
-    }
+    }}
     
-    .badge-expiring {
-        background-color: #FFB81C;
-        color: #00843D;
+    .badge-expiring {{
+        background-color: {HELB_GOLD};
+        color: {HELB_DARK};
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        display: inline-block;
-    }
+    }}
     
-    .badge-expired {
+    .badge-expired {{
         background-color: #dc2626;
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        display: inline-block;
-    }
+    }}
     
-    /* Main buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
+    /* Buttons */
+    .stButton > button {{
+        background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 10px 20px !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
-    }
+    }}
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
+    /* Danger button */
+    div[data-testid="column"]:has(button[key*="delete"]) button {{
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    }}
     
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 0.5rem;
-        background: #F8FAFC;
+        background: {HELB_GRAY};
         padding: 0.5rem;
         border-radius: 12px;
         margin-bottom: 1rem;
-    }
+    }}
     
-    .stTabs [data-baseweb="tab"] {
+    .stTabs [data-baseweb="tab"] {{
         border-radius: 8px;
         padding: 0.5rem 1.2rem;
         font-weight: 500;
         font-size: 0.8rem;
-        color: #1F2937;
+        color: {HELB_DARK};
         white-space: nowrap;
         transition: all 0.2s;
-        background-color: #F8FAFC;
-    }
+        background-color: {HELB_GRAY};
+    }}
     
-    .stTabs [aria-selected="true"] {
-        background-color: #FFB81C !important;
-        color: #00843D !important;
+    .stTabs [aria-selected="true"] {{
+        background-color: {HELB_GOLD} !important;
+        color: {HELB_DARK} !important;
         font-weight: 600;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        background-color: rgba(255,184,28,0.2);
-    }
+    }}
     
     /* Expander */
-    .streamlit-expanderHeader {
-        background-color: #F8FAFC !important;
+    .streamlit-expanderHeader {{
+        background-color: {HELB_GRAY} !important;
         border-radius: 8px !important;
-        color: #00843D !important;
+        color: {HELB_GREEN} !important;
         font-weight: 600 !important;
-        border: 1px solid #E5E7EB !important;
-    }
-    
-    /* Dataframe */
-    .dataframe {
-        font-size: 0.8rem;
-        background-color: #FFFFFF !important;
-    }
-    
-    .dataframe th {
-        background-color: #00843D !important;
-        color: white !important;
-        padding: 10px !important;
-    }
-    
-    .dataframe td {
-        color: #1F2937 !important;
-    }
-    
-    /* Text colors */
-    .stMarkdown, .stText, p, li {
-        color: #1F2937 !important;
-    }
-    
-    /* Input fields */
-    .stTextInput input, .stSelectbox select, .stTextArea textarea, .stNumberInput input {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E5E7EB !important;
-        border-radius: 8px !important;
-        color: #1F2937 !important;
-    }
-    
-    /* Labels */
-    .stTextInput label, .stSelectbox label, .stTextArea label, .stNumberInput label {
-        color: #1F2937 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Success/Info/Warning messages */
-    .stSuccess {
-        background-color: #E8F5E9 !important;
-        border-left: 4px solid #00843D !important;
-        color: #1F2937 !important;
-    }
-    
-    .stInfo {
-        background-color: #EFF6FF !important;
-        border-left: 4px solid #00529B !important;
-        color: #1F2937 !important;
-    }
-    
-    .stWarning {
-        background-color: #FEF3C7 !important;
-        border-left: 4px solid #FFB81C !important;
-        color: #1F2937 !important;
-    }
-    
-    .stError {
-        background-color: #FEE2E2 !important;
-        border-left: 4px solid #DC2626 !important;
-        color: #1F2937 !important;
-    }
+    }}
     
     /* Footer */
-    .footer {
+    .footer {{
         text-align: center;
         padding: 1.5rem;
-        color: #6B7280 !important;
+        color: #6B7280;
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
-    }
+    }}
+    
+    /* Dataframe */
+    .dataframe {{
+        font-size: 0.8rem;
+    }}
+    
+    .dataframe th {{
+        background-color: {HELB_GREEN} !important;
+        color: white !important;
+        padding: 10px !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -529,6 +429,7 @@ def get_filtered_data(table_name):
         return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
 
 def get_all_users():
+    """Get all users for admin management"""
     try:
         result = supabase.table("users").select("*").execute()
         return result.data
@@ -536,6 +437,7 @@ def get_all_users():
         return []
 
 def delete_user(username):
+    """Delete a user"""
     try:
         supabase.table("users").delete().eq("username", username).execute()
         return True
@@ -543,6 +445,7 @@ def delete_user(username):
         return False
 
 def update_user_role(username, new_role, department_id):
+    """Update user role and department"""
     try:
         supabase.table("users").update({
             "role": new_role,
@@ -553,6 +456,7 @@ def update_user_role(username, new_role, department_id):
         return False
 
 def reset_user_password(username, new_password):
+    """Reset user password"""
     try:
         supabase.table("users").update({
             "password_hash": new_password
@@ -562,6 +466,7 @@ def reset_user_password(username, new_password):
         return False
 
 def create_new_user(username, full_name, password, role, department_id):
+    """Create a new user"""
     try:
         existing = supabase.table("users").select("*").eq("username", username.lower()).execute()
         if existing.data:
@@ -584,14 +489,15 @@ def create_new_user(username, full_name, password, role, department_id):
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if LOGO_LARGE:
-            logo_html = f'<img src="data:image/png;base64,{LOGO_LARGE}" style="width: 200px; height: auto; margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">'
+        # Display logo
+        if LOGO_BASE64 and LOGO_BASE64.get("large"):
+            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["large"]}" style="width: 200px; height: auto; margin-bottom: 1rem;">'
         else:
-            logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">🏦</div>'
+            logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
         
         st.markdown(f"""
         <div class='login-container'>
-            <div>{logo_html}</div>
+            <div class='login-logo'>{logo_html}</div>
             <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
             <p class='login-subtitle'>Strategy Performance Management System</p>
         </div>
@@ -619,9 +525,9 @@ if not st.session_state.authenticated:
                             st.session_state.user_id = user["id"]
                             st.rerun()
                         else:
-                            st.error("Invalid password")
+                            st.error("❌ Invalid password")
                     else:
-                        st.error("User not found")
+                        st.error("❌ User not found")
                 else:
                     st.warning("Please enter both username and password")
     st.stop()
@@ -630,13 +536,13 @@ if not st.session_state.authenticated:
 # MAIN APPLICATION (LOGGED IN)
 # ============================================
 
-# Dashboard Header
+# Dashboard Header with logo
 col_header, col_refresh = st.columns([6, 1])
 with col_header:
-    if LOGO_SMALL:
-        logo_html = f'<img src="data:image/png;base64,{LOGO_SMALL}" style="width: 35px; height: auto;">'
+    if LOGO_BASE64 and LOGO_BASE64.get("small"):
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["small"]}" style="width: 40px; height: auto;">'
     else:
-        logo_html = '<div style="font-size: 1.3rem;">🏦</div>'
+        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
     
     st.markdown(f"""
     <div class='dashboard-header'>
@@ -650,13 +556,13 @@ with col_header:
     </div>
     """, unsafe_allow_html=True)
 with col_refresh:
-    if st.button("Refresh", key="global_refresh"):
+    if st.button("🔄 Refresh", key="global_refresh"):
         st.rerun()
 
-# Sidebar
+# Sidebar with logo
 with st.sidebar:
-    if LOGO_SMALL:
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_SMALL}" style="width: 100px; height: auto;"></div>', unsafe_allow_html=True)
+    if LOGO_BASE64 and LOGO_BASE64.get("medium"):
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64["medium"]}" style="width: 120px; height: auto;"></div>', unsafe_allow_html=True)
     else:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
@@ -674,30 +580,32 @@ with st.sidebar:
     
     st.markdown("---")
     
-    menu_options = ["Dashboard", "Action Plans", "Contracts", "Policies"]
+    # Navigation menu
+    menu_options = ["📊 Dashboard", "✅ Action Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
-        menu_options.append("User Management")
+        menu_options.append("👥 User Management")
     if st.session_state.user_role in ["admin", "management"]:
-        menu_options.append("Enterprise View")
+        menu_options.append("🏢 Enterprise View")
     
-    choice = st.radio("Navigation", menu_options, label_visibility="collapsed")
+    choice = st.radio("📋 Navigation", menu_options, label_visibility="collapsed")
     
     st.markdown("---")
     
-    if st.button("Logout", use_container_width=True):
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.clear()
         st.rerun()
 
 # ============================================
 # DASHBOARD
 # ============================================
-if choice == "Dashboard":
+if choice == "📊 Dashboard":
     st.subheader("Dashboard Overview")
     
     plans = get_filtered_data("action_plans")
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
     
+    # KPI Cards
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -707,7 +615,7 @@ if choice == "Dashboard":
             avg_progress = sum(p.get("progress_percent", 0) for p in plans) / total if total > 0 else 0
             st.markdown(f"""
             <div class='kpi-card'>
-                <div class='kpi-label'>ACTION PLANS</div>
+                <div class='kpi-label'>📋 ACTION PLANS</div>
                 <div class='kpi-value'>{completed}/{total}</div>
                 <div class='progress-bar'><div class='progress-fill' style='width:{avg_progress}%;'></div></div>
             </div>
@@ -715,7 +623,7 @@ if choice == "Dashboard":
         else:
             st.markdown(f"""
             <div class='kpi-card'>
-                <div class='kpi-label'>ACTION PLANS</div>
+                <div class='kpi-label'>📋 ACTION PLANS</div>
                 <div class='kpi-value'>0/0</div>
             </div>
             """, unsafe_allow_html=True)
@@ -725,7 +633,7 @@ if choice == "Dashboard":
             expiring = sum(1 for c in contracts if c.get("status") == "expiring_soon")
             st.markdown(f"""
             <div class='kpi-card'>
-                <div class='kpi-label'>CONTRACTS</div>
+                <div class='kpi-label'>📄 CONTRACTS</div>
                 <div class='kpi-value'>{expiring}</div>
                 <div class='kpi-label' style='font-size:0.6rem;'>expiring within 30 days</div>
             </div>
@@ -733,7 +641,7 @@ if choice == "Dashboard":
         else:
             st.markdown(f"""
             <div class='kpi-card'>
-                <div class='kpi-label'>CONTRACTS</div>
+                <div class='kpi-label'>📄 CONTRACTS</div>
                 <div class='kpi-value'>0</div>
             </div>
             """, unsafe_allow_html=True)
@@ -750,7 +658,7 @@ if choice == "Dashboard":
                     pass
             st.markdown(f"""
             <div class='kpi-card'>
-                <div class='kpi-label'>POLICIES</div>
+                <div class='kpi-label'>📜 POLICIES</div>
                 <div class='kpi-value'>{expiring_policies}</div>
                 <div class='kpi-label' style='font-size:0.6rem;'>expiring within 90 days</div>
             </div>
@@ -758,7 +666,7 @@ if choice == "Dashboard":
         else:
             st.markdown(f"""
             <div class='kpi-card'>
-                <div class='kpi-label'>POLICIES</div>
+                <div class='kpi-label'>📜 POLICIES</div>
                 <div class='kpi-value'>0</div>
             </div>
             """, unsafe_allow_html=True)
@@ -767,13 +675,14 @@ if choice == "Dashboard":
         users_count = len(supabase.table("users").select("*").execute().data)
         st.markdown(f"""
         <div class='kpi-card'>
-            <div class='kpi-label'>ACTIVE USERS</div>
+            <div class='kpi-label'>👥 ACTIVE USERS</div>
             <div class='kpi-value'>{users_count}</div>
         </div>
         """, unsafe_allow_html=True)
     
+    # Progress Chart
     if plans and len(plans) > 0:
-        st.subheader("Department Performance Overview")
+        st.subheader("📈 Department Performance Overview")
         df = pd.DataFrame(plans)
         if st.session_state.user_role in ["admin", "management"]:
             depts = supabase.table("departments").select("id,name").execute().data
@@ -781,31 +690,30 @@ if choice == "Dashboard":
             df["department"] = df["department_id"].map(dept_map)
             fig = px.bar(df, x="task_name", y="progress_percent", color="department", 
                         title="Action Plan Progress by Task",
-                        color_discrete_sequence=["#00843D", "#FFB81C", "#00529B"])
+                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         else:
             fig = px.bar(df, x="task_name", y="progress_percent", color="status",
                         title="My Department's Action Plan Progress",
-                        color_discrete_sequence=["#00843D", "#FFB81C", "#00529B"])
+                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         
         fig.update_layout(
             barmode='group', 
             bargap=0.3, 
-            plot_bgcolor="#FFFFFF",
-            paper_bgcolor="#FFFFFF",
-            title_font_color="#00843D",
+            plot_bgcolor=HELB_WHITE,
+            title_font_color=HELB_GREEN,
             title_font_size=16
         )
         st.plotly_chart(fig, use_container_width=True)
     
-    st.success(f"Welcome, {st.session_state.user_fullname}!")
+    st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
 # ACTION PLANS
 # ============================================
-elif choice == "Action Plans":
+elif choice == "✅ Action Plans":
     st.subheader("Action Plan Monitor")
     
-    with st.expander("Add New Action Item", expanded=False):
+    with st.expander("➕ Add New Action Item", expanded=False):
         with st.form("new_action"):
             col1, col2 = st.columns(2)
             with col1:
@@ -825,7 +733,7 @@ elif choice == "Action Plans":
                         "department_id": st.session_state.user_dept,
                         "last_updated_by": st.session_state.user_id
                     }).execute()
-                    st.success("Action item added successfully!")
+                    st.success("✅ Action item added successfully!")
                     st.rerun()
                 else:
                     st.error("Please enter a task name")
@@ -840,7 +748,7 @@ elif choice == "Action Plans":
                 col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
                     st.markdown(f"**{plan['task_name']}**")
-                    st.caption(f"Due: {plan['due_date']} ({days_left} days left)")
+                    st.caption(f"📅 Due: {plan['due_date']} ({days_left} days left)")
                 with col2:
                     st.progress(plan["progress_percent"] / 100)
                     st.caption(f"{plan['progress_percent']}%")
@@ -861,10 +769,10 @@ elif choice == "Action Plans":
 # ============================================
 # CONTRACTS
 # ============================================
-elif choice == "Contracts":
+elif choice == "📄 Contracts":
     st.subheader("Contract Tracker")
     
-    with st.expander("Add New Contract", expanded=False):
+    with st.expander("➕ Add New Contract", expanded=False):
         with st.form("new_contract"):
             col1, col2 = st.columns(2)
             with col1:
@@ -916,8 +824,8 @@ elif choice == "Contracts":
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
                         <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
-                        <span>Vendor: {contract['vendor_name']}</span><br>
-                        <span>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
                         <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
                     </div>
                     <div>{badge}</div>
@@ -930,10 +838,10 @@ elif choice == "Contracts":
 # ============================================
 # POLICIES
 # ============================================
-elif choice == "Policies":
+elif choice == "📋 Policies":
     st.subheader("Policy Monitor")
     
-    with st.expander("Add New Policy", expanded=False):
+    with st.expander("➕ Add New Policy", expanded=False):
         with st.form("new_policy"):
             policy_name = st.text_input("Policy Name*")
             expiry_date = st.date_input("Expiry Date*")
@@ -970,7 +878,7 @@ elif choice == "Policies":
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
                         <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
-                        <span>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -980,16 +888,19 @@ elif choice == "Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# ENHANCED USER MANAGEMENT (ADMIN ONLY)
 # ============================================
-elif choice == "User Management" and st.session_state.user_role == "admin":
+elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
     
+    # Get all departments for dropdown
     depts = supabase.table("departments").select("id,name").execute().data
     dept_options = {d["name"]: d["id"] for d in depts}
+    
+    # Get all users
     users = get_all_users()
     
-    tab1, tab2, tab3 = st.tabs(["Create New User", "Edit User Role", "Delete User"])
+    tab1, tab2, tab3 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User"])
     
     with tab1:
         with st.form("create_user_form"):
@@ -1028,18 +939,20 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
                 selected_user_str = st.selectbox("Select User to Edit", user_options)
                 selected_username = selected_user_str.split(" - ")[0]
                 
+                # Get current user data
                 current_user = next((u for u in users if u['username'] == selected_username), None)
                 if current_user:
                     col1, col2 = st.columns(2)
                     with col1:
                         new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], 
-                                               index=["department_champion", "management", "admin"].index(current_user["role"]))
+                                               index=["department_champion", "management", "admin"].index(current_user['role']))
                     with col2:
-                        current_dept = get_department_name(current_user["department_id"])
+                        current_dept = get_department_name(current_user['department_id'])
                         dept_list = ["None"] + list(dept_options.keys())
                         default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
                         new_department = st.selectbox("Department", dept_list, index=default_index)
                     
+                    # Password reset option
                     reset_password = st.checkbox("Reset Password")
                     new_password = None
                     if reset_password:
@@ -1047,14 +960,18 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
                         confirm_new = st.text_input("Confirm New Password", type="password")
                     
                     if st.button("Save Changes", use_container_width=True):
+                        # Update role and department
                         dept_id = dept_options.get(new_department) if new_department != "None" else None
                         if update_user_role(selected_username, new_role, dept_id):
-                            st.success(f"Role and department updated for {selected_username}")
+                            st.success(f"✅ Role and department updated for {selected_username}")
+                        else:
+                            st.error("Failed to update role/department")
                         
+                        # Reset password if requested
                         if reset_password and new_password:
                             if new_password == confirm_new and len(new_password) >= 4:
                                 if reset_user_password(selected_username, new_password):
-                                    st.success(f"Password reset for {selected_username}")
+                                    st.success(f"✅ Password reset for {selected_username}")
                                     st.info(f"New password: {new_password}")
                                 else:
                                     st.error("Failed to reset password")
@@ -1063,10 +980,12 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
                         st.rerun()
             else:
                 st.info("No other users to edit")
+        else:
+            st.info("No users found")
     
     with tab3:
         st.markdown("### Delete User")
-        st.warning("Deleting a user is permanent and cannot be undone!")
+        st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
         
         if users:
             delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
@@ -1076,28 +995,31 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
                 
                 confirm = st.checkbox(f"I understand that this will permanently delete user '{delete_username}'")
                 
-                if st.button("Delete User", use_container_width=True):
+                if st.button("🗑️ Delete User", use_container_width=True):
                     if confirm:
                         if delete_user(delete_username):
-                            st.success(f"User '{delete_username}' has been deleted!")
+                            st.success(f"✅ User '{delete_username}' has been deleted!")
                             st.rerun()
                         else:
-                            st.error(f"Failed to delete user '{delete_username}'")
+                            st.error(f"❌ Failed to delete user '{delete_username}'")
                     else:
                         st.error("Please confirm deletion by checking the box")
             else:
                 st.info("No other users to delete")
+        else:
+            st.info("No users found")
     
+    # Display current users table
     st.markdown("---")
     st.markdown("### Current Users")
     if users:
         user_display = []
         for user in users:
-            dept_name = get_department_name(user["department_id"]) if user["department_id"] else "N/A"
+            dept_name = get_department_name(user['department_id']) if user['department_id'] else "N/A"
             user_display.append({
-                "Username": user["username"],
-                "Full Name": user["full_name"],
-                "Role": user["role"].replace("_", " ").title(),
+                "Username": user['username'],
+                "Full Name": user['full_name'],
+                "Role": user['role'].replace("_", " ").title(),
                 "Department": dept_name
             })
         df_users = pd.DataFrame(user_display)
@@ -1106,12 +1028,15 @@ elif choice == "User Management" and st.session_state.user_role == "admin":
 # ============================================
 # ENTERPRISE VIEW
 # ============================================
-elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "management"]:
+elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
     st.markdown("### Cross-Department Performance Overview")
     
     depts = supabase.table("departments").select("*").execute().data
     dept_names = {d["id"]: d["name"] for d in depts}
+    
+    # Department performance summary
+    st.markdown("#### Department Performance Summary")
     
     performance_data = []
     for dept in depts:
@@ -1137,6 +1062,7 @@ elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "ma
         df = pd.DataFrame(performance_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
     
+    # Tabs for detailed views
     tabs = st.tabs(["All Action Plans", "All Contracts", "All Policies"])
     
     with tabs[0]:
@@ -1170,7 +1096,7 @@ elif choice == "Enterprise View" and st.session_state.user_role in ["admin", "ma
 # FOOTER
 # ============================================
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
     <p>Powered by Streamlit | Secure & Real-time</p>
