@@ -1,107 +1,90 @@
 import streamlit as st
 from supabase import create_client
-from datetime import datetime
-import pandas as pd
-import plotly.express as px
+import requests
 
-# Page config
-st.set_page_config(page_title="HELB Strategy System", layout="wide")
+st.set_page_config(page_title="Connection Test", layout="wide")
 
-# Supabase connection
-@st.cache_resource
-def init_supabase():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
+st.title("🔧 Supabase Connection Test")
 
-supabase = init_supabase()
-
-# Initialize session state
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = None
-    st.session_state.full_name = None
-    st.session_state.role = None
-    st.session_state.dept_id = None
-
-# Login page
-if not st.session_state.logged_in:
-    st.title("🔐 HELB Strategy System")
+# Get secrets
+try:
+    URL = st.secrets["SUPABASE_URL"]
+    KEY = st.secrets["SUPABASE_KEY"]
     
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.markdown("### Login")
-        
-        with st.form("login"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submit = st.form_submit_button("Login", use_container_width=True)
-            
-            if submit:
-                try:
-                    # Query user
-                    result = supabase.table("users").select("*").eq("username", username).execute()
-                    
-                    if result.data:
-                        user = result.data[0]
-                        # Simple password check
-                        if password == user["password_hash"]:
-                            st.session_state.logged_in = True
-                            st.session_state.username = user["username"]
-                            st.session_state.full_name = user["full_name"]
-                            st.session_state.role = user["role"]
-                            st.session_state.dept_id = user["department_id"]
-                            st.rerun()
-                        else:
-                            st.error("Wrong password")
-                    else:
-                        st.error(f"User '{username}' not found")
-                        
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-    
+    st.write("### 📡 Secrets found:")
+    st.code(f"SUPABASE_URL = {URL}")
+    st.code(f"SUPABASE_KEY = {KEY[:30]}...")
+except Exception as e:
+    st.error(f"❌ Secrets error: {e}")
     st.stop()
 
-# Main app after login
-st.sidebar.write(f"Welcome, **{st.session_state.full_name}**")
-st.sidebar.write(f"Role: {st.session_state.role}")
-st.sidebar.write(f"Username: {st.session_state.username}")
+# Test 1: Direct REST API call (bypasses supabase library)
+st.write("### Test 1: Direct REST API Call")
 
-if st.sidebar.button("Logout"):
-    st.session_state.clear()
-    st.rerun()
+headers = {
+    "apikey": KEY,
+    "Authorization": f"Bearer {KEY}"
+}
 
-st.title("📊 HELB Strategy Performance Management System")
-
-# Simple dashboard
-st.write("### Dashboard")
-
-col1, col2, col3 = st.columns(3)
-
-# Get counts
 try:
-    plans_count = len(supabase.table("action_plans").select("*").execute().data)
-    contracts_count = len(supabase.table("contracts").select("*").execute().data)
-    policies_count = len(supabase.table("policies").select("*").execute().data)
+    response = requests.get(f"{URL}/rest/v1/users?select=*", headers=headers)
+    st.write(f"**Status code:** {response.status_code}")
     
-    col1.metric("Action Plans", plans_count)
-    col2.metric("Contracts", contracts_count)
-    col3.metric("Policies", policies_count)
-except:
-    col1.metric("Action Plans", "?")
-    col2.metric("Contracts", "?")
-    col3.metric("Policies", "?")
-
-st.success(f"✅ You are logged in as {st.session_state.full_name} ({st.session_state.role})")
-
-# Show action plans
-st.write("### Recent Action Plans")
-try:
-    plans = supabase.table("action_plans").select("*").limit(5).execute().data
-    if plans:
-        df = pd.DataFrame(plans)
-        st.dataframe(df[["task_name", "status", "progress_percent", "due_date"]])
+    if response.status_code == 200:
+        data = response.json()
+        st.success(f"✅ API call successful! Found {len(data)} users")
+        if data:
+            st.write("Users found:")
+            for user in data:
+                st.write(f"  - {user.get('username')} (role: {user.get('role')})")
     else:
-        st.info("No action plans yet")
-except:
-    st.info("No data found")
+        st.error(f"❌ API failed: {response.text}")
+        
+except Exception as e:
+    st.error(f"❌ Request error: {e}")
+
+# Test 2: Using supabase library
+st.write("### Test 2: Supabase Library Test")
+
+try:
+    supabase = create_client(URL, KEY)
+    result = supabase.table("users").select("*").execute()
+    st.success(f"✅ Library call successful! Found {len(result.data)} users")
+    
+    if result.data:
+        for user in result.data:
+            st.write(f"  - {user['username']} (password: {user['password_hash']})")
+            
+except Exception as e:
+    st.error(f"❌ Library error: {e}")
+
+# Test 3: Check if tables exist
+st.write("### Test 3: Checking Tables")
+
+try:
+    supabase = create_client(URL, KEY)
+    
+    tables = ["users", "departments", "action_plans", "contracts", "policies"]
+    
+    for table in tables:
+        try:
+            result = supabase.table(table).select("*").limit(1).execute()
+            st.success(f"✅ Table '{table}' exists")
+        except Exception as e:
+            st.error(f"❌ Table '{table}' not accessible: {e}")
+            
+except Exception as e:
+    st.error(f"Error: {e}")
+
+# Instructions
+st.write("---")
+st.write("### What to do next:")
+
+if response.status_code == 200 and len(response.json()) == 0:
+    st.warning("""
+    **Your connection works but the users table is EMPTY.**
+    
+    Run this SQL in your Supabase SQL Editor:
+    ```sql
+    INSERT INTO users (username, full_name, password_hash, role, department_id) 
+    VALUES ('admin', 'System Administrator', 'admin123', 'admin', NULL);
