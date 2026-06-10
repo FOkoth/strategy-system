@@ -1,99 +1,78 @@
 import streamlit as st
 from supabase import create_client
-import requests
+import pandas as pd
+from datetime import datetime
 
-st.set_page_config(page_title="Connection Test", layout="wide")
+st.set_page_config(page_title="HELB Strategy System", layout="wide")
 
-st.title("🔧 Supabase Connection Test")
+# Supabase connection
+@st.cache_resource
+def init_supabase():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
-# Get secrets
-try:
-    URL = st.secrets["SUPABASE_URL"]
-    KEY = st.secrets["SUPABASE_KEY"]
+supabase = init_supabase()
+
+# Session state
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.user = None
+
+# Login page
+if not st.session_state.logged_in:
+    st.title("HELB Strategy Performance System")
     
-    st.write("### 📡 Secrets found:")
-    st.code(f"SUPABASE_URL = {URL}")
-    st.code(f"SUPABASE_KEY = {KEY[:30]}...")
-except Exception as e:
-    st.error(f"❌ Secrets error: {e}")
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.markdown("### Login")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        
+        if st.button("Login", use_container_width=True):
+            result = supabase.table("users").select("*").eq("username", username).execute()
+            
+            if result.data:
+                user = result.data[0]
+                if password == user["password_hash"]:
+                    st.session_state.logged_in = True
+                    st.session_state.user = user
+                    st.rerun()
+                else:
+                    st.error("Invalid password")
+            else:
+                st.error(f"User '{username}' not found")
+    
     st.stop()
 
-# Test 1: Direct REST API call (bypasses supabase library)
-st.write("### Test 1: Direct REST API Call")
-
-headers = {
-    "apikey": KEY,
-    "Authorization": f"Bearer {KEY}"
-}
-
-try:
-    response = requests.get(f"{URL}/rest/v1/users?select=*", headers=headers)
-    st.write(f"**Status code:** {response.status_code}")
+# Main app
+with st.sidebar:
+    st.markdown("### HELB Strategy System")
+    st.markdown("---")
+    st.markdown(f"**Welcome, {st.session_state.user['full_name']}**")
+    st.markdown(f"**Username:** {st.session_state.user['username']}")
+    st.markdown(f"**Role:** {st.session_state.user['role']}")
+    st.markdown("---")
     
-    if response.status_code == 200:
-        data = response.json()
-        st.success(f"✅ API call successful! Found {len(data)} users")
-        if data:
-            st.write("Users found:")
-            for user in data:
-                st.write(f"  - {user.get('username')} (role: {user.get('role')})")
-    else:
-        st.error(f"❌ API failed: {response.text}")
-        
-except Exception as e:
-    st.error(f"❌ Request error: {e}")
+    if st.button("Logout"):
+        st.session_state.clear()
+        st.rerun()
 
-# Test 2: Using supabase library
-st.write("### Test 2: Supabase Library Test")
+st.title("HELB Strategy Performance Management System")
+st.success(f"Logged in as {st.session_state.user['full_name']}")
 
-try:
-    supabase = create_client(URL, KEY)
-    result = supabase.table("users").select("*").execute()
-    st.success(f"✅ Library call successful! Found {len(result.data)} users")
-    
-    if result.data:
-        for user in result.data:
-            st.write(f"  - {user['username']} (password: {user['password_hash']})")
-            
-except Exception as e:
-    st.error(f"❌ Library error: {e}")
+# Dashboard
+col1, col2, col3 = st.columns(3)
 
-# Test 3: Check if tables exist
-st.write("### Test 3: Checking Tables")
+plans = supabase.table("action_plans").select("*").execute().data
+contracts = supabase.table("contracts").select("*").execute().data
+policies = supabase.table("policies").select("*").execute().data
 
-try:
-    supabase = create_client(URL, KEY)
-    
-    tables = ["users", "departments", "action_plans", "contracts", "policies"]
-    
-    for table in tables:
-        try:
-            result = supabase.table(table).select("*").limit(1).execute()
-            st.success(f"✅ Table '{table}' exists")
-        except Exception as e:
-            st.error(f"❌ Table '{table}' not accessible: {e}")
-            
-except Exception as e:
-    st.error(f"Error: {e}")
+col1.metric("Action Plans", len(plans))
+col2.metric("Contracts", len(contracts))
+col3.metric("Policies", len(policies))
 
-# Instructions
-st.write("---")
-st.write("### What to do next:")
-
-if response.status_code == 200 and len(response.json()) == 0:
-    st.warning("Your connection works but the users table is EMPTY. Run this SQL in Supabase:")
-    st.code("""
-    INSERT INTO users (username, full_name, password_hash, role, department_id) 
-    VALUES ('admin', 'System Administrator', 'admin123', 'admin', NULL);
-    """)
-    
-elif response.status_code != 200:
-    st.error(f"Your connection is FAILING. Status code: {response.status_code}")
-    st.write("Possible issues:")
-    st.write("1. Wrong SUPABASE_URL - should be: https://YOUR_PROJECT.supabase.co")
-    st.write("2. Wrong SUPABASE_KEY - use the 'anon public' key, NOT the 'secret' key")
-    st.write("3. Table doesn't exist - run the database setup script first")
-    st.write(f"Your current URL: {URL}")
-    
-elif response.status_code == 200 and len(response.json()) > 0:
-    st.success("Your connection works and you have users! Try logging in with the usernames shown above.")
+if plans:
+    st.subheader("Recent Action Plans")
+    df = pd.DataFrame(plans)
+    st.dataframe(df[["task_name", "status", "progress_percent", "due_date"]], use_container_width=True)
