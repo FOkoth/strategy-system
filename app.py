@@ -217,29 +217,112 @@ st.markdown("""
         margin-top: 0.5rem;
     }
     
-    /* Input fields - White background, green border, black text */
-    .stTextInput input, .stSelectbox select, .stTextArea textarea, .stNumberInput input {
+    /* ============================================ */
+    /* FIXED INPUT FIELDS - White background, green border, black text */
+    /* ============================================ */
+    .stTextInput input, 
+    .stSelectbox select, 
+    .stTextArea textarea, 
+    .stNumberInput input,
+    .stDateInput input {
         background-color: #FFFFFF !important;
         border: 2px solid #00843D !important;
         border-radius: 8px !important;
-        color: #1F2937 !important;
+        color: #000000 !important;
         padding: 8px 12px !important;
     }
     
-    .stTextInput input:focus, .stSelectbox select:focus, .stTextArea textarea:focus {
+    /* Input focus state */
+    .stTextInput input:focus, 
+    .stSelectbox select:focus, 
+    .stTextArea textarea:focus,
+    .stNumberInput input:focus,
+    .stDateInput input:focus {
         border-color: #FFB81C !important;
         box-shadow: 0 0 0 2px rgba(255,184,28,0.2) !important;
         outline: none !important;
     }
     
     /* Labels - Black text */
-    .stTextInput label, .stSelectbox label, .stTextArea label, .stNumberInput label {
+    .stTextInput label, 
+    .stSelectbox label, 
+    .stTextArea label, 
+    .stNumberInput label,
+    .stDateInput label {
         color: #1F2937 !important;
         font-weight: 500 !important;
         margin-bottom: 4px !important;
     }
     
-    /* KPI Cards */
+    /* Dropdown options - Black text on white */
+    ul[role="listbox"] li {
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    ul[role="listbox"] li:hover {
+        background-color: #F0F2F6 !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED BUTTONS - White text on green gradient */
+    /* ============================================ */
+    .stButton > button {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Login button specific */
+    .login-container .stButton > button {
+        background: #FFB81C !important;
+        color: #00843D !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED EXPANDER HEADER */
+    /* ============================================ */
+    .streamlit-expanderHeader {
+        background-color: #F0F2F6 !important;
+        border-radius: 8px !important;
+        color: #00843D !important;
+        font-weight: 600 !important;
+        border: 1px solid #E5E7EB !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED SLIDER - Black text */
+    /* ============================================ */
+    .stSlider div {
+        color: #1F2937 !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED CHECKBOX - Black label */
+    /* ============================================ */
+    .stCheckbox label {
+        color: #1F2937 !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED RADIO BUTTONS - Black label */
+    /* ============================================ */
+    .stRadio label {
+        color: #1F2937 !important;
+    }
+    
+    /* ============================================ */
+    /* FIXED KPI CARDS - Keep as is */
+    /* ============================================ */
     .kpi-card {
         background: #00843D;
         border-radius: 12px;
@@ -283,7 +366,9 @@ st.markdown("""
         border-radius: 2px;
     }
     
-    /* Metric Cards */
+    /* ============================================ */
+    /* FIXED METRIC CARDS - White background */
+    /* ============================================ */
     .metric-card {
         background: #FFFFFF;
         border-radius: 12px;
@@ -298,7 +383,9 @@ st.markdown("""
         color: #1F2937 !important;
     }
     
-    /* Status Badges */
+    /* ============================================ */
+    /* FIXED STATUS BADGES */
+    /* ============================================ */
     .badge-active {
         background-color: #00843D;
         color: white;
@@ -329,23 +416,9 @@ st.markdown("""
         display: inline-block;
     }
     
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 10px 20px !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    
-    /* Tabs */
+    /* ============================================ */
+    /* FIXED TABS */
+    /* ============================================ */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
         background: #F3F4F6;
@@ -371,16 +444,9 @@ st.markdown("""
         font-weight: 600;
     }
     
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: #F3F4F6 !important;
-        border-radius: 8px !important;
-        color: #00843D !important;
-        font-weight: 600 !important;
-        border: 1px solid #E5E7EB !important;
-    }
-    
-    /* Dataframe */
+    /* ============================================ */
+    /* FIXED DATAFRAME */
+    /* ============================================ */
     .dataframe {
         font-size: 0.8rem;
         background-color: #FFFFFF !important;
@@ -396,7 +462,9 @@ st.markdown("""
         color: #1F2937 !important;
     }
     
-    /* Success/Info/Warning messages */
+    /* ============================================ */
+    /* FIXED MESSAGES */
+    /* ============================================ */
     .stSuccess {
         background-color: #E8F5E9 !important;
         border-left: 4px solid #00843D !important;
@@ -429,29 +497,6 @@ st.markdown("""
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
-    }
-    
-    /* Slider */
-    .stSlider div {
-        color: #1F2937 !important;
-    }
-    
-    /* Checkbox */
-    .stCheckbox label {
-        color: #1F2937 !important;
-    }
-    
-    /* Radio */
-    .stRadio label {
-        color: #1F2937 !important;
-    }
-    
-    /* Date input */
-    .stDateInput input {
-        background-color: #FFFFFF !important;
-        border: 2px solid #00843D !important;
-        border-radius: 8px !important;
-        color: #1F2937 !important;
     }
 </style>
 """, unsafe_allow_html=True)
