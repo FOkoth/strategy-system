@@ -152,6 +152,7 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     df['due_month'] = df['due_date_dt'].dt.month
     df['due_year'] = df['due_date_dt'].dt.year
     
+    # Filter by Financial Year (July - June)
     if financial_year and financial_year != "All":
         start_year = int(financial_year.split('/')[0])
         end_year = int(financial_year.split('/')[1])
@@ -159,6 +160,7 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
                ((df['due_year'] == end_year) & (df['due_month'] <= 6))
         df = df[mask]
     
+    # Filter by Quarter - Q1 (Jul-Sep), Q2 (Oct-Dec), Q3 (Jan-Mar), Q4 (Apr-Jun)
     if quarter and quarter != "All":
         if quarter == "Q1 (Jul-Sep)":
             df = df[df['due_month'].isin([7, 8, 9])]
@@ -169,6 +171,7 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
         elif quarter == "Q4 (Apr-Jun)":
             df = df[df['due_month'].isin([4, 5, 6])]
     
+    # Filter by Month
     if month and month != "All":
         month_num = {
             "January": 1, "February": 2, "March": 3, "April": 4,
