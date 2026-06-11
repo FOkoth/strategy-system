@@ -196,6 +196,17 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     return df
 
 # ============================================
+# DATABASE FUNCTIONS
+# ============================================
+@st.cache_resource
+def init_supabase():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+supabase = init_supabase()
+
+# ============================================
 # DIRECTORATE FUNCTIONS
 # ============================================
 def get_all_directorates():
@@ -204,6 +215,15 @@ def get_all_directorates():
         return result.data
     except:
         return []
+
+def get_directorate_by_id(directorate_id):
+    try:
+        if not directorate_id:
+            return None
+        result = supabase.table("directorates").select("*").eq("id", directorate_id).execute()
+        return result.data[0] if result.data else None
+    except:
+        return None
 
 def add_directorate(name, director_name):
     try:
@@ -235,14 +255,39 @@ def delete_directorate(directorate_id):
         return False, str(e)
 
 # ============================================
-# UPDATED DEPARTMENT FUNCTIONS
+# DEPARTMENT FUNCTIONS
 # ============================================
 def get_all_departments():
     try:
-        result = supabase.table("departments").select("*, directorates(name, director_name)").order("name").execute()
-        return result.data
+        result = supabase.table("departments").select("*").order("name").execute()
+        departments = result.data
+        # Add directorate info to each department
+        for dept in departments:
+            if dept.get("directorate_id"):
+                directorate = get_directorate_by_id(dept["directorate_id"])
+                if directorate:
+                    dept["directorate_name"] = directorate["name"]
+                    dept["director_name"] = directorate["director_name"]
+        return departments
     except:
         return []
+
+def get_department_by_id(dept_id):
+    try:
+        if not dept_id:
+            return None
+        result = supabase.table("departments").select("*").eq("id", dept_id).execute()
+        if result.data:
+            dept = result.data[0]
+            if dept.get("directorate_id"):
+                directorate = get_directorate_by_id(dept["directorate_id"])
+                if directorate:
+                    dept["directorate_name"] = directorate["name"]
+                    dept["director_name"] = directorate["director_name"]
+            return dept
+        return None
+    except:
+        return None
 
 def add_department(dept_name, directorate_id, deputy_director_name):
     try:
@@ -278,9 +323,35 @@ def delete_department(dept_id):
     except Exception as e:
         return False, str(e)
 
+def get_department_name(dept_id):
+    if dept_id is None:
+        return "No Department"
+    try:
+        result = supabase.table("departments").select("name").eq("id", dept_id).execute()
+        return result.data[0]["name"] if result.data else "Unknown Department"
+    except:
+        return "Unknown Department"
+
 # ============================================
-# FIXED WORK PLAN UPDATE FUNCTION
+# WORK PLAN FUNCTIONS
 # ============================================
+def get_work_plans():
+    try:
+        if st.session_state.user_role in ["admin", "management"]:
+            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
+        else:
+            result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).order("created_at", desc=True).execute()
+        return result.data
+    except:
+        return []
+
+def add_work_plan(data):
+    try:
+        result = supabase.table("work_plan").insert(data).execute()
+        return True
+    except:
+        return False
+
 def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
     try:
         update_data = {
@@ -295,8 +366,98 @@ def update_work_plan_progress(plan_id, actual_achievement, progress_percent, sta
         st.error(f"Update error: {e}")
         return False
 
+def update_work_plan_due_date(plan_id, new_due_date):
+    try:
+        update_data = {
+            "due_date": new_due_date.isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
+        return True
+    except:
+        return False
+
+def delete_work_plan(plan_id):
+    try:
+        supabase.table("work_plan").delete().eq("id", plan_id).execute()
+        return True
+    except:
+        return False
+
+def get_filtered_data(table_name):
+    if st.session_state.user_role in ["admin", "management"]:
+        return supabase.table(table_name).select("*").execute().data
+    else:
+        return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
+
 # ============================================
-# CUSTOM CSS (SAME AS BEFORE - UNCHANGED)
+# USER MANAGEMENT FUNCTIONS
+# ============================================
+def get_all_users():
+    try:
+        result = supabase.table("users").select("*").execute()
+        return result.data
+    except:
+        return []
+
+def delete_user(username):
+    try:
+        supabase.table("users").delete().eq("username", username).execute()
+        return True
+    except:
+        return False
+
+def update_user_role(username, new_role, department_id):
+    try:
+        supabase.table("users").update({
+            "role": new_role,
+            "department_id": department_id if department_id != "None" else None
+        }).eq("username", username).execute()
+        return True
+    except:
+        return False
+
+def reset_user_password(username, new_password):
+    try:
+        supabase.table("users").update({
+            "password_hash": new_password
+        }).eq("username", username).execute()
+        return True
+    except:
+        return False
+
+def create_new_user(username, full_name, password, role, department_id):
+    try:
+        existing = supabase.table("users").select("*").eq("username", username.lower()).execute()
+        if existing.data:
+            return False, "Username already exists"
+        
+        supabase.table("users").insert({
+            "username": username.lower(),
+            "full_name": full_name,
+            "password_hash": password,
+            "role": role,
+            "department_id": department_id if department_id != "None" else None
+        }).execute()
+        return True, "User created successfully"
+    except Exception as e:
+        return False, str(e)
+
+# ============================================
+# SESSION STATE INITIALIZATION
+# ============================================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+    st.session_state.user = None
+    st.session_state.user_role = None
+    st.session_state.user_dept = None
+    st.session_state.user_name = None
+    st.session_state.user_fullname = None
+    st.session_state.user_id = None
+    st.session_state.user_dept_name = ""
+
+# ============================================
+# CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -521,143 +682,6 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# SUPABASE CONNECTION
-# ============================================
-@st.cache_resource
-def init_supabase():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
-
-supabase = init_supabase()
-
-# ============================================
-# WORK PLAN FUNCTIONS
-# ============================================
-def get_work_plans():
-    try:
-        if st.session_state.user_role in ["admin", "management"]:
-            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
-        else:
-            result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).order("created_at", desc=True).execute()
-        return result.data
-    except:
-        return []
-
-def add_work_plan(data):
-    try:
-        result = supabase.table("work_plan").insert(data).execute()
-        return True
-    except:
-        return False
-
-def update_work_plan_due_date(plan_id, new_due_date):
-    try:
-        update_data = {
-            "due_date": new_due_date.isoformat(),
-            "updated_at": datetime.now().isoformat()
-        }
-        supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
-        return True
-    except:
-        return False
-
-def delete_work_plan(plan_id):
-    try:
-        supabase.table("work_plan").delete().eq("id", plan_id).execute()
-        return True
-    except:
-        return False
-
-# ============================================
-# SESSION STATE INITIALIZATION
-# ============================================
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-    st.session_state.user = None
-    st.session_state.user_role = None
-    st.session_state.user_dept = None
-    st.session_state.user_name = None
-    st.session_state.user_fullname = None
-    st.session_state.user_id = None
-    st.session_state.user_dept_name = ""
-
-# ============================================
-# HELPER FUNCTIONS
-# ============================================
-def get_department_name(dept_id):
-    if dept_id is None:
-        return "No Department"
-    try:
-        result = supabase.table("departments").select("name").eq("id", dept_id).execute()
-        return result.data[0]["name"] if result.data else "Unknown Department"
-    except:
-        return "Unknown Department"
-
-def get_department_with_details(dept_id):
-    try:
-        result = supabase.table("departments").select("*, directorates(name, director_name)").eq("id", dept_id).execute()
-        return result.data[0] if result.data else None
-    except:
-        return None
-
-def get_filtered_data(table_name):
-    if st.session_state.user_role in ["admin", "management"]:
-        return supabase.table(table_name).select("*").execute().data
-    else:
-        return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
-
-def get_all_users():
-    try:
-        result = supabase.table("users").select("*").execute()
-        return result.data
-    except:
-        return []
-
-def delete_user(username):
-    try:
-        supabase.table("users").delete().eq("username", username).execute()
-        return True
-    except:
-        return False
-
-def update_user_role(username, new_role, department_id):
-    try:
-        supabase.table("users").update({
-            "role": new_role,
-            "department_id": department_id if department_id != "None" else None
-        }).eq("username", username).execute()
-        return True
-    except:
-        return False
-
-def reset_user_password(username, new_password):
-    try:
-        supabase.table("users").update({
-            "password_hash": new_password
-        }).eq("username", username).execute()
-        return True
-    except:
-        return False
-
-def create_new_user(username, full_name, password, role, department_id):
-    try:
-        existing = supabase.table("users").select("*").eq("username", username.lower()).execute()
-        if existing.data:
-            return False, "Username already exists"
-        
-        supabase.table("users").insert({
-            "username": username.lower(),
-            "full_name": full_name,
-            "password_hash": password,
-            "role": role,
-            "department_id": department_id if department_id != "None" else None
-        }).execute()
-        return True, "User created successfully"
-    except Exception as e:
-        return False, str(e)
-
-# ============================================
 # LOGIN PAGE
 # ============================================
 if not st.session_state.authenticated:
@@ -755,12 +779,16 @@ with st.sidebar:
         """, unsafe_allow_html=True)
     
     role_display = st.session_state.user_role.replace('_', ' ').title() if st.session_state.user_role else "User"
-    dept_display = st.session_state.user_dept_name if st.session_state.user_dept_name else "No Department"
     
-    # Get department details if available
-    dept_details = get_department_with_details(st.session_state.user_dept) if st.session_state.user_dept else None
-    if dept_details and dept_details.get('directorates'):
-        dept_display = f"{dept_details['name']} ({dept_details['directorates']['name']})"
+    # Get department details with directorate
+    dept_details = get_department_by_id(st.session_state.user_dept) if st.session_state.user_dept else None
+    if dept_details:
+        if dept_details.get("directorate_name"):
+            dept_display = f"{dept_details['name']} ({dept_details['directorate_name']})"
+        else:
+            dept_display = dept_details['name']
+    else:
+        dept_display = st.session_state.user_dept_name if st.session_state.user_dept_name else "No Department"
     
     st.markdown(f"""
     <div class='sidebar-user-info'>
@@ -867,7 +895,7 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
     
-    # TAB 2: VIEW ALL ACTIVITIES - FIXED UPDATE
+    # TAB 2: VIEW ALL ACTIVITIES
     with tab_view:
         if filtered_plans:
             for plan in filtered_plans:
@@ -1402,17 +1430,16 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# UPDATED USER MANAGEMENT (ADMIN ONLY) - WITH DIRECTORATES
+# USER MANAGEMENT (ADMIN ONLY)
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
     
-    # Get data for dropdowns
+    # Get data
     directorates = get_all_directorates()
-    depts = supabase.table("departments").select("*, directorates(name, director_name)").execute().data
-    dept_options = {d["name"]: d["id"] for d in depts}
     directorate_options = {d["name"]: d["id"] for d in directorates}
-    
+    departments = get_all_departments()
+    dept_options = {d["name"]: d["id"] for d in departments}
     users = get_all_users()
     
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User", "🏢 Manage Departments", "🏛️ Manage Directorates"])
@@ -1547,19 +1574,24 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
         
         # Edit existing departments
         st.markdown("### Edit Existing Departments")
-        if depts:
-            dept_names = [d["name"] for d in depts]
+        if departments:
+            dept_names = [d["name"] for d in departments]
             selected_dept_name = st.selectbox("Select Department to Edit", dept_names, key="edit_dept_select")
             
             if selected_dept_name:
-                selected_dept = next((d for d in depts if d["name"] == selected_dept_name), None)
+                selected_dept = next((d for d in departments if d["name"] == selected_dept_name), None)
                 if selected_dept:
                     with st.form("edit_department_form"):
                         col1, col2 = st.columns(2)
                         with col1:
                             edit_dept_name = st.text_input("Department Name", value=selected_dept["name"])
+                            current_dir_name = ""
+                            if selected_dept.get("directorate_id"):
+                                dir_info = get_directorate_by_id(selected_dept["directorate_id"])
+                                if dir_info:
+                                    current_dir_name = dir_info["name"]
                             edit_dept_directorate = st.selectbox("Directorate", ["None"] + list(directorate_options.keys()), 
-                                                                 index=0 if not selected_dept.get("directorate_id") else list(directorate_options.values()).index(selected_dept["directorate_id"]) + 1)
+                                                                 index=0 if not current_dir_name else list(directorate_options.keys()).index(current_dir_name) + 1)
                         with col2:
                             edit_dept_deputy = st.text_input("Deputy Director Name", value=selected_dept.get("deputy_director_name", ""))
                         
@@ -1575,11 +1607,15 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
         st.markdown("---")
         st.markdown("### Existing Departments")
         
-        if depts:
-            for dept in depts:
+        if departments:
+            for dept in departments:
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
-                    directorate_info = f" ({dept['directorates']['name']})" if dept.get('directorates') else ""
+                    directorate_info = ""
+                    if dept.get("directorate_id"):
+                        dir_info = get_directorate_by_id(dept["directorate_id"])
+                        if dir_info:
+                            directorate_info = f" ({dir_info['name']})"
                     deputy_info = f"\nDeputy: {dept.get('deputy_director_name', 'Not assigned')}" if dept.get('deputy_director_name') else ""
                     st.write(f"• {dept['name']}{directorate_info}{deputy_info}")
                 with col2:
@@ -1653,16 +1689,17 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                     st.write(f"• **{dir_item['name']}** - Director: {dir_item.get('director_name', 'Not assigned')}")
                 with col2:
                     # Show department count
-                    dept_count = len([d for d in depts if d.get('directorate_id') == dir_item['id']])
+                    dept_count = len([d for d in departments if d.get('directorate_id') == dir_item['id']])
                     st.caption(f"{dept_count} departments")
                 with col3:
-                    if st.button(f"🗑️ Delete", key=f"del_dir_{dir_item['id']}"):
-                        success, message = delete_directorate(dir_item['id'])
-                        if success:
-                            st.success(f"✅ {message}")
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {message}")
+                    if dir_item['name'] not in ["Operations", "Human Resource & Administration", "Fund Management", "ICT", "CEO's Office"]:
+                        if st.button(f"🗑️ Delete", key=f"del_dir_{dir_item['id']}"):
+                            success, message = delete_directorate(dir_item['id'])
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
         else:
             st.info("No directorates found")
     
