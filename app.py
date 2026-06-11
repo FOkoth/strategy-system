@@ -83,7 +83,6 @@ STRATEGIC_PILLARS = [
 ACTIVITY_CATEGORIES = ["SP Deliverable", "PC Deliverable"]
 STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
 
-# Financial Years (July - June)
 def get_financial_years():
     current_year = datetime.now().year
     years = []
@@ -113,7 +112,7 @@ if "filter_month" not in st.session_state:
     st.session_state.filter_month = "All"
 
 # ============================================
-# HELPER FUNCTIONS FOR PROGRESS CALCULATION
+# HELPER FUNCTIONS
 # ============================================
 def calculate_progress_from_actual(annual_target, actual_achievement):
     if not annual_target or actual_achievement is None:
@@ -143,6 +142,43 @@ def is_target_exceeded(actual_achievement, annual_target):
         return actual_num > target_num
     except:
         return False
+
+def filter_work_plans_by_date(df, financial_year, quarter, month):
+    if df.empty:
+        return df
+    
+    df = df.copy()
+    df['due_date_dt'] = pd.to_datetime(df['due_date'])
+    df['due_month'] = df['due_date_dt'].dt.month
+    df['due_year'] = df['due_date_dt'].dt.year
+    
+    if financial_year and financial_year != "All":
+        start_year = int(financial_year.split('/')[0])
+        end_year = int(financial_year.split('/')[1])
+        mask = ((df['due_year'] == start_year) & (df['due_month'] >= 7)) | \
+               ((df['due_year'] == end_year) & (df['due_month'] <= 6))
+        df = df[mask]
+    
+    if quarter and quarter != "All":
+        if quarter == "Q1 (Jul-Sep)":
+            df = df[df['due_month'].isin([7, 8, 9])]
+        elif quarter == "Q2 (Oct-Dec)":
+            df = df[df['due_month'].isin([10, 11, 12])]
+        elif quarter == "Q3 (Jan-Mar)":
+            df = df[df['due_month'].isin([1, 2, 3])]
+        elif quarter == "Q4 (Apr-Jun)":
+            df = df[df['due_month'].isin([4, 5, 6])]
+    
+    if month and month != "All":
+        month_num = {
+            "January": 1, "February": 2, "March": 3, "April": 4,
+            "May": 5, "June": 6, "July": 7, "August": 8,
+            "September": 9, "October": 10, "November": 11, "December": 12
+        }.get(month, 0)
+        if month_num:
+            df = df[df['due_month'] == month_num]
+    
+    return df
 
 # ============================================
 # CUSTOM CSS
@@ -218,8 +254,8 @@ if st.session_state.theme == "light":
             text-align: center;
         }}
         .kpi-label {{ font-size: 0.7rem; text-transform: uppercase; color: {HELB_GOLD} !important; font-weight: 600; }}
-        .kpi-value {{ font-size: 1.8rem; font-weight: 700; margin: 0.3rem 0; color: white !important; }}
-        .kpi-sub {{ font-size: 0.6rem; color: white !important; margin-top: 0.2rem; opacity: 0.9; }}
+        .kpi-value {{ font-size: 1.5rem; font-weight: 700; margin: 0.2rem 0; color: white !important; }}
+        .kpi-sub {{ font-size: 0.55rem; color: white !important; margin-top: 0.2rem; opacity: 0.9; }}
         .progress-bar {{ height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.5rem; }}
         .progress-fill {{ height: 100%; background: {HELB_GOLD}; border-radius: 2px; }}
         
@@ -231,23 +267,23 @@ if st.session_state.theme == "light":
             border-left: 4px solid {HELB_GOLD};
         }}
         
-        .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }}
-        .badge-pending {{ background-color: #dc2626; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }}
-        .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }}
-        .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }}
-        .badge-expired {{ background-color: #dc2626; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }}
+        .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
+        .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
+        .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
+        .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
+        .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
             border-radius: 8px !important;
-            padding: 10px 20px !important;
+            padding: 8px 16px !important;
             font-weight: 600 !important;
         }}
         .stButton > button[key*="delete"] {{ background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; }}
         
         .streamlit-expanderHeader {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.9rem !important; font-weight: 600 !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.85rem !important; font-weight: 600 !important; }}
         .streamlit-expanderContent {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; border-top: none !important; padding: 1rem !important; }}
         .streamlit-expanderContent * {{ color: {HELB_BLACK} !important; }}
         
@@ -255,16 +291,19 @@ if st.session_state.theme == "light":
             background-color: white !important;
             color: {HELB_BLACK} !important;
             border: 1px solid #D1D5DB !important;
+            font-size: 0.75rem !important;
         }}
         
-        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.5rem; border-radius: 12px; }}
-        .stTabs [data-baseweb="tab"] {{ color: {HELB_DARK}; background-color: {HELB_GRAY}; }}
-        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
+        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
+        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_DARK}; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; font-weight: 600; }}
         
-        .footer {{ text-align: center; padding: 1.5rem; color: #6B7280; font-size: 0.7rem; border-top: 1px solid #E5E7EB; margin-top: 2rem; }}
+        .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
-        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; }}
-        .dataframe td {{ color: {HELB_BLACK} !important; }}
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
+        .dataframe td {{ color: {HELB_BLACK} !important; font-size: 0.7rem; }}
+        
+        hr {{ margin: 0.5rem 0; }}
     </style>
     """
 else:
@@ -316,12 +355,12 @@ else:
         
         .login-container {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 20px; padding: 2.5rem; text-align: center; }}
         
-        .kpi-card {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 12px; padding: 1rem; text-align: center; }}
-        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.7rem; }}
-        .kpi-value {{ color: white; font-size: 1.8rem; }}
-        .kpi-sub {{ color: rgba(255,255,255,0.8); font-size: 0.6rem; }}
+        .kpi-card {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 10px; padding: 0.8rem; text-align: center; }}
+        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.65rem; }}
+        .kpi-value {{ color: white; font-size: 1.3rem; font-weight: 700; }}
+        .kpi-sub {{ color: rgba(255,255,255,0.7); font-size: 0.55rem; }}
         
-        .metric-card {{ background: #16213e; border-radius: 12px; padding: 1rem; border-left: 4px solid {HELB_GOLD}; }}
+        .metric-card {{ background: #16213e; border-radius: 10px; padding: 0.8rem; border-left: 4px solid {HELB_GOLD}; }}
         
         .stButton > button {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important; color: white !important; }}
         
@@ -332,12 +371,12 @@ else:
         }}
         
         .streamlit-expanderHeader {{ background-color: #2d2d44 !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; font-size: 0.9rem !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
         
         .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
         .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
         
-        .footer {{ text-align: center; padding: 1.5rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 2rem; }}
+        .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
         
         .badge-pending {{ background-color: #dc2626; color: white; }}
         .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; }}
@@ -360,7 +399,7 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# DEPARTMENT MANAGEMENT FUNCTIONS (ADMIN)
+# DEPARTMENT MANAGEMENT FUNCTIONS
 # ============================================
 def get_all_departments():
     try:
@@ -400,8 +439,7 @@ def add_work_plan(data):
     try:
         result = supabase.table("work_plan").insert(data).execute()
         return True
-    except Exception as e:
-        st.error(f"Error adding work plan: {e}")
+    except:
         return False
 
 def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
@@ -434,43 +472,6 @@ def delete_work_plan(plan_id):
         return True
     except:
         return False
-
-def filter_work_plans_by_date(df, financial_year, quarter, month):
-    if df.empty:
-        return df
-    
-    df = df.copy()
-    df['due_date_dt'] = pd.to_datetime(df['due_date'])
-    df['due_month'] = df['due_date_dt'].dt.month
-    df['due_year'] = df['due_date_dt'].dt.year
-    
-    if financial_year and financial_year != "All":
-        start_year = int(financial_year.split('/')[0])
-        end_year = int(financial_year.split('/')[1])
-        mask = ((df['due_year'] == start_year) & (df['due_month'] >= 7)) | \
-               ((df['due_year'] == end_year) & (df['due_month'] <= 6))
-        df = df[mask]
-    
-    if quarter and quarter != "All":
-        if quarter == "Q1 (Jul-Sep)":
-            df = df[df['due_month'].isin([7, 8, 9])]
-        elif quarter == "Q2 (Oct-Dec)":
-            df = df[df['due_month'].isin([10, 11, 12])]
-        elif quarter == "Q3 (Jan-Mar)":
-            df = df[df['due_month'].isin([1, 2, 3])]
-        elif quarter == "Q4 (Apr-Jun)":
-            df = df[df['due_month'].isin([4, 5, 6])]
-    
-    if month and month != "All":
-        month_num = {
-            "January": 1, "February": 2, "March": 3, "April": 4,
-            "May": 5, "June": 6, "July": 7, "August": 8,
-            "September": 9, "October": 10, "November": 11, "December": 12
-        }.get(month, 0)
-        if month_num:
-            df = df[df['due_month'] == month_num]
-    
-    return df
 
 # ============================================
 # SESSION STATE INITIALIZATION
@@ -854,7 +855,7 @@ if choice == "📋 Work Plans":
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
-    # TAB 3: DASHBOARD
+    # TAB 3: WORK PLAN DASHBOARD
     with tab_dashboard:
         if filtered_plans:
             df = pd.DataFrame(filtered_plans)
@@ -878,51 +879,16 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - ENHANCED WITH COMPREHENSIVE ANALYTICS
+# DASHBOARD - ORGANIZED WITH TABS
 # ============================================
 elif choice == "📊 Dashboard":
-    st.subheader("Dashboard Overview")
+    st.markdown("### Performance Dashboard")
     
     work_plans = get_work_plans()
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
     
-    # Prepare work plan data with enhanced analytics
-    if work_plans:
-        df_plans = pd.DataFrame(work_plans)
-        df_plans['due_date_dt'] = pd.to_datetime(df_plans['due_date'])
-        df_plans['due_month'] = df_plans['due_date_dt'].dt.month
-        df_plans['due_year'] = df_plans['due_date_dt'].dt.year
-        df_plans['quarter'] = df_plans['due_month'].apply(get_quarter_from_month)
-        
-        # Calculate progress metrics
-        df_plans['calculated_progress'] = df_plans.apply(
-            lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1
-        )
-        df_plans['exceeded'] = df_plans.apply(
-            lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1
-        )
-        df_plans['days_left'] = (df_plans['due_date_dt'] - pd.Timestamp.now()).dt.days
-        df_plans['status_group'] = df_plans['calculated_progress'].apply(
-            lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
-        )
-        
-        # Apply filters
-        filtered_df = filter_work_plans_by_date(df_plans, st.session_state.filter_financial_year, 
-                                                 st.session_state.filter_quarter, st.session_state.filter_month)
-        
-        # Department filter for management view
-        if st.session_state.user_role in ["admin", "management"]:
-            departments_list = filtered_df['department_name'].unique().tolist() if not filtered_df.empty else []
-            selected_dept_filter = st.multiselect("Filter by Department", departments_list, default=[])
-            if selected_dept_filter:
-                filtered_df = filtered_df[filtered_df['department_name'].isin(selected_dept_filter)]
-    else:
-        filtered_df = pd.DataFrame()
-        df_plans = pd.DataFrame()
-    
-    # Dashboard Filters
-    st.markdown("### 📅 Dashboard Filters")
+    # Compact Filters
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
@@ -941,390 +907,289 @@ elif choice == "📊 Dashboard":
                                                       index=months.index(st.session_state.filter_month) if st.session_state.filter_month in months else 0,
                                                       key="m_filter_dash")
     
-    # Re-filter after filter changes
-    if not df_plans.empty:
+    # Prepare work plan data
+    if work_plans:
+        df_plans = pd.DataFrame(work_plans)
+        df_plans['due_date_dt'] = pd.to_datetime(df_plans['due_date'])
+        df_plans['due_month'] = df_plans['due_date_dt'].dt.month
+        df_plans['due_year'] = df_plans['due_date_dt'].dt.year
+        df_plans['quarter'] = df_plans['due_month'].apply(get_quarter_from_month)
+        df_plans['calculated_progress'] = df_plans.apply(
+            lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1
+        )
+        df_plans['exceeded'] = df_plans.apply(
+            lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1
+        )
+        df_plans['days_left'] = (df_plans['due_date_dt'] - pd.Timestamp.now()).dt.days
+        df_plans['status_group'] = df_plans['calculated_progress'].apply(
+            lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
+        )
+        
+        # Apply filters
         filtered_df = filter_work_plans_by_date(df_plans, st.session_state.filter_financial_year, 
                                                  st.session_state.filter_quarter, st.session_state.filter_month)
-        if st.session_state.user_role in ["admin", "management"] and 'selected_dept_filter' in locals() and selected_dept_filter:
-            filtered_df = filtered_df[filtered_df['department_name'].isin(selected_dept_filter)]
-    
-    # ============================================
-    # SECTION 1: KEY PERFORMANCE INDICATORS (KPI CARDS)
-    # ============================================
-    st.markdown("---")
-    st.markdown("### 📊 Key Performance Indicators")
-    
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    
-    with col1:
-        if not filtered_df.empty:
-            total = len(filtered_df)
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
-                <div class='kpi-value'>{total}</div>
-                <div class='kpi-sub'>Work plan items</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
-                <div class='kpi-value'>0</div>
-                <div class='kpi-sub'>Work plan items</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col2:
-        if not filtered_df.empty:
-            completed = len(filtered_df[filtered_df['calculated_progress'] >= 100])
-            completion_rate = (completed / len(filtered_df) * 100) if len(filtered_df) > 0 else 0
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>✅ COMPLETION RATE</div>
-                <div class='kpi-value'>{completion_rate:.1f}%</div>
-                <div class='progress-bar'><div class='progress-fill' style='width:{completion_rate}%;'></div></div>
-                <div class='kpi-sub'>{completed} of {len(filtered_df)} completed</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>✅ COMPLETION RATE</div>
-                <div class='kpi-value'>0%</div>
-                <div class='kpi-sub'>No data</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col3:
-        if not filtered_df.empty:
-            total_budget = filtered_df['budget_allocation'].fillna(0).sum()
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>💰 TOTAL BUDGET</div>
-                <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
-                <div class='kpi-sub'>Allocated funds</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>💰 TOTAL BUDGET</div>
-                <div class='kpi-value'>KES 0</div>
-                <div class='kpi-sub'>Allocated funds</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col4:
-        if not filtered_df.empty:
-            avg_progress = filtered_df['calculated_progress'].mean()
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📈 AVG PROGRESS</div>
-                <div class='kpi-value'>{avg_progress:.1f}%</div>
-                <div class='kpi-sub'>Overall achievement</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📈 AVG PROGRESS</div>
-                <div class='kpi-value'>0%</div>
-                <div class='kpi-sub'>Overall achievement</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col5:
-        if not filtered_df.empty:
-            exceeded = len(filtered_df[filtered_df['exceeded'] == True])
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
-                <div class='kpi-value'>{exceeded}</div>
-                <div class='kpi-sub'>Above expectations</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
-                <div class='kpi-value'>0</div>
-                <div class='kpi-sub'>Above expectations</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col6:
-        if not filtered_df.empty:
-            at_risk = len(filtered_df[(filtered_df['days_left'] < 30) & (filtered_df['days_left'] >= 0) & (filtered_df['calculated_progress'] < 80)])
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>⚠️ AT RISK</div>
-                <div class='kpi-value'>{at_risk}</div>
-                <div class='kpi-sub'>Due within 30 days, <80% progress</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>⚠️ AT RISK</div>
-                <div class='kpi-value'>0</div>
-                <div class='kpi-sub'>Due within 30 days, <80% progress</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # ============================================
-    # SECTION 2: CONTRACTS AND POLICIES KPI
-    # ============================================
-    col_c, col_p = st.columns(2)
-    
-    with col_c:
-        if contracts:
-            expiring = sum(1 for c in contracts if c.get("status") == "expiring_soon")
-            total_contracts = len(contracts)
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📄 CONTRACTS</div>
-                <div class='kpi-value'>{expiring}</div>
-                <div class='kpi-sub'>expiring within 30 days out of {total_contracts}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📄 CONTRACTS</div>
-                <div class='kpi-value'>0</div>
-                <div class='kpi-sub'>No contracts yet</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with col_p:
-        if policies:
-            expiring_policies = 0
-            total_policies = len(policies)
-            for p in policies:
-                try:
-                    expiry = datetime.strptime(p["expiry_date"], "%Y-%m-%d").date()
-                    if (expiry - datetime.now().date()).days <= 90:
-                        expiring_policies += 1
-                except:
-                    pass
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📜 POLICIES</div>
-                <div class='kpi-value'>{expiring_policies}</div>
-                <div class='kpi-sub'>expiring within 90 days out of {total_policies}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📜 POLICIES</div>
-                <div class='kpi-value'>0</div>
-                <div class='kpi-sub'>No policies yet</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # ============================================
-    # SECTION 3: CHARTS AND VISUALIZATIONS
-    # ============================================
-    if not filtered_df.empty:
-        st.markdown("---")
-        st.markdown("### 📈 Performance Analytics")
         
-        # Row 1: Status Distribution & Progress by Pillar
-        col_chart1, col_chart2 = st.columns(2)
-        
-        with col_chart1:
-            st.markdown("#### Status Distribution")
-            status_counts = filtered_df['status_group'].value_counts().reset_index()
-            status_counts.columns = ['Status', 'Count']
-            colors = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
-            fig = px.pie(status_counts, values='Count', names='Status', 
-                        title="Work Plan Status Distribution",
-                        color='Status', color_discrete_map=colors,
-                        hole=0.4)
-            fig.update_traces(textposition='inside', textinfo='percent+label')
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col_chart2:
-            st.markdown("#### Progress by Strategic Pillar")
-            pillar_progress = filtered_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
-            pillar_progress.columns = ['Pillar', 'Avg Progress %']
-            fig = px.bar(pillar_progress, x='Pillar', y='Avg Progress %',
-                        title="Average Progress by Strategic Pillar",
-                        color='Avg Progress %', color_continuous_scale='Greens',
-                        text='Avg Progress %')
-            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-            fig.update_layout(height=400, xaxis_tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # Row 2: Budget by Pillar & Department Performance
-        col_chart3, col_chart4 = st.columns(2)
-        
-        with col_chart3:
-            st.markdown("#### Budget Allocation by Pillar")
-            budget_by_pillar = filtered_df.groupby('strategic_pillar')['budget_allocation'].sum().reset_index()
-            budget_by_pillar.columns = ['Pillar', 'Budget']
-            budget_by_pillar = budget_by_pillar[budget_by_pillar['Budget'] > 0]
-            if not budget_by_pillar.empty:
-                fig = px.pie(budget_by_pillar, values='Budget', names='Pillar',
-                            title="Budget Distribution by Pillar",
-                            color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE, "#FF6B6B", "#4ECDC4"])
-                fig.update_layout(height=400)
+        # Department filter for management
+        if st.session_state.user_role in ["admin", "management"]:
+            departments_list = filtered_df['department_name'].unique().tolist() if not filtered_df.empty else []
+            if departments_list:
+                selected_dept_filter = st.multiselect("Filter by Department", departments_list, default=[])
+                if selected_dept_filter:
+                    filtered_df = filtered_df[filtered_df['department_name'].isin(selected_dept_filter)]
+    else:
+        filtered_df = pd.DataFrame()
+        df_plans = pd.DataFrame()
+    
+    # Create Tabs
+    tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
+    
+    # ============================================
+    # TAB 1: WORK PLANS ANALYTICS
+    # ============================================
+    with tab_work:
+        if not filtered_df.empty:
+            # Row 1: Key Metrics
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
+            with col2:
+                completed = len(filtered_df[filtered_df['calculated_progress'] >= 100])
+                rate = (completed/len(filtered_df)*100) if len(filtered_df)>0 else 0
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ COMPLETED</div><div class='kpi-value'>{rate:.0f}%</div><div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div></div>", unsafe_allow_html=True)
+            with col3:
+                avg_progress = filtered_df['calculated_progress'].mean()
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📈 AVG PROGRESS</div><div class='kpi-value'>{avg_progress:.0f}%</div></div>", unsafe_allow_html=True)
+            with col4:
+                total_budget = filtered_df['budget_allocation'].fillna(0).sum()
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 BUDGET</div><div class='kpi-value'>KES {total_budget/1e6:.1f}M</div></div>", unsafe_allow_html=True)
+            with col5:
+                exceeded = len(filtered_df[filtered_df['exceeded'] == True])
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🏆 EXCEEDED</div><div class='kpi-value'>{exceeded}</div></div>", unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # Row 2: Charts
+            col_chart1, col_chart2 = st.columns(2)
+            with col_chart1:
+                st.markdown("#### Status Distribution")
+                status_counts = filtered_df['status_group'].value_counts().reset_index()
+                status_counts.columns = ['Status', 'Count']
+                colors = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
+                fig = px.pie(status_counts, values='Count', names='Status', hole=0.4,
+                            color='Status', color_discrete_map=colors)
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No budget data available for chart")
-        
-        with col_chart4:
-            st.markdown("#### Department Performance")
-            dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
-            dept_progress.columns = ['Department', 'Avg Progress %']
-            dept_progress = dept_progress.sort_values('Avg Progress %', ascending=False).head(10)
-            fig = px.bar(dept_progress, x='Department', y='Avg Progress %',
-                        title="Top 10 Departments by Progress",
-                        color='Avg Progress %', color_continuous_scale='Greens',
-                        text='Avg Progress %')
-            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-            fig.update_layout(height=400, xaxis_tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # Row 3: Quarterly Trend & Activity Category
-        col_chart5, col_chart6 = st.columns(2)
-        
-        with col_chart5:
+            
+            with col_chart2:
+                st.markdown("#### Progress by Strategic Pillar")
+                pillar_progress = filtered_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
+                pillar_progress.columns = ['Pillar', 'Progress %']
+                fig = px.bar(pillar_progress, x='Pillar', y='Progress %',
+                            color='Progress %', color_continuous_scale='Greens',
+                            text='Progress %')
+                fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+                fig.update_layout(height=350, xaxis_tickangle=-45, margin=dict(l=20, r=20, t=30, b=80))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            # Row 3: More Charts
+            col_chart3, col_chart4 = st.columns(2)
+            with col_chart3:
+                st.markdown("#### Department Performance (Top 10)")
+                dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
+                dept_progress.columns = ['Department', 'Progress %']
+                dept_progress = dept_progress.sort_values('Progress %', ascending=False).head(10)
+                fig = px.bar(dept_progress, x='Department', y='Progress %',
+                            color='Progress %', color_continuous_scale='Greens',
+                            text='Progress %')
+                fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+                fig.update_layout(height=350, xaxis_tickangle=-45, margin=dict(l=20, r=20, t=30, b=80))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart4:
+                st.markdown("#### Activity Category Breakdown")
+                category_stats = filtered_df['activity_category'].value_counts().reset_index()
+                category_stats.columns = ['Category', 'Count']
+                fig = px.bar(category_stats, x='Category', y='Count',
+                            color='Count', color_discrete_sequence=[HELB_GREEN],
+                            text='Count')
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            # Row 4: Quarterly Trend
             st.markdown("#### Quarterly Performance Trend")
             quarterly_data = filtered_df.groupby('quarter').agg({
                 'id': 'count',
                 'calculated_progress': 'mean'
             }).reset_index()
-            quarterly_data.columns = ['Quarter', 'Activity Count', 'Avg Progress %']
+            quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
             quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
             quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
             quarterly_data = quarterly_data.sort_values('Quarter')
             
             fig = go.Figure()
-            fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activity Count'],
-                                 name='Number of Activities', marker_color=HELB_GREEN,
-                                 text=quarterly_data['Activity Count'], textposition='outside'))
+            fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
+                                 name='Activities', marker_color=HELB_GREEN,
+                                 text=quarterly_data['Activities'], textposition='outside'))
             fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
                                      name='Avg Progress %', marker_color=HELB_GOLD,
                                      line=dict(width=3), yaxis='y2'))
             fig.update_layout(
-                title="Activities by Quarter vs Average Progress",
-                xaxis_title="Quarter",
+                height=350,
                 yaxis_title="Number of Activities",
-                yaxis2=dict(title="Average Progress %", overlaying='y', side='right'),
-                height=400,
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+                yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                margin=dict(l=20, r=60, t=30, b=20)
             )
             st.plotly_chart(fig, use_container_width=True)
-        
-        with col_chart6:
-            st.markdown("#### Activity Category Breakdown")
-            category_stats = filtered_df['activity_category'].value_counts().reset_index()
-            category_stats.columns = ['Category', 'Count']
-            fig = px.bar(category_stats, x='Category', y='Count',
-                        title="SP Deliverable vs PC Deliverable",
-                        color='Count', color_discrete_sequence=[HELB_GREEN],
-                        text='Count')
-            fig.update_traces(textposition='outside')
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # Row 4: Monthly Trend & Budget Utilization
-        col_chart7, col_chart8 = st.columns(2)
-        
-        with col_chart7:
-            st.markdown("#### Monthly Activity Trend")
-            filtered_df['month_name'] = filtered_df['due_date_dt'].dt.strftime('%b %Y')
-            monthly_counts = filtered_df.groupby('month_name').size().reset_index(name='count')
-            monthly_counts = monthly_counts.sort_values('month_name')
-            fig = px.line(monthly_counts, x='month_name', y='count',
-                         title="Number of Activities by Month",
-                         markers=True, color_discrete_sequence=[HELB_GREEN])
-            fig.update_layout(height=350, xaxis_tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col_chart8:
-            st.markdown("#### Budget vs Progress Correlation")
-            budget_progress = filtered_df[filtered_df['budget_allocation'].notna() & (filtered_df['budget_allocation'] > 0)]
-            if not budget_progress.empty:
-                budget_progress_sample = budget_progress.nlargest(10, 'budget_allocation')
-                fig = px.scatter(budget_progress_sample, x='budget_allocation', y='calculated_progress',
-                                size='budget_allocation', color='calculated_progress',
-                                text='planned_activity',
-                                title="Budget vs Progress (Top 10 by Budget)",
-                                labels={'budget_allocation': 'Budget (KES)', 'calculated_progress': 'Progress %'},
-                                color_continuous_scale='Greens')
-                fig.update_traces(textposition='top center', textfont_size=10)
-                fig.update_layout(height=400)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No budget data available for correlation chart")
-        
-        # Row 5: Urgent & Overdue Activities
-        st.markdown("### ⚠️ Priority Alerts")
-        
-        overdue_df = filtered_df[(filtered_df['days_left'] < 0) & (filtered_df['calculated_progress'] < 100)]
-        urgent_df = filtered_df[(filtered_df['days_left'] >= 0) & (filtered_df['days_left'] <= 14) & (filtered_df['calculated_progress'] < 80)]
-        
-        col_alert1, col_alert2 = st.columns(2)
-        
-        with col_alert1:
-            if not overdue_df.empty:
-                st.error(f"🔴 **CRITICAL: {len(overdue_df)} Overdue Activities**")
-                for _, row in overdue_df.head(10).iterrows():
-                    st.markdown(f"- **{row['planned_activity'][:50]}...** | Due: {row['due_date']} | Overdue by {abs(row['days_left'])} days | Progress: {row['calculated_progress']:.0f}%")
-                if len(overdue_df) > 10:
-                    st.caption(f"... and {len(overdue_df) - 10} more overdue activities")
-            else:
-                st.success("✅ No overdue activities! Great job!")
-        
-        with col_alert2:
-            if not urgent_df.empty:
-                st.warning(f"🟡 **WARNING: {len(urgent_df)} Activities Due Within 14 Days (<80% progress)**")
-                for _, row in urgent_df.head(10).iterrows():
-                    st.markdown(f"- **{row['planned_activity'][:50]}...** | Due: {row['due_date']} | {row['days_left']} days left | Progress: {row['calculated_progress']:.0f}%")
-                if len(urgent_df) > 10:
-                    st.caption(f"... and {len(urgent_df) - 10} more urgent activities")
-            else:
-                st.success("✅ No urgent at-risk activities!")
-        
-        # Row 6: Top Performers & Bottom Performers
-        col_perf1, col_perf2 = st.columns(2)
-        
-        with col_perf1:
-            st.markdown("#### 🏆 Top 5 Best Performing Activities")
-            top_performers = filtered_df.nlargest(5, 'calculated_progress')[['planned_activity', 'department_name', 'calculated_progress', 'exceeded']]
-            if not top_performers.empty:
-                for _, row in top_performers.iterrows():
-                    exceeded_mark = " 🎉" if row['exceeded'] else ""
-                    st.markdown(f"**{row['planned_activity'][:60]}...** - {row['calculated_progress']:.0f}%{exceeded_mark} ({row['department_name']})")
-            else:
-                st.info("No performance data available")
-        
-        with col_perf2:
-            st.markdown("#### 📉 Bottom 5 Activities Needing Attention")
-            bottom_performers = filtered_df.nsmallest(5, 'calculated_progress')[['planned_activity', 'department_name', 'calculated_progress', 'due_date']]
-            if not bottom_performers.empty:
-                for _, row in bottom_performers.iterrows():
-                    st.markdown(f"**{row['planned_activity'][:60]}...** - {row['calculated_progress']:.0f}% (Due: {row['due_date']}) - {row['department_name']}")
-            else:
-                st.info("No performance data available")
-        
-        # Export option
-        with st.expander("📥 Export Dashboard Data", expanded=False):
-            csv = filtered_df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Export Work Plan Data", csv, f"work_plan_dashboard_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
+            
+            # Row 5: Alerts
+            st.markdown("### ⚠️ Priority Alerts")
+            col_alert1, col_alert2 = st.columns(2)
+            
+            overdue_df = filtered_df[(filtered_df['days_left'] < 0) & (filtered_df['calculated_progress'] < 100)]
+            urgent_df = filtered_df[(filtered_df['days_left'] >= 0) & (filtered_df['days_left'] <= 14) & (filtered_df['calculated_progress'] < 80)]
+            
+            with col_alert1:
+                if not overdue_df.empty:
+                    st.error(f"🔴 **{len(overdue_df)} Overdue Activities**")
+                    for _, row in overdue_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... (Due: {row['due_date']})")
+                else:
+                    st.success("✅ No overdue activities")
+            
+            with col_alert2:
+                if not urgent_df.empty:
+                    st.warning(f"🟡 **{len(urgent_df)} Urgent Activities**")
+                    for _, row in urgent_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... ({row['days_left']} days left)")
+                else:
+                    st.success("✅ No urgent at-risk activities")
+            
+            # Export
+            with st.expander("📥 Export Data", expanded=False):
+                csv = filtered_df.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
+        else:
+            st.info("No work plan data available for the selected filters.")
     
-    else:
-        st.info("No work plan data available for the selected filters. Please adjust your filters or add work plan activities.")
+    # ============================================
+    # TAB 2: CONTRACTS ANALYTICS
+    # ============================================
+    with tab_contracts:
+        if contracts:
+            df_contracts = pd.DataFrame(contracts)
+            
+            # Key Metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📄 TOTAL CONTRACTS</div><div class='kpi-value'>{len(df_contracts)}</div></div>", unsafe_allow_html=True)
+            with col2:
+                active = len(df_contracts[df_contracts['status'] == 'active'])
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ ACTIVE</div><div class='kpi-value'>{active}</div></div>", unsafe_allow_html=True)
+            with col3:
+                expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⚠️ EXPIRING SOON</div><div class='kpi-value'>{expiring}</div></div>", unsafe_allow_html=True)
+            with col4:
+                expired = len(df_contracts[df_contracts['status'] == 'expired'])
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # Contracts List
+            st.markdown("#### Contract Status Overview")
+            for _, contract in df_contracts.iterrows():
+                end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
+                days_left = (end_date - datetime.now().date()).days
+                
+                if days_left > 30:
+                    badge = '<span class="badge-active">🟢 Active</span>'
+                elif days_left > 0:
+                    badge = '<span class="badge-inprogress">🟡 Expiring Soon</span>'
+                else:
+                    badge = '<span class="badge-expired">🔴 Expired</span>'
+                
+                st.markdown(f"""
+                <div class='metric-card'>
+                    <div style='display:flex; justify-content:space-between; align-items:center;'>
+                        <div>
+                            <b>{contract['contract_title']}</b><br>
+                            Vendor: {contract['vendor_name']}<br>
+                            End Date: {contract['end_date']} | {days_left} days remaining
+                        </div>
+                        <div>{badge}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No contracts found. Click 'Add New Contract' in the Contracts section to get started.")
+    
+    # ============================================
+    # TAB 3: POLICIES ANALYTICS
+    # ============================================
+    with tab_policies:
+        if policies:
+            df_policies = pd.DataFrame(policies)
+            
+            # Key Metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📜 TOTAL POLICIES</div><div class='kpi-value'>{len(df_policies)}</div></div>", unsafe_allow_html=True)
+            with col2:
+                expiring_soon = 0
+                for p in policies:
+                    try:
+                        expiry = datetime.strptime(p["expiry_date"], "%Y-%m-%d").date()
+                        if 0 < (expiry - datetime.now().date()).days <= 90:
+                            expiring_soon += 1
+                    except:
+                        pass
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⚠️ EXPIRING SOON</div><div class='kpi-value'>{expiring_soon}</div></div>", unsafe_allow_html=True)
+            with col3:
+                expired = 0
+                for p in policies:
+                    try:
+                        expiry = datetime.strptime(p["expiry_date"], "%Y-%m-%d").date()
+                        if (expiry - datetime.now().date()).days < 0:
+                            expired += 1
+                    except:
+                        pass
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # Policies List
+            st.markdown("#### Policy Status Overview")
+            for policy in policies:
+                expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
+                days_left = (expiry - datetime.now().date()).days
+                
+                if days_left > 90:
+                    badge = '<span class="badge-active">🟢 Active</span>'
+                elif days_left > 0:
+                    badge = '<span class="badge-inprogress">🟡 Expiring Soon</span>'
+                else:
+                    badge = '<span class="badge-expired">🔴 Expired</span>'
+                
+                st.markdown(f"""
+                <div class='metric-card'>
+                    <div style='display:flex; justify-content:space-between; align-items:center;'>
+                        <div>
+                            <b>📜 {policy['policy_name']}</b><br>
+                            Expires: {policy['expiry_date']} ({days_left} days left)
+                        </div>
+                        <div>{badge}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No policies found. Click 'Add New Policy' in the Policies section to get started.")
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS
+# CONTRACTS SECTION
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Tracker")
@@ -1380,10 +1245,10 @@ elif choice == "📄 Contracts":
             <div class='metric-card'>
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
-                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
-                        <span>Vendor: {contract['vendor_name']}</span><br>
-                        <span>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
-                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                        <b>{color} {contract['contract_title']}</b><br>
+                        Vendor: {contract['vendor_name']}<br>
+                        End Date: {contract['end_date']} | {days_left} days remaining<br>
+                        Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -1393,7 +1258,7 @@ elif choice == "📄 Contracts":
         st.info("No contracts found. Click 'Add New Contract' to get started.")
 
 # ============================================
-# POLICIES
+# POLICIES SECTION
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Monitor")
@@ -1435,7 +1300,7 @@ elif choice == "📋 Policies":
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
                         <b>📜 {policy['policy_name']}</b><br>
-                        <span>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                        Expires: {policy['expiry_date']} ({days_left} days left)
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -1683,6 +1548,6 @@ st.markdown("---")
 st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
-    <p>Powered by Streamlit | Target-Based Progress Tracking | Comprehensive Analytics | Secure & Real-time</p>
+    <p>Powered by Streamlit | Target-Based Progress Tracking | Comprehensive Analytics</p>
 </div>
 """, unsafe_allow_html=True)
