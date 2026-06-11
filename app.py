@@ -196,7 +196,107 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     return df
 
 # ============================================
-# CUSTOM CSS
+# DIRECTORATE FUNCTIONS
+# ============================================
+def get_all_directorates():
+    try:
+        result = supabase.table("directorates").select("*").order("name").execute()
+        return result.data
+    except:
+        return []
+
+def add_directorate(name, director_name):
+    try:
+        supabase.table("directorates").insert({"name": name, "director_name": director_name}).execute()
+        return True, "Directorate added successfully"
+    except Exception as e:
+        return False, str(e)
+
+def update_directorate(directorate_id, name, director_name):
+    try:
+        supabase.table("directorates").update({
+            "name": name, 
+            "director_name": director_name,
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", directorate_id).execute()
+        return True, "Directorate updated successfully"
+    except Exception as e:
+        return False, str(e)
+
+def delete_directorate(directorate_id):
+    try:
+        # Check if there are departments in this directorate
+        depts = supabase.table("departments").select("id").eq("directorate_id", directorate_id).execute()
+        if depts.data:
+            return False, "Cannot delete directorate that has departments. Move departments first."
+        supabase.table("directorates").delete().eq("id", directorate_id).execute()
+        return True, "Directorate deleted successfully"
+    except Exception as e:
+        return False, str(e)
+
+# ============================================
+# UPDATED DEPARTMENT FUNCTIONS
+# ============================================
+def get_all_departments():
+    try:
+        result = supabase.table("departments").select("*, directorates(name, director_name)").order("name").execute()
+        return result.data
+    except:
+        return []
+
+def add_department(dept_name, directorate_id, deputy_director_name):
+    try:
+        supabase.table("departments").insert({
+            "name": dept_name, 
+            "directorate_id": directorate_id if directorate_id else None,
+            "deputy_director_name": deputy_director_name
+        }).execute()
+        return True, "Department added successfully"
+    except Exception as e:
+        return False, str(e)
+
+def update_department(dept_id, name, directorate_id, deputy_director_name):
+    try:
+        supabase.table("departments").update({
+            "name": name,
+            "directorate_id": directorate_id if directorate_id else None,
+            "deputy_director_name": deputy_director_name,
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", dept_id).execute()
+        return True, "Department updated successfully"
+    except Exception as e:
+        return False, str(e)
+
+def delete_department(dept_id):
+    try:
+        # Check if there are users in this department
+        users = supabase.table("users").select("id").eq("department_id", dept_id).execute()
+        if users.data:
+            return False, "Cannot delete department that has users. Reassign users first."
+        supabase.table("departments").delete().eq("id", dept_id).execute()
+        return True, "Department deleted successfully"
+    except Exception as e:
+        return False, str(e)
+
+# ============================================
+# FIXED WORK PLAN UPDATE FUNCTION
+# ============================================
+def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
+    try:
+        update_data = {
+            "actual_achievement": actual_achievement,
+            "progress_percent": progress_percent,
+            "status": status,
+            "updated_at": datetime.now().isoformat()
+        }
+        supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Update error: {e}")
+        return False
+
+# ============================================
+# CUSTOM CSS (SAME AS BEFORE - UNCHANGED)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -207,7 +307,6 @@ if st.session_state.theme == "light":
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
         
-        /* Sidebar */
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
         
@@ -222,7 +321,6 @@ if st.session_state.theme == "light":
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        /* Navigation - ALL GOLD background */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
@@ -239,7 +337,6 @@ if st.session_state.theme == "light":
             filter: brightness(1.05);
         }}
         
-        /* Selected - BLUE background for light theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
             background-color: {HELB_BLUE} !important;
             color: white !important;
@@ -251,11 +348,9 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        /* Headers */
         h1, h2, h3, h4 {{ color: {HELB_GREEN} !important; font-weight: 600 !important; }}
         h1 {{ border-bottom: 3px solid {HELB_GOLD}; padding-bottom: 15px; margin-bottom: 25px; }}
         
-        /* Dashboard Header */
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -268,7 +363,6 @@ if st.session_state.theme == "light":
         .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
         .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
         
-        /* Login Container */
         .login-container {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 20px;
@@ -278,7 +372,6 @@ if st.session_state.theme == "light":
         .login-title {{ color: white; font-size: 1.5rem; font-weight: 700; }}
         .login-subtitle {{ color: rgba(255,255,255,0.85); font-size: 0.85rem; }}
         
-        /* KPI Cards - GOLD label, WHITE value, WHITE subtext */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
@@ -292,7 +385,6 @@ if st.session_state.theme == "light":
         .progress-bar {{ height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.5rem; }}
         .progress-fill {{ height: 100%; background: {HELB_GOLD}; border-radius: 2px; }}
         
-        /* Metric Cards */
         .metric-card {{
             background: {HELB_WHITE};
             border-radius: 12px;
@@ -302,14 +394,12 @@ if st.session_state.theme == "light":
         }}
         .metric-card * {{ color: {HELB_BLACK} !important; }}
         
-        /* Status Badges */
         .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         
-        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
@@ -319,13 +409,11 @@ if st.session_state.theme == "light":
         }}
         .stButton > button[key*="delete"] {{ background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; }}
         
-        /* Expander */
         .streamlit-expanderHeader {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; }}
         .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.85rem !important; font-weight: 600 !important; }}
         .streamlit-expanderContent {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; border-top: none !important; padding: 1rem !important; }}
         .streamlit-expanderContent * {{ color: {HELB_BLACK} !important; }}
         
-        /* Input fields */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: white !important;
             color: {HELB_BLACK} !important;
@@ -334,12 +422,10 @@ if st.session_state.theme == "light":
         }}
         .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{ color: {HELB_BLACK} !important; }}
         
-        /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
         .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_BLACK}; }}
         .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_BLACK} !important; font-weight: 600; }}
         
-        /* Footer */
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
@@ -371,7 +457,6 @@ else:
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        /* Navigation - ALL GOLD background for dark theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
@@ -382,7 +467,6 @@ else:
             font-size: 0.8rem !important;
         }}
         
-        /* Selected - GREEN background for dark theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
             background-color: {HELB_GREEN} !important;
             color: white !important;
@@ -448,30 +532,6 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# DEPARTMENT MANAGEMENT FUNCTIONS
-# ============================================
-def get_all_departments():
-    try:
-        result = supabase.table("departments").select("*").order("name").execute()
-        return result.data
-    except:
-        return []
-
-def add_department(dept_name):
-    try:
-        supabase.table("departments").insert({"name": dept_name}).execute()
-        return True, "Department added successfully"
-    except Exception as e:
-        return False, str(e)
-
-def delete_department(dept_id):
-    try:
-        supabase.table("departments").delete().eq("id", dept_id).execute()
-        return True, "Department deleted successfully"
-    except Exception as e:
-        return False, str(e)
-
-# ============================================
 # WORK PLAN FUNCTIONS
 # ============================================
 def get_work_plans():
@@ -487,19 +547,6 @@ def get_work_plans():
 def add_work_plan(data):
     try:
         result = supabase.table("work_plan").insert(data).execute()
-        return True
-    except:
-        return False
-
-def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
-    try:
-        update_data = {
-            "actual_achievement": actual_achievement,
-            "progress_percent": progress_percent,
-            "status": status,
-            "updated_at": datetime.now().isoformat()
-        }
-        supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
         return True
     except:
         return False
@@ -546,6 +593,13 @@ def get_department_name(dept_id):
         return result.data[0]["name"] if result.data else "Unknown Department"
     except:
         return "Unknown Department"
+
+def get_department_with_details(dept_id):
+    try:
+        result = supabase.table("departments").select("*, directorates(name, director_name)").eq("id", dept_id).execute()
+        return result.data[0] if result.data else None
+    except:
+        return None
 
 def get_filtered_data(table_name):
     if st.session_state.user_role in ["admin", "management"]:
@@ -703,6 +757,11 @@ with st.sidebar:
     role_display = st.session_state.user_role.replace('_', ' ').title() if st.session_state.user_role else "User"
     dept_display = st.session_state.user_dept_name if st.session_state.user_dept_name else "No Department"
     
+    # Get department details if available
+    dept_details = get_department_with_details(st.session_state.user_dept) if st.session_state.user_dept else None
+    if dept_details and dept_details.get('directorates'):
+        dept_display = f"{dept_details['name']} ({dept_details['directorates']['name']})"
+    
     st.markdown(f"""
     <div class='sidebar-user-info'>
         <strong>{st.session_state.user_fullname or "User"}</strong>
@@ -808,7 +867,7 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
     
-    # TAB 2: VIEW ALL ACTIVITIES
+    # TAB 2: VIEW ALL ACTIVITIES - FIXED UPDATE
     with tab_view:
         if filtered_plans:
             for plan in filtered_plans:
@@ -892,13 +951,15 @@ if choice == "📋 Work Plans":
                                 else:
                                     new_status = "Pending"
                                 if update_work_plan_progress(plan['id'], actual_input, new_progress, new_status):
-                                    st.success("✅ Achievement updated!")
+                                    st.success("✅ Achievement updated successfully!")
                                     st.rerun()
+                                else:
+                                    st.error("❌ Failed to update. Please try again.")
                         with col_delete:
                             if st.session_state.user_role == "admin":
                                 if st.button(f"🗑️ Delete", key=f"delete_{plan['id']}"):
                                     if delete_work_plan(plan['id']):
-                                        st.success("✅ Deleted!")
+                                        st.success("✅ Deleted successfully!")
                                         st.rerun()
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
@@ -927,7 +988,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH EXACT CHANGES
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -987,12 +1048,9 @@ elif choice == "📊 Dashboard":
     # Create Tabs
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
     
-    # ============================================
     # TAB 1: WORK PLANS ANALYTICS
-    # ============================================
     with tab_work:
         if not filtered_df.empty:
-            # Row 1: Key Metrics - KPI CARDS (Gold label, White value, White subtext)
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
@@ -1012,13 +1070,11 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Row 2: Charts
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
                 status_counts = filtered_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                # DOUGHNUT CHART with percentages
                 fig = go.Figure(data=[go.Pie(
                     labels=status_counts['Status'],
                     values=status_counts['Count'],
@@ -1035,7 +1091,6 @@ elif choice == "📊 Dashboard":
                 pillar_progress = filtered_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
                 pillar_progress.columns = ['Pillar', 'Progress %']
                 pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
-                # HORIZONTAL BAR CHART
                 fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
                             color='Progress %', color_continuous_scale='Greens',
                             text='Progress %')
@@ -1043,12 +1098,10 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 3: Department Performance - ALL DEPARTMENTS
             st.markdown("#### Department Performance")
             dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
             dept_progress.columns = ['Department', 'Progress %']
             dept_progress = dept_progress.sort_values('Progress %', ascending=True)
-            # HORIZONTAL BAR CHART
             fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
                         color='Progress %', color_continuous_scale='Greens',
                         text='Progress %')
@@ -1056,7 +1109,6 @@ elif choice == "📊 Dashboard":
             fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
             st.plotly_chart(fig, use_container_width=True)
             
-            # Row 4: Additional Charts
             col_chart3, col_chart4 = st.columns(2)
             with col_chart3:
                 st.markdown("#### Activity Category Breakdown")
@@ -1096,7 +1148,6 @@ elif choice == "📊 Dashboard":
                 )
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 5: Alerts
             st.markdown("### ⚠️ Priority Alerts")
             col_alert1, col_alert2 = st.columns(2)
             
@@ -1119,16 +1170,13 @@ elif choice == "📊 Dashboard":
                 else:
                     st.success("✅ No urgent at-risk activities")
             
-            # Export
             with st.expander("📥 Export Data", expanded=False):
                 csv = filtered_df.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
             st.info("No work plan data available for the selected filters.")
     
-    # ============================================
     # TAB 2: CONTRACTS ANALYTICS
-    # ============================================
     with tab_contracts:
         if contracts:
             df_contracts = pd.DataFrame(contracts)
@@ -1174,9 +1222,7 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No contracts found. Click 'Add New Contract' in the Contracts section to get started.")
     
-    # ============================================
     # TAB 3: POLICIES ANALYTICS
-    # ============================================
     with tab_policies:
         if policies:
             df_policies = pd.DataFrame(policies)
@@ -1356,16 +1402,20 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# UPDATED USER MANAGEMENT (ADMIN ONLY) - WITH DIRECTORATES
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
     
-    depts = supabase.table("departments").select("id,name").execute().data
+    # Get data for dropdowns
+    directorates = get_all_directorates()
+    depts = supabase.table("departments").select("*, directorates(name, director_name)").execute().data
     dept_options = {d["name"]: d["id"] for d in depts}
+    directorate_options = {d["name"]: d["id"] for d in directorates}
+    
     users = get_all_users()
     
-    tab1, tab2, tab3, tab4 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User", "🏢 Manage Departments"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User", "🏢 Manage Departments", "🏛️ Manage Directorates"])
     
     with tab1:
         with st.form("create_user_form"):
@@ -1473,33 +1523,70 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     with tab4:
         st.markdown("### Manage Departments")
         
-        with st.form("add_department_form"):
-            new_dept_name = st.text_input("New Department Name")
-            if st.form_submit_button("Add Department", use_container_width=True):
-                if new_dept_name:
-                    success, message = add_department(new_dept_name)
-                    if success:
-                        st.success(f"✅ {message}")
-                        st.rerun()
+        # Add new department
+        with st.expander("➕ Add New Department", expanded=False):
+            with st.form("add_department_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_dept_name = st.text_input("Department Name*")
+                    new_dept_directorate = st.selectbox("Directorate*", ["None"] + list(directorate_options.keys()))
+                with col2:
+                    new_dept_deputy = st.text_input("Deputy Director Name", placeholder="e.g., Deputy Director - Department Name")
+                
+                if st.form_submit_button("Add Department", use_container_width=True):
+                    if new_dept_name:
+                        directorate_id = directorate_options.get(new_dept_directorate) if new_dept_directorate != "None" else None
+                        success, message = add_department(new_dept_name, directorate_id, new_dept_deputy)
+                        if success:
+                            st.success(f"✅ {message}")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {message}")
                     else:
-                        st.error(f"❌ {message}")
-                else:
-                    st.error("Please enter a department name")
+                        st.error("Please enter a department name")
+        
+        # Edit existing departments
+        st.markdown("### Edit Existing Departments")
+        if depts:
+            dept_names = [d["name"] for d in depts]
+            selected_dept_name = st.selectbox("Select Department to Edit", dept_names, key="edit_dept_select")
+            
+            if selected_dept_name:
+                selected_dept = next((d for d in depts if d["name"] == selected_dept_name), None)
+                if selected_dept:
+                    with st.form("edit_department_form"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            edit_dept_name = st.text_input("Department Name", value=selected_dept["name"])
+                            edit_dept_directorate = st.selectbox("Directorate", ["None"] + list(directorate_options.keys()), 
+                                                                 index=0 if not selected_dept.get("directorate_id") else list(directorate_options.values()).index(selected_dept["directorate_id"]) + 1)
+                        with col2:
+                            edit_dept_deputy = st.text_input("Deputy Director Name", value=selected_dept.get("deputy_director_name", ""))
+                        
+                        if st.form_submit_button("Update Department", use_container_width=True):
+                            directorate_id = directorate_options.get(edit_dept_directorate) if edit_dept_directorate != "None" else None
+                            success, message = update_department(selected_dept["id"], edit_dept_name, directorate_id, edit_dept_deputy)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
         
         st.markdown("---")
         st.markdown("### Existing Departments")
         
-        departments = get_all_departments()
-        if departments:
-            for dept in departments:
-                col1, col2 = st.columns([3, 1])
+        if depts:
+            for dept in depts:
+                col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
-                    st.write(f"• {dept['name']}")
+                    directorate_info = f" ({dept['directorates']['name']})" if dept.get('directorates') else ""
+                    deputy_info = f"\nDeputy: {dept.get('deputy_director_name', 'Not assigned')}" if dept.get('deputy_director_name') else ""
+                    st.write(f"• {dept['name']}{directorate_info}{deputy_info}")
                 with col2:
-                    if st.button(f"🗑️ Delete", key=f"del_dept_{dept['id']}"):
-                        if dept['name'] in ["Lending", "Strategy", "Finance", "ICT", "Human Resource"]:
-                            st.error(f"Cannot delete core department: {dept['name']}")
-                        else:
+                    pass
+                with col3:
+                    if dept['name'] not in ["Lending", "Strategy", "Finance", "ICT", "Human Resource"]:
+                        if st.button(f"🗑️ Delete", key=f"del_dept_{dept['id']}"):
                             success, message = delete_department(dept['id'])
                             if success:
                                 st.success(f"✅ {message}")
@@ -1509,6 +1596,77 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
         else:
             st.info("No departments found")
     
+    with tab5:
+        st.markdown("### Manage Directorates")
+        
+        # Add new directorate
+        with st.expander("➕ Add New Directorate", expanded=False):
+            with st.form("add_directorate_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_dir_name = st.text_input("Directorate Name*")
+                with col2:
+                    new_dir_director = st.text_input("Director Name*")
+                
+                if st.form_submit_button("Add Directorate", use_container_width=True):
+                    if new_dir_name and new_dir_director:
+                        success, message = add_directorate(new_dir_name, new_dir_director)
+                        if success:
+                            st.success(f"✅ {message}")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {message}")
+                    else:
+                        st.error("Please fill all required fields")
+        
+        # Edit existing directorates
+        st.markdown("### Edit Existing Directorates")
+        if directorates:
+            dir_names = [d["name"] for d in directorates]
+            selected_dir_name = st.selectbox("Select Directorate to Edit", dir_names, key="edit_dir_select")
+            
+            if selected_dir_name:
+                selected_dir = next((d for d in directorates if d["name"] == selected_dir_name), None)
+                if selected_dir:
+                    with st.form("edit_directorate_form"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            edit_dir_name = st.text_input("Directorate Name", value=selected_dir["name"])
+                        with col2:
+                            edit_dir_director = st.text_input("Director Name", value=selected_dir.get("director_name", ""))
+                        
+                        if st.form_submit_button("Update Directorate", use_container_width=True):
+                            success, message = update_directorate(selected_dir["id"], edit_dir_name, edit_dir_director)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+        
+        st.markdown("---")
+        st.markdown("### Existing Directorates")
+        
+        if directorates:
+            for dir_item in directorates:
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.write(f"• **{dir_item['name']}** - Director: {dir_item.get('director_name', 'Not assigned')}")
+                with col2:
+                    # Show department count
+                    dept_count = len([d for d in depts if d.get('directorate_id') == dir_item['id']])
+                    st.caption(f"{dept_count} departments")
+                with col3:
+                    if st.button(f"🗑️ Delete", key=f"del_dir_{dir_item['id']}"):
+                        success, message = delete_directorate(dir_item['id'])
+                        if success:
+                            st.success(f"✅ {message}")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {message}")
+        else:
+            st.info("No directorates found")
+    
+    # Display current users table
     st.markdown("---")
     st.markdown("### Current Users")
     if users:
