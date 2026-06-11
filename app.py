@@ -157,7 +157,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.3) !important;
     }
     
-    /* Expander styling */
+    /* Expander header styling */
     .streamlit-expanderHeader {
         background-color: #F3F4F6 !important;
         border-radius: 8px !important;
@@ -166,8 +166,11 @@ st.markdown("""
         border: 1px solid #E5E7EB !important;
     }
     
-    /* CRITICAL FIX: Force expander content to white background */
-    .streamlit-expanderContent div, 
+    /* CRITICAL FIX: Force ALL expander content to white */
+    div[data-testid="stExpander"] div[data-testid="stExpanderContent"],
+    div[data-testid="stExpander"] div[data-testid="stExpanderContent"] *,
+    .streamlit-expanderContent,
+    .streamlit-expanderContent div,
     .streamlit-expanderContent .stMarkdown,
     .streamlit-expanderContent .stForm,
     .streamlit-expanderContent [data-testid="stForm"],
@@ -177,7 +180,13 @@ st.markdown("""
     .streamlit-expanderContent .stNumberInput,
     .streamlit-expanderContent .stSlider,
     .streamlit-expanderContent .stCheckbox,
-    .streamlit-expanderContent .stButton {
+    .streamlit-expanderContent .stButton,
+    .streamlit-expanderContent .stColumns,
+    .streamlit-expanderContent [data-testid="column"],
+    .streamlit-expanderContent .stTextInput input,
+    .streamlit-expanderContent .stSelectbox div,
+    .streamlit-expanderContent .stDateInput input,
+    .streamlit-expanderContent .stNumberInput input {
         background-color: #FFFFFF !important;
     }
     
@@ -374,8 +383,29 @@ st.markdown("""
         background-color: transparent !important;
     }
     
-    /* Specific fix for expander content area */
+    /* Specific fix for expander content area - OVERRIDE EVERYTHING */
     div[data-testid="stExpander"] div[data-testid="stExpanderContent"] {
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Force all input fields to have white background */
+    input, textarea, select {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+    
+    /* Force Streamlit containers to be white */
+    .stTextInput, .stSelectbox, .stDateInput, .stNumberInput, .stSlider, .stCheckbox {
+        background-color: transparent !important;
+    }
+    
+    /* Make sure the main content area is white */
+    .main .block-container {
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Fix any remaining dark backgrounds */
+    .st-emotion-cache-1y4p8pa, .st-emotion-cache-16idsys {
         background-color: #FFFFFF !important;
     }
 </style>
