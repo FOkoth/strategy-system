@@ -40,28 +40,26 @@ st.set_page_config(
 )
 
 # ============================================
-# LOAD HELB LOGO - HIGH QUALITY
+# LOAD HELB LOGO - HIGH QUALITY WITH TRANSPARENCY
 # ============================================
 def get_logo_base64():
-    """Load HELB logo and return as base64 with high quality"""
+    """Load HELB logo and return as base64 with transparency preserved"""
     try:
-        # Try to load from URL first
         logo_url = st.secrets.get("HELB_LOGO_URL", "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png")
         response = requests.get(logo_url, timeout=10)
         if response.status_code == 200:
-            # Load with high quality
             img = Image.open(BytesIO(response.content))
-            # Convert to RGBA to preserve transparency
             if img.mode != 'RGBA':
                 img = img.convert('RGBA')
-            # Save with high quality
+            # Create transparent background
+            transparent = Image.new('RGBA', img.size, (0, 0, 0, 0))
+            transparent.paste(img, (0, 0), img)
             buffered = BytesIO()
-            img.save(buffered, format="PNG", quality=95, optimize=False)
+            transparent.save(buffered, format="PNG")
             return base64.b64encode(buffered.getvalue()).decode()
     except:
         pass
     
-    # Fallback to local file
     try:
         with open("HELB Logo.png", "rb") as f:
             return base64.b64encode(f.read()).decode()
@@ -71,7 +69,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# THEME-BASED CSS
+# THEME-BASED CSS - RESTORED ORIGINAL STYLING
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -82,54 +80,270 @@ if st.session_state.theme == "light":
         .stAppDeployButton {{display: none;}}
         
         /* Main container - White background */
-        .stApp, .main {{
+        .main, .stApp {{
             background-color: {HELB_WHITE} !important;
         }}
         
-        /* All text black */
-        .stMarkdown, p, span, div, label {{
-            color: #000000 !important;
-        }}
-        
-        /* Headers green */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {HELB_GREEN} !important;
-        }}
-        
-        /* Sidebar - Solid Green */
+        /* Sidebar - HELB Green */
         [data-testid="stSidebar"] {{
             background-color: {HELB_GREEN} !important;
+            padding-top: 1rem;
         }}
         
         [data-testid="stSidebar"] * {{
             color: white !important;
         }}
         
+        /* Sidebar user info */
+        .sidebar-user-info {{
+            background: rgba(255,255,255,0.15);
+            padding: 0.8rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            text-align: center;
+        }}
+        
+        /* Navigation radio buttons - Gold background */
+        [data-testid="stSidebar"] div[role="radiogroup"] label {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            border-radius: 8px !important;
+            padding: 10px 15px !important;
+            margin: 5px 0 !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
+            transform: translateX(5px);
+            filter: brightness(1.05);
+        }}
+        
+        /* Logout button */
+        [data-testid="stSidebar"] .stButton > button {{
+            background-color: rgba(255,255,255,0.2) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3 {{
+            color: {HELB_GREEN} !important;
+            font-weight: 600 !important;
+        }}
+        
+        h1 {{
+            border-bottom: 3px solid {HELB_GOLD};
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }}
+        
+        /* Dashboard Header */
+        .dashboard-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        
+        .header-left {{
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }}
+        
+        .dashboard-header h1 {{
+            color: white !important;
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-bottom: none;
+        }}
+        
+        .dashboard-header p {{
+            color: rgba(255,255,255,0.85);
+            margin: 0;
+            font-size: 0.7rem;
+        }}
+        
+        /* Login Container */
+        .login-container {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }}
+        
+        .login-title {{
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }}
+        
+        .login-subtitle {{
+            color: rgba(255,255,255,0.85);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }}
+        
+        /* KPI Cards */
+        .kpi-card {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }}
+        
+        .kpi-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }}
+        
+        .kpi-label {{
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: {HELB_GOLD};
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }}
+        
+        .kpi-value {{
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0.3rem 0;
+            color: white;
+            line-height: 1.2;
+        }}
+        
+        .progress-bar {{
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }}
+        
+        .progress-fill {{
+            height: 100%;
+            background: {HELB_GOLD};
+            border-radius: 2px;
+        }}
+        
+        /* Metric Cards */
+        .metric-card {{
+            background: {HELB_WHITE};
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid {HELB_GOLD};
+            transition: all 0.3s ease;
+        }}
+        
+        /* Status Badges */
+        .badge-active {{
+            background-color: {HELB_GREEN};
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }}
+        
+        .badge-expiring {{
+            background-color: {HELB_GOLD};
+            color: {HELB_DARK};
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }}
+        
+        .badge-expired {{
+            background-color: #dc2626;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }}
+        
+        /* Buttons - IMPORTANT: White text on green */
+        .stButton > button {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 10px 20px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+        }}
+        
+        .stButton > button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }}
+        
         /* Input fields - White background, black text */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: white !important;
             color: black !important;
-            border: 1px solid #ccc !important;
-        }}
-        
-        /* Buttons */
-        .stButton > button {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
+            border: 1px solid #D1D5DB !important;
+            border-radius: 6px !important;
         }}
         
         /* Expander */
         .streamlit-expanderHeader {{
             background-color: {HELB_GRAY} !important;
+            border-radius: 8px !important;
+            color: {HELB_GREEN} !important;
+            font-weight: 600 !important;
         }}
         
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{
+            gap: 0.5rem;
+            background: {HELB_GRAY};
+            padding: 0.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }}
+        
+        .stTabs [data-baseweb="tab"] {{
+            border-radius: 8px;
+            padding: 0.5rem 1.2rem;
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: {HELB_DARK};
+            white-space: nowrap;
             background-color: {HELB_GRAY};
         }}
         
         .stTabs [aria-selected="true"] {{
             background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            font-weight: 600;
+        }}
+        
+        /* Footer */
+        .footer {{
+            text-align: center;
+            padding: 1.5rem;
+            color: #6B7280;
+            font-size: 0.7rem;
+            border-top: 1px solid #E5E7EB;
+            margin-top: 2rem;
+        }}
+        
+        /* Theme toggle button */
+        .theme-btn button {{
+            background: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
         }}
     </style>
     """
@@ -142,54 +356,130 @@ else:
         .stAppDeployButton {{display: none;}}
         
         /* Main container - Dark background */
-        .stApp, .main {{
+        .main, .stApp {{
             background-color: #1a1a2e !important;
         }}
         
-        /* Text light */
-        .stMarkdown, p, span, div, label {{
-            color: #ffffff !important;
-        }}
-        
-        /* Headers */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {HELB_GOLD} !important;
-        }}
-        
-        /* Sidebar - Darker */
+        /* Sidebar - Dark Green */
         [data-testid="stSidebar"] {{
-            background-color: #16213e !important;
+            background-color: #0f3460 !important;
+            padding-top: 1rem;
         }}
         
         [data-testid="stSidebar"] * {{
             color: white !important;
         }}
         
-        /* Input fields - Dark */
+        .sidebar-user-info {{
+            background: rgba(255,255,255,0.15);
+            padding: 0.8rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            text-align: center;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            border-radius: 8px !important;
+            padding: 10px 15px !important;
+            margin: 5px 0 !important;
+            font-weight: 600 !important;
+        }}
+        
+        [data-testid="stSidebar"] .stButton > button {{
+            background-color: rgba(255,255,255,0.2) !important;
+            color: white !important;
+        }}
+        
+        h1, h2, h3 {{
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+        }}
+        
+        .dashboard-header {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        
+        .dashboard-header h1 {{
+            color: white !important;
+        }}
+        
+        .login-container {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+        }}
+        
+        .kpi-card {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-radius: 12px;
+            padding: 1rem;
+        }}
+        
+        .kpi-label {{
+            color: {HELB_GOLD};
+        }}
+        
+        .kpi-value {{
+            color: white;
+        }}
+        
+        .metric-card {{
+            background: #16213e;
+            border-radius: 12px;
+            padding: 1rem;
+            border-left: 4px solid {HELB_GOLD};
+        }}
+        
+        /* Buttons - White text */
+        .stButton > button {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 10px 20px !important;
+            font-weight: 600 !important;
+        }}
+        
+        /* Input fields - Dark background, light text */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: #2d2d44 !important;
             color: white !important;
             border: 1px solid #4a4a6a !important;
         }}
         
-        /* Buttons */
-        .stButton > button {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
-        }}
-        
-        /* Expander */
         .streamlit-expanderHeader {{
             background-color: #2d2d44 !important;
+            color: {HELB_GOLD} !important;
         }}
         
-        /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{
-            background-color: #2d2d44;
+            background: #2d2d44;
         }}
         
         .stTabs [aria-selected="true"] {{
             background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+        }}
+        
+        .footer {{
+            text-align: center;
+            padding: 1.5rem;
+            color: #6B7280;
+            border-top: 1px solid #2d2d44;
+            margin-top: 2rem;
+        }}
+        
+        .stMarkdown, p, span, div, label {{
+            color: #e0e0e0 !important;
         }}
     </style>
     """
@@ -293,27 +583,24 @@ def create_new_user(username, full_name, password, role, department_id):
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Display high quality logo
         if LOGO_BASE64:
             logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 200px; height: auto; margin-bottom: 1rem; background: transparent;">'
         else:
             logo_html = '<div style="font-size: 3rem;">🏦</div>'
         
-        login_bg = "#00843D" if st.session_state.theme == "light" else "#16213e"
-        
         st.markdown(f"""
-        <div style='background: {login_bg}; border-radius: 20px; padding: 2rem; text-align: center;'>
-            <div>{logo_html}</div>
-            <h1 style='color: white; font-size: 1.5rem;'>HIGHER EDUCATION LOANS BOARD</h1>
-            <p style='color: rgba(255,255,255,0.85);'>Strategy Performance Management System</p>
+        <div class='login-container'>
+            <div class='login-logo'>{logo_html}</div>
+            <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
+            <p class='login-subtitle'>Strategy Performance Management System</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
+            username = st.text_input("Username", placeholder="Enter your username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
             submitted = st.form_submit_button("Login", use_container_width=True)
             
             if submitted:
@@ -343,29 +630,54 @@ if not st.session_state.authenticated:
 # ============================================
 
 # Header with theme toggle
-col1, col2, col3 = st.columns([4, 1, 1])
-with col1:
+col_header, col_theme, col_refresh = st.columns([5, 1, 1])
+with col_header:
     if LOGO_BASE64:
-        st.image(f"data:image/png;base64,{LOGO_BASE64}", width=40)
-    st.markdown(f"### HELB Strategy Performance Management System")
-    st.caption("Real-time monitoring | Action plans | Contracts | Policies")
-with col2:
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 40px; height: auto; background: transparent;">'
+    else:
+        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
+    
+    st.markdown(f"""
+    <div class='dashboard-header'>
+        <div class='header-left'>
+            {logo_html}
+            <div>
+                <h1>HELB Strategy Performance Management System</h1>
+                <p>Real-time monitoring | Action plans | Contracts | Policies</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_theme:
     theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
     theme_label = "Dark" if st.session_state.theme == "light" else "Light"
-    if st.button(f"{theme_icon} {theme_label} Mode", key="theme_toggle"):
+    if st.button(f"{theme_icon} {theme_label}", key="theme_toggle", help="Toggle between light and dark mode"):
         toggle_theme()
-with col3:
-    if st.button("🔄 Refresh"):
+
+with col_refresh:
+    if st.button("🔄 Refresh", key="global_refresh"):
         st.rerun()
 
 # Sidebar
 with st.sidebar:
     if LOGO_BASE64:
-        st.image(f"data:image/png;base64,{LOGO_BASE64}", width=120)
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='text-align: center; padding: 0.5rem 0;'>
+            <div style='font-size: 2rem;'>🏦</div>
+            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    st.markdown("---")
-    st.markdown(f"**{st.session_state.user_fullname}**")
-    st.caption(st.session_state.user_role.replace('_', ' ').title())
+    st.markdown(f"""
+    <div class='sidebar-user-info'>
+        <strong>{st.session_state.user_fullname}</strong><br>
+        <span style='font-size: 0.7rem;'>{st.session_state.user_role.replace('_', ' ').title()}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown("---")
     
     menu_options = ["📊 Dashboard", "✅ Action Plans", "📄 Contracts", "📋 Policies"]
@@ -374,9 +686,10 @@ with st.sidebar:
     if st.session_state.user_role in ["admin", "management"]:
         menu_options.append("🏢 Enterprise View")
     
-    choice = st.radio("Navigation", menu_options)
+    choice = st.radio("📋 Navigation", menu_options, label_visibility="collapsed")
     
     st.markdown("---")
+    
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.clear()
         st.rerun()
@@ -385,7 +698,7 @@ with st.sidebar:
 # DASHBOARD
 # ============================================
 if choice == "📊 Dashboard":
-    st.header("Dashboard Overview")
+    st.subheader("Dashboard Overview")
     
     plans = get_filtered_data("action_plans")
     contracts = get_filtered_data("contracts")
@@ -397,16 +710,39 @@ if choice == "📊 Dashboard":
         if plans:
             completed = sum(1 for p in plans if p.get("status") == "completed")
             total = len(plans)
-            st.metric("📋 Action Plans", f"{completed}/{total}")
+            avg_progress = sum(p.get("progress_percent", 0) for p in plans) / total if total > 0 else 0
+            st.markdown(f"""
+            <div class='kpi-card'>
+                <div class='kpi-label'>📋 ACTION PLANS</div>
+                <div class='kpi-value'>{completed}/{total}</div>
+                <div class='progress-bar'><div class='progress-fill' style='width:{avg_progress}%;'></div></div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.metric("📋 Action Plans", "0/0")
+            st.markdown(f"""
+            <div class='kpi-card'>
+                <div class='kpi-label'>📋 ACTION PLANS</div>
+                <div class='kpi-value'>0/0</div>
+            </div>
+            """, unsafe_allow_html=True)
     
     with col2:
         if contracts:
             expiring = sum(1 for c in contracts if c.get("status") == "expiring_soon")
-            st.metric("📄 Contracts Expiring", expiring, help="Expiring within 30 days")
+            st.markdown(f"""
+            <div class='kpi-card'>
+                <div class='kpi-label'>📄 CONTRACTS</div>
+                <div class='kpi-value'>{expiring}</div>
+                <div class='kpi-label' style='font-size:0.6rem;'>expiring within 30 days</div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.metric("📄 Contracts Expiring", "0")
+            st.markdown(f"""
+            <div class='kpi-card'>
+                <div class='kpi-label'>📄 CONTRACTS</div>
+                <div class='kpi-value'>0</div>
+            </div>
+            """, unsafe_allow_html=True)
     
     with col3:
         if policies:
@@ -418,13 +754,29 @@ if choice == "📊 Dashboard":
                         expiring_policies += 1
                 except:
                     pass
-            st.metric("📜 Policies Expiring", expiring_policies, help="Expiring within 90 days")
+            st.markdown(f"""
+            <div class='kpi-card'>
+                <div class='kpi-label'>📜 POLICIES</div>
+                <div class='kpi-value'>{expiring_policies}</div>
+                <div class='kpi-label' style='font-size:0.6rem;'>expiring within 90 days</div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.metric("📜 Policies Expiring", "0")
+            st.markdown(f"""
+            <div class='kpi-card'>
+                <div class='kpi-label'>📜 POLICIES</div>
+                <div class='kpi-value'>0</div>
+            </div>
+            """, unsafe_allow_html=True)
     
     with col4:
         users_count = len(supabase.table("users").select("*").execute().data)
-        st.metric("👥 Active Users", users_count)
+        st.markdown(f"""
+        <div class='kpi-card'>
+            <div class='kpi-label'>👥 ACTIVE USERS</div>
+            <div class='kpi-value'>{users_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     if plans and len(plans) > 0:
         st.subheader("📈 Department Performance Overview")
@@ -433,11 +785,17 @@ if choice == "📊 Dashboard":
             depts = supabase.table("departments").select("id,name").execute().data
             dept_map = {d["id"]: d["name"] for d in depts}
             df["department"] = df["department_id"].map(dept_map)
-            fig = px.bar(df, x="task_name", y="progress_percent", color="department", title="Action Plan Progress by Task")
+            fig = px.bar(df, x="task_name", y="progress_percent", color="department", 
+                        title="Action Plan Progress by Task",
+                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         else:
-            fig = px.bar(df, x="task_name", y="progress_percent", color="status", title="My Department's Action Plan Progress")
+            fig = px.bar(df, x="task_name", y="progress_percent", color="status",
+                        title="My Department's Action Plan Progress",
+                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         
-        fig.update_layout(barmode='group', bargap=0.3)
+        fig.update_layout(barmode='group', bargap=0.3, plot_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
+                         paper_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
+                         title_font_color=HELB_GREEN, title_font_size=16)
         st.plotly_chart(fig, use_container_width=True)
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
@@ -446,7 +804,7 @@ if choice == "📊 Dashboard":
 # ACTION PLANS
 # ============================================
 elif choice == "✅ Action Plans":
-    st.header("Action Plan Monitor")
+    st.subheader("Action Plan Monitor")
     
     with st.expander("➕ Add New Action Item", expanded=False):
         with st.form("new_action"):
@@ -505,7 +863,7 @@ elif choice == "✅ Action Plans":
 # CONTRACTS
 # ============================================
 elif choice == "📄 Contracts":
-    st.header("Contract Tracker")
+    st.subheader("Contract Tracker")
     
     with st.expander("➕ Add New Contract", expanded=False):
         with st.form("new_contract"):
@@ -545,18 +903,28 @@ elif choice == "📄 Contracts":
             days_left = (end_date - datetime.now().date()).days
             
             if days_left > 30:
-                badge = "🟢 Active"
+                color = "🟢"
+                badge = '<span class="badge-active">Active</span>'
             elif days_left > 0:
-                badge = "🟡 Expiring Soon"
+                color = "🟡"
+                badge = '<span class="badge-expiring">Expiring Soon</span>'
             else:
-                badge = "🔴 Expired"
+                color = "🔴"
+                badge = '<span class="badge-expired">Expired</span>'
             
-            with st.container():
-                st.markdown(f"**{badge} - {contract['contract_title']}**")
-                st.caption(f"Vendor: {contract['vendor_name']}")
-                st.caption(f"End Date: {contract['end_date']} | {days_left} days remaining")
-                st.caption(f"Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}")
-                st.markdown("---")
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
         st.info("No contracts found. Click 'Add New Contract' to get started.")
 
@@ -564,7 +932,7 @@ elif choice == "📄 Contracts":
 # POLICIES
 # ============================================
 elif choice == "📋 Policies":
-    st.header("Policy Monitor")
+    st.subheader("Policy Monitor")
     
     with st.expander("➕ Add New Policy", expanded=False):
         with st.form("new_policy"):
@@ -592,16 +960,23 @@ elif choice == "📋 Policies":
             days_left = (expiry - datetime.now().date()).days
             
             if days_left > 90:
-                badge = "🟢 Active"
+                badge = '<span class="badge-active">Active</span>'
             elif days_left > 0:
-                badge = "🟡 Expiring Soon"
+                badge = '<span class="badge-expiring">Expiring Soon</span>'
             else:
-                badge = "🔴 Expired"
+                badge = '<span class="badge-expired">Expired</span>'
             
-            with st.container():
-                st.markdown(f"**{badge} - 📜 {policy['policy_name']}**")
-                st.caption(f"Expires: {policy['expiry_date']} ({days_left} days left)")
-                st.markdown("---")
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
@@ -609,7 +984,7 @@ elif choice == "📋 Policies":
 # USER MANAGEMENT
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
-    st.header("User Management - Admin Panel")
+    st.subheader("User Management - Admin Panel")
     
     depts = supabase.table("departments").select("id,name").execute().data
     dept_options = {d["name"]: d["id"] for d in depts}
@@ -619,7 +994,7 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     
     with tab1:
         with st.form("create_user_form"):
-            st.subheader("Create New User Account")
+            st.markdown("### Create New User Account")
             col1, col2 = st.columns(2)
             with col1:
                 new_username = st.text_input("Username*")
@@ -647,7 +1022,7 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                         st.error(f"❌ {message}")
     
     with tab2:
-        st.subheader("Edit User Role and Department")
+        st.markdown("### Edit User Role and Department")
         if users:
             user_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
             if user_options:
@@ -695,7 +1070,7 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
             st.info("No users found")
     
     with tab3:
-        st.subheader("Delete User")
+        st.markdown("### Delete User")
         st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
         
         if users:
@@ -721,7 +1096,7 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
             st.info("No users found")
     
     st.markdown("---")
-    st.subheader("Current Users")
+    st.markdown("### Current Users")
     if users:
         user_display = []
         for user in users:
@@ -739,11 +1114,13 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
 # ENTERPRISE VIEW
 # ============================================
 elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
-    st.header("Enterprise Management View")
-    st.subheader("Cross-Department Performance Overview")
+    st.subheader("Enterprise Management View")
+    st.markdown("### Cross-Department Performance Overview")
     
     depts = supabase.table("departments").select("*").execute().data
     dept_names = {d["id"]: d["name"] for d in depts}
+    
+    st.markdown("#### Department Performance Summary")
     
     performance_data = []
     for dept in depts:
@@ -802,5 +1179,9 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
 # FOOTER
 # ============================================
 st.markdown("---")
-st.caption("© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System")
-st.caption("Powered by Streamlit | Secure & Real-time")
+st.markdown("""
+<div class='footer'>
+    <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
+    <p>Powered by Streamlit | Secure & Real-time</p>
+</div>
+""", unsafe_allow_html=True)
