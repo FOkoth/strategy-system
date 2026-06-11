@@ -127,67 +127,6 @@ if "filter_quarter" not in st.session_state:
 if "filter_month" not in st.session_state:
     st.session_state.filter_month = "All"
 
-# Cache for work plans data
-@st.cache_data(ttl=60)  # Cache for 60 seconds
-def get_cached_work_plans(user_role, user_dept):
-    """Cached version of work plans fetch"""
-    try:
-        if user_role in ["admin", "management"]:
-            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
-        else:
-            result = supabase.table("work_plan").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
-        return result.data
-    except:
-        return []
-
-@st.cache_data(ttl=3600)
-def get_cached_departments():
-    """Cached departments with directorate info"""
-    try:
-        result = supabase.table("departments").select("*").order("name").execute()
-        depts = result.data
-        # Get all directorates in one query
-        dir_result = supabase.table("directorates").select("*").execute()
-        directorates = {d["id"]: d for d in dir_result.data}
-        
-        for dept in depts:
-            if dept.get("directorate_id") and dept["directorate_id"] in directorates:
-                dept["directorate_name"] = directorates[dept["directorate_id"]]["name"]
-                dept["director_name"] = directorates[dept["directorate_id"]]["director_name"]
-        return depts
-    except:
-        return []
-
-@st.cache_data(ttl=3600)
-def get_cached_directorates():
-    try:
-        result = supabase.table("directorates").select("*").order("name").execute()
-        return result.data
-    except:
-        return []
-
-@st.cache_data(ttl=60)
-def get_cached_contracts(user_role, user_dept):
-    try:
-        if user_role in ["admin", "management"]:
-            result = supabase.table("contracts").select("*").execute()
-        else:
-            result = supabase.table("contracts").select("*").eq("department_id", user_dept).execute()
-        return result.data
-    except:
-        return []
-
-@st.cache_data(ttl=60)
-def get_cached_policies(user_role, user_dept):
-    try:
-        if user_role in ["admin", "management"]:
-            result = supabase.table("policies").select("*").execute()
-        else:
-            result = supabase.table("policies").select("*").eq("department_id", user_dept).execute()
-        return result.data
-    except:
-        return []
-
 # ============================================
 # HELPER FUNCTIONS
 # ============================================
@@ -269,8 +208,16 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# DIRECTORATE FUNCTIONS (using cache)
+# DIRECTORATE FUNCTIONS
 # ============================================
+@st.cache_data(ttl=3600)
+def get_cached_directorates():
+    try:
+        result = supabase.table("directorates").select("*").order("name").execute()
+        return result.data
+    except:
+        return []
+
 def get_all_directorates():
     return get_cached_directorates()
 
@@ -315,8 +262,24 @@ def delete_directorate(directorate_id):
         return False, str(e)
 
 # ============================================
-# DEPARTMENT FUNCTIONS (using cache)
+# DEPARTMENT FUNCTIONS
 # ============================================
+@st.cache_data(ttl=3600)
+def get_cached_departments():
+    try:
+        result = supabase.table("departments").select("*").order("name").execute()
+        depts = result.data
+        dir_result = supabase.table("directorates").select("*").execute()
+        directorates = {d["id"]: d for d in dir_result.data}
+        
+        for dept in depts:
+            if dept.get("directorate_id") and dept["directorate_id"] in directorates:
+                dept["directorate_name"] = directorates[dept["directorate_id"]]["name"]
+                dept["director_name"] = directorates[dept["directorate_id"]]["director_name"]
+        return depts
+    except:
+        return []
+
 def get_all_departments():
     return get_cached_departments()
 
@@ -372,8 +335,41 @@ def get_department_name(dept_id):
     return dept["name"] if dept else "Unknown Department"
 
 # ============================================
-# WORK PLAN FUNCTIONS (using cache)
+# WORK PLAN FUNCTIONS
 # ============================================
+@st.cache_data(ttl=60)
+def get_cached_work_plans(user_role, user_dept):
+    try:
+        if user_role in ["admin", "management"]:
+            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
+        else:
+            result = supabase.table("work_plan").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
+        return result.data
+    except:
+        return []
+
+@st.cache_data(ttl=60)
+def get_cached_contracts(user_role, user_dept):
+    try:
+        if user_role in ["admin", "management"]:
+            result = supabase.table("contracts").select("*").execute()
+        else:
+            result = supabase.table("contracts").select("*").eq("department_id", user_dept).execute()
+        return result.data
+    except:
+        return []
+
+@st.cache_data(ttl=60)
+def get_cached_policies(user_role, user_dept):
+    try:
+        if user_role in ["admin", "management"]:
+            result = supabase.table("policies").select("*").execute()
+        else:
+            result = supabase.table("policies").select("*").eq("department_id", user_dept).execute()
+        return result.data
+    except:
+        return []
+
 def get_work_plans():
     return get_cached_work_plans(st.session_state.user_role, st.session_state.user_dept)
 
@@ -385,11 +381,15 @@ def add_work_plan(data):
     except:
         return False
 
+# FIXED: Convert progress_percent to integer to avoid database error
 def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
     try:
+        # Convert progress_percent to integer (round down)
+        progress_int = int(progress_percent) if progress_percent else 0
+        
         update_data = {
-            "actual_achievement": actual_achievement,
-            "progress_percent": progress_percent,
+            "actual_achievement": float(actual_achievement) if actual_achievement else 0,
+            "progress_percent": progress_int,
             "status": status,
             "updated_at": datetime.now().isoformat()
         }
@@ -499,7 +499,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (condensed for performance)
+# CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -809,7 +809,6 @@ with st.sidebar:
     
     role_display = st.session_state.user_role.replace('_', ' ').title() if st.session_state.user_role else "User"
     
-    # Get department details with directorate (cached)
     dept_details = get_department_by_id(st.session_state.user_dept) if st.session_state.user_dept else None
     if dept_details:
         if dept_details.get("directorate_name"):
@@ -845,7 +844,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE - OPTIMIZED
+# WORK PLANS MODULE
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -868,7 +867,6 @@ if choice == "📋 Work Plans":
     
     st.markdown("---")
     
-    # Get cached work plans
     work_plans = get_work_plans()
     
     if work_plans:
@@ -926,10 +924,9 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
     
-    # TAB 2: VIEW ALL ACTIVITIES - OPTIMIZED
+    # TAB 2: VIEW ALL ACTIVITIES
     with tab_view:
         if filtered_plans:
-            # Show filter summary
             filter_summary = []
             if selected_fy != "All":
                 filter_summary.append(f"FY: {selected_fy}")
@@ -940,7 +937,6 @@ if choice == "📋 Work Plans":
             if filter_summary:
                 st.info(f"📊 Showing activities for: {' | '.join(filter_summary)} | Total: {len(filtered_plans)} activities")
             
-            # Additional filters for pillar, status, category
             col_filter1, col_filter2, col_filter3 = st.columns(3)
             with col_filter1:
                 pillar_filter = st.multiselect("Filter by Pillar", STRATEGIC_PILLARS, default=[])
@@ -1062,7 +1058,7 @@ if choice == "📋 Work Plans":
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
-    # TAB 3: WORK PLAN DASHBOARD - OPTIMIZED
+    # TAB 3: WORK PLAN DASHBOARD
     with tab_dashboard:
         if filtered_plans:
             df = pd.DataFrame(filtered_plans)
@@ -1086,17 +1082,15 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - OPTIMIZED
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
     
-    # Get all data once with caching
     work_plans = get_work_plans()
     contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
     policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     
-    # Compact Filters
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
@@ -1114,7 +1108,6 @@ elif choice == "📊 Dashboard":
                                                       index=0 if st.session_state.filter_month == "All" or st.session_state.filter_month not in available_months else available_months.index(st.session_state.filter_month) + 1,
                                                       key="m_filter_dash")
     
-    # Prepare work plan data
     if work_plans:
         df_plans = pd.DataFrame(work_plans)
         df_plans['due_date_dt'] = pd.to_datetime(df_plans['due_date'])
@@ -1144,10 +1137,8 @@ elif choice == "📊 Dashboard":
     else:
         filtered_df = pd.DataFrame()
     
-    # Create Tabs
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
     
-    # TAB 1: WORK PLANS ANALYTICS
     with tab_work:
         if not filtered_df.empty:
             col1, col2, col3, col4, col5 = st.columns(5)
@@ -1275,7 +1266,6 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No work plan data available for the selected filters.")
     
-    # TAB 2: CONTRACTS ANALYTICS
     with tab_contracts:
         if contracts:
             df_contracts = pd.DataFrame(contracts)
@@ -1321,7 +1311,6 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No contracts found. Click 'Add New Contract' in the Contracts section to get started.")
     
-    # TAB 3: POLICIES ANALYTICS
     with tab_policies:
         if policies:
             df_policies = pd.DataFrame(policies)
@@ -1501,12 +1490,11 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY) - OPTIMIZED
+# USER MANAGEMENT (ADMIN ONLY)
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
     
-    # Get data once with caching
     directorates = get_cached_directorates()
     directorate_options = {d["name"]: d["id"] for d in directorates}
     departments = get_cached_departments()
@@ -1621,7 +1609,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     with tab4:
         st.markdown("### Manage Departments")
         
-        # Add new department
         with st.expander("➕ Add New Department", expanded=False):
             with st.form("add_department_form"):
                 col1, col2 = st.columns(2)
@@ -1643,7 +1630,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                     else:
                         st.error("Please enter a department name")
         
-        # Edit existing departments
         st.markdown("### Edit Existing Departments")
         if departments:
             dept_names = [d["name"] for d in departments]
@@ -1706,7 +1692,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     with tab5:
         st.markdown("### Manage Directorates")
         
-        # Add new directorate
         with st.expander("➕ Add New Directorate", expanded=False):
             with st.form("add_directorate_form"):
                 col1, col2 = st.columns(2)
@@ -1726,7 +1711,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                     else:
                         st.error("Please fill all required fields")
         
-        # Edit existing directorates
         st.markdown("### Edit Existing Directorates")
         if directorates:
             dir_names = [d["name"] for d in directorates]
@@ -1773,7 +1757,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
         else:
             st.info("No directorates found")
     
-    # Display current users table
     st.markdown("---")
     st.markdown("### Current Users")
     if users:
