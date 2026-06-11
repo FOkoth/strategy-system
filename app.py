@@ -69,6 +69,20 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
+# CONSTANTS
+# ============================================
+STRATEGIC_PILLARS = [
+    "1. Customer Excellence",
+    "2. Financial Sustainability and Stewardship",
+    "3. Innovation & Digital Transformation",
+    "4. Our People Centricity and Compliance",
+    "5. Strategy"
+]
+
+ACTIVITY_CATEGORIES = ["Strategic Plan", "Performance Contracting"]
+STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
+
+# ============================================
 # CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
@@ -420,24 +434,6 @@ if st.session_state.theme == "light":
             color: white !important;
             padding: 10px !important;
         }}
-        
-        /* Work Plan specific */
-        .pillar-card {{
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-left: 4px solid {HELB_GOLD};
-            padding: 0.5rem;
-            border-radius: 8px;
-            margin: 0.3rem 0;
-        }}
-        
-        .budget-highlight {{
-            background: #E8F5E9;
-            padding: 0.2rem 0.5rem;
-            border-radius: 15px;
-            font-weight: bold;
-            color: {HELB_GREEN};
-            display: inline-block;
-        }}
     </style>
     """
 else:
@@ -607,41 +603,17 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# CREATE WORK PLAN TABLE IF NOT EXISTS
-# ============================================
-def create_work_plan_table():
-    """Create work_plan table if it doesn't exist"""
-    try:
-        # Check if table exists by trying to select from it
-        supabase.table("work_plan").select("id").limit(1).execute()
-    except:
-        # Table doesn't exist - create it via SQL (Supabase SQL API would be needed)
-        # For now, we'll just return and let the app handle empty data
-        pass
-
-# ============================================
 # WORK PLAN FUNCTIONS
 # ============================================
-STRATEGIC_PILLARS = [
-    "1. Customer Excellence",
-    "2. Financial Sustainability and Stewardship",
-    "3. Innovation & Digital Transformation",
-    "4. Our People Centricity and Compliance",
-    "5. Strategy"
-]
-
-ACTIVITY_CATEGORIES = ["Strategic Plan", "Performance Contracting"]
-STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
-
 def get_work_plans():
     """Get work plans based on user role"""
     try:
         if st.session_state.user_role in ["admin", "management"]:
-            result = supabase.table("work_plan").select("*").execute()
+            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
         else:
-            result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).execute()
+            result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).order("created_at", desc=True).execute()
         return result.data
-    except:
+    except Exception as e:
         return []
 
 def add_work_plan(data):
@@ -656,7 +628,7 @@ def add_work_plan(data):
 def update_work_plan_status(plan_id, new_status, progress_percent=None):
     """Update work plan status"""
     try:
-        update_data = {"status": new_status}
+        update_data = {"status": new_status, "updated_at": datetime.now().isoformat()}
         if progress_percent is not None:
             update_data["progress_percent"] = progress_percent
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
@@ -667,6 +639,7 @@ def update_work_plan_status(plan_id, new_status, progress_percent=None):
 def update_work_plan(plan_id, data):
     """Update work plan"""
     try:
+        data["updated_at"] = datetime.now().isoformat()
         supabase.table("work_plan").update(data).eq("id", plan_id).execute()
         return True
     except:
@@ -892,10 +865,8 @@ if choice == "📋 Work Plans":
     st.markdown("<h2>📋 Institution-Wide Work Plan</h2>", unsafe_allow_html=True)
     st.markdown("<p style='margin-bottom: 1rem;'>Strategic planning and performance management across all pillars</p>", unsafe_allow_html=True)
     
-    # Get work plans
     work_plans = get_work_plans()
     
-    # Tabs for different views
     tab_add, tab_view, tab_dashboard = st.tabs(["➕ Add Work Plan Activity", "📊 View All Activities", "📈 Performance Dashboard"])
     
     # ============================================
@@ -909,36 +880,34 @@ if choice == "📋 Work Plans":
             
             with col1:
                 strategic_pillar = st.selectbox("Strategic Issue (Pillar)*", STRATEGIC_PILLARS)
+                strategy = st.text_area("Strategy", placeholder="e.g., Enhance customer service through digital platforms", height=80, help="Optional but recommended")
                 key_result_area = st.text_input("Key Result Area*", placeholder="e.g., Improve customer satisfaction score")
                 planned_activity = st.text_area("Planned Activity*", placeholder="Describe the activity in detail")
                 performance_indicator = st.text_input("Performance Indicator*", placeholder="e.g., Customer satisfaction score")
             
             with col2:
-                budget_allocation = st.number_input("Budget Allocation (KShs.)*", min_value=0.0, step=10000.0, format="%.2f")
+                budget_allocation = st.number_input("Budget Allocation (KShs.)", min_value=0.0, step=10000.0, format="%.2f", help="Optional - leave as 0 if not applicable")
                 annual_target = st.text_input("Annual Target*", placeholder="e.g., 90% satisfaction rate")
                 due_date = st.date_input("Due Date*")
                 activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
-                department_id = st.session_state.user_dept
                 
-                # Auto-fill department name
+                # Auto-fill department info
                 dept_name = st.session_state.user_dept_name if st.session_state.user_dept_name else "Current Department"
                 st.text_input("Department", value=dept_name, disabled=True)
             
             submitted = st.form_submit_button("Save Work Plan Activity", use_container_width=True)
             
             if submitted:
-                if not key_result_area or not planned_activity or not performance_indicator:
+                if not key_result_area or not planned_activity or not performance_indicator or not annual_target:
                     st.error("Please fill all required fields (*)")
                 else:
-                    # Calculate progress percent based on status
-                    progress_percent = 0
-                    
                     work_plan_data = {
                         "strategic_pillar": strategic_pillar,
+                        "strategy": strategy if strategy else None,
                         "key_result_area": key_result_area,
                         "planned_activity": planned_activity,
                         "performance_indicator": performance_indicator,
-                        "budget_allocation": budget_allocation,
+                        "budget_allocation": budget_allocation if budget_allocation > 0 else None,
                         "annual_target": annual_target,
                         "due_date": due_date.isoformat(),
                         "activity_category": activity_category,
@@ -955,7 +924,7 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error("Failed to add work plan activity")
+                        st.error("Failed to add work plan activity. Please ensure the database table exists.")
     
     # ============================================
     # TAB 2: VIEW ALL ACTIVITIES
@@ -973,7 +942,6 @@ if choice == "📋 Work Plans":
             with col_filter3:
                 category_filter = st.multiselect("Filter by Category", ACTIVITY_CATEGORIES, default=[])
             
-            # Apply filters
             filtered_plans = work_plans
             if pillar_filter:
                 filtered_plans = [p for p in filtered_plans if p.get("strategic_pillar") in pillar_filter]
@@ -984,9 +952,7 @@ if choice == "📋 Work Plans":
             
             st.markdown(f"**Showing {len(filtered_plans)} activities**")
             
-            # Display each work plan item
             for plan in filtered_plans:
-                # Determine badge color based on status
                 if plan.get("status") == "Done":
                     badge = '<span class="badge-active">✅ Done</span>'
                 elif plan.get("status") == "In Progress":
@@ -994,7 +960,6 @@ if choice == "📋 Work Plans":
                 else:
                     badge = '<span class="badge-pending">⏳ Pending</span>'
                 
-                # Calculate days remaining
                 due_date = datetime.strptime(plan["due_date"], "%Y-%m-%d").date()
                 days_left = (due_date - datetime.now().date()).days
                 
@@ -1003,6 +968,8 @@ if choice == "📋 Work Plans":
                     
                     with col1:
                         st.markdown(f"**Strategic Pillar:** {plan.get('strategic_pillar', 'N/A')}")
+                        if plan.get('strategy'):
+                            st.markdown(f"**Strategy:** {plan.get('strategy', 'N/A')}")
                         st.markdown(f"**Key Result Area:** {plan.get('key_result_area', 'N/A')}")
                         st.markdown(f"**Planned Activity:** {plan.get('planned_activity', 'N/A')}")
                         st.markdown(f"**Performance Indicator:** {plan.get('performance_indicator', 'N/A')}")
@@ -1013,9 +980,11 @@ if choice == "📋 Work Plans":
                     
                     with col2:
                         st.markdown(f"**Status:** {badge}", unsafe_allow_html=True)
-                        st.markdown(f"**Budget:** <span class='budget-highlight'>KES {plan.get('budget_allocation', 0):,.2f}</span>", unsafe_allow_html=True)
+                        if plan.get('budget_allocation'):
+                            st.markdown(f"**Budget:** <span class='budget-highlight'>KES {plan.get('budget_allocation', 0):,.2f}</span>", unsafe_allow_html=True)
+                        else:
+                            st.markdown("**Budget:** Not applicable")
                         
-                        # Progress update section
                         st.markdown("---")
                         st.markdown("**Update Progress**")
                         
@@ -1086,7 +1055,7 @@ if choice == "📋 Work Plans":
                 """, unsafe_allow_html=True)
             
             with col3:
-                total_budget = df['budget_allocation'].sum()
+                total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>💰 TOTAL BUDGET</div>
@@ -1107,7 +1076,6 @@ if choice == "📋 Work Plans":
             
             st.markdown("---")
             
-            # Charts Row 1
             col_chart1, col_chart2 = st.columns(2)
             
             with col_chart1:
@@ -1128,10 +1096,8 @@ if choice == "📋 Work Plans":
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Charts Row 2
             st.markdown("#### Department Performance Overview")
             
-            # Department performance
             dept_performance = df.groupby('department_name').agg({
                 'id': 'count',
                 'status': lambda x: (x == 'Done').sum(),
@@ -1148,165 +1114,21 @@ if choice == "📋 Work Plans":
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
             
-            # Charts Row 3
-            col_chart3, col_chart4 = st.columns(2)
-            
-            with col_chart3:
-                st.markdown("#### Activity Category Breakdown")
-                category_stats = df['activity_category'].value_counts().reset_index()
-                category_stats.columns = ['Category', 'Count']
-                fig = px.bar(category_stats, x='Category', y='Count',
-                            title="Strategic Plan vs Performance Contracting",
-                            color='Count', color_discrete_sequence=[HELB_GREEN])
-                fig.update_layout(height=350)
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col_chart4:
-                st.markdown("#### Progress by Key Result Area")
-                # Get top 10 KRA by progress
-                kra_progress = df.groupby('key_result_area')['progress_percent'].mean().sort_values(ascending=False).head(10).reset_index()
-                fig = px.bar(kra_progress, x='key_result_area', y='progress_percent',
-                            title="Top 10 Key Result Areas by Progress",
-                            color='progress_percent', color_continuous_scale='Viridis')
-                fig.update_layout(height=350, xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
-            
             # Detailed Data Table
             with st.expander("📋 Detailed Work Plan Data", expanded=False):
-                display_df = df[['strategic_pillar', 'key_result_area', 'planned_activity', 
-                                'performance_indicator', 'budget_allocation', 'status', 
-                                'progress_percent', 'due_date', 'department_name']]
+                display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
+                               'performance_indicator', 'budget_allocation', 'status', 
+                               'progress_percent', 'due_date', 'department_name']
+                display_df = df[display_cols] if all(col in df.columns for col in display_cols) else df
                 st.dataframe(display_df, use_container_width=True, hide_index=True)
                 
-                # Export option
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Export Work Plan Data", csv, f"work_plan_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
             st.info("No data available. Add work plan activities to see the dashboard.")
 
 # ============================================
-# CONTRACTS
-# ============================================
-elif choice == "📄 Contracts":
-    st.subheader("Contract Tracker")
-    
-    with st.expander("➕ Add New Contract", expanded=False):
-        with st.form("new_contract"):
-            col1, col2 = st.columns(2)
-            with col1:
-                title = st.text_input("Contract Title*")
-                vendor = st.text_input("Vendor*")
-            with col2:
-                end_date = st.date_input("End Date*")
-                auto_renew = st.checkbox("Auto-renewal")
-            
-            if st.form_submit_button("Save Contract", use_container_width=True):
-                if title and vendor:
-                    start_date = datetime.now().date()
-                    days_left = (end_date - start_date).days
-                    status = "expired" if days_left < 0 else ("expiring_soon" if days_left <= 30 else "active")
-                    
-                    supabase.table("contracts").insert({
-                        "contract_title": title,
-                        "vendor_name": vendor,
-                        "start_date": start_date.isoformat(),
-                        "end_date": end_date.isoformat(),
-                        "days_remaining": days_left,
-                        "status": status,
-                        "auto_renewal": auto_renew,
-                        "department_id": st.session_state.user_dept
-                    }).execute()
-                    st.success("Contract added successfully!")
-                    st.rerun()
-                else:
-                    st.error("Please fill all required fields")
-    
-    contracts = get_filtered_data("contracts")
-    if contracts:
-        for contract in contracts:
-            end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
-            days_left = (end_date - datetime.now().date()).days
-            
-            if days_left > 30:
-                color = "🟢"
-                badge = '<span class="badge-active">Active</span>'
-            elif days_left > 0:
-                color = "🟡"
-                badge = '<span class="badge-expiring">Expiring Soon</span>'
-            else:
-                color = "🔴"
-                badge = '<span class="badge-expired">Expired</span>'
-            
-            st.markdown(f"""
-            <div class='metric-card'>
-                <div style='display:flex; justify-content:space-between; align-items:center;'>
-                    <div>
-                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
-                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
-                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
-                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
-                    </div>
-                    <div>{badge}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("No contracts found. Click 'Add New Contract' to get started.")
-
-# ============================================
-# POLICIES
-# ============================================
-elif choice == "📋 Policies":
-    st.subheader("Policy Monitor")
-    
-    with st.expander("➕ Add New Policy", expanded=False):
-        with st.form("new_policy"):
-            policy_name = st.text_input("Policy Name*")
-            expiry_date = st.date_input("Expiry Date*")
-            is_global = st.checkbox("Global Policy (applies to all departments)")
-            
-            if st.form_submit_button("Save Policy", use_container_width=True):
-                if policy_name:
-                    supabase.table("policies").insert({
-                        "policy_name": policy_name,
-                        "expiry_date": expiry_date.isoformat(),
-                        "department_id": None if is_global else st.session_state.user_dept,
-                        "status": "active"
-                    }).execute()
-                    st.success("Policy added successfully!")
-                    st.rerun()
-                else:
-                    st.error("Please enter a policy name")
-    
-    policies = get_filtered_data("policies")
-    if policies:
-        for policy in policies:
-            expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
-            days_left = (expiry - datetime.now().date()).days
-            
-            if days_left > 90:
-                badge = '<span class="badge-active">Active</span>'
-            elif days_left > 0:
-                badge = '<span class="badge-expiring">Expiring Soon</span>'
-            else:
-                badge = '<span class="badge-expired">Expired</span>'
-            
-            st.markdown(f"""
-            <div class='metric-card'>
-                <div style='display:flex; justify-content:space-between; align-items:center;'>
-                    <div>
-                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
-                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
-                    </div>
-                    <div>{badge}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("No policies found. Click 'Add New Policy' to get started.")
-
-# ============================================
-# DASHBOARD (UPDATED)
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.subheader("Dashboard Overview")
@@ -1396,13 +1218,11 @@ elif choice == "📊 Dashboard":
         </div>
         """, unsafe_allow_html=True)
     
-    # Work Plan Progress Chart
     if work_plans and len(work_plans) > 0:
         st.subheader("📈 Work Plan Performance Overview")
         df = pd.DataFrame(work_plans)
         
         if st.session_state.user_role in ["admin", "management"]:
-            # Department comparison
             dept_progress = df.groupby('department_name').agg({
                 'progress_percent': 'mean',
                 'status': lambda x: (x == 'Done').sum()
@@ -1412,7 +1232,6 @@ elif choice == "📊 Dashboard":
                         title="Average Progress by Department",
                         color='Avg Progress %', color_continuous_scale='Greens')
         else:
-            # Status distribution for department
             status_counts = df['status'].value_counts().reset_index()
             status_counts.columns = ['Status', 'Count']
             fig = px.pie(status_counts, values='Count', names='Status',
@@ -1425,7 +1244,128 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# CONTRACTS
+# ============================================
+elif choice == "📄 Contracts":
+    st.subheader("Contract Tracker")
+    
+    with st.expander("➕ Add New Contract", expanded=False):
+        with st.form("new_contract"):
+            col1, col2 = st.columns(2)
+            with col1:
+                title = st.text_input("Contract Title*")
+                vendor = st.text_input("Vendor*")
+            with col2:
+                end_date = st.date_input("End Date*")
+                auto_renew = st.checkbox("Auto-renewal")
+            
+            if st.form_submit_button("Save Contract", use_container_width=True):
+                if title and vendor:
+                    start_date = datetime.now().date()
+                    days_left = (end_date - start_date).days
+                    status = "expired" if days_left < 0 else ("expiring_soon" if days_left <= 30 else "active")
+                    
+                    supabase.table("contracts").insert({
+                        "contract_title": title,
+                        "vendor_name": vendor,
+                        "start_date": start_date.isoformat(),
+                        "end_date": end_date.isoformat(),
+                        "days_remaining": days_left,
+                        "status": status,
+                        "auto_renewal": auto_renew,
+                        "department_id": st.session_state.user_dept
+                    }).execute()
+                    st.success("Contract added successfully!")
+                    st.rerun()
+                else:
+                    st.error("Please fill all required fields")
+    
+    contracts = get_filtered_data("contracts")
+    if contracts:
+        for contract in contracts:
+            end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
+            days_left = (end_date - datetime.now().date()).days
+            
+            if days_left > 30:
+                color = "🟢"
+                badge = '<span class="badge-active">Active</span>'
+            elif days_left > 0:
+                color = "🟡"
+                badge = '<span class="badge-pending">Expiring Soon</span>'
+            else:
+                color = "🔴"
+                badge = '<span class="badge-expired">Expired</span>'
+            
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No contracts found. Click 'Add New Contract' to get started.")
+
+# ============================================
+# POLICIES
+# ============================================
+elif choice == "📋 Policies":
+    st.subheader("Policy Monitor")
+    
+    with st.expander("➕ Add New Policy", expanded=False):
+        with st.form("new_policy"):
+            policy_name = st.text_input("Policy Name*")
+            expiry_date = st.date_input("Expiry Date*")
+            is_global = st.checkbox("Global Policy (applies to all departments)")
+            
+            if st.form_submit_button("Save Policy", use_container_width=True):
+                if policy_name:
+                    supabase.table("policies").insert({
+                        "policy_name": policy_name,
+                        "expiry_date": expiry_date.isoformat(),
+                        "department_id": None if is_global else st.session_state.user_dept,
+                        "status": "active"
+                    }).execute()
+                    st.success("Policy added successfully!")
+                    st.rerun()
+                else:
+                    st.error("Please enter a policy name")
+    
+    policies = get_filtered_data("policies")
+    if policies:
+        for policy in policies:
+            expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
+            days_left = (expiry - datetime.now().date()).days
+            
+            if days_left > 90:
+                badge = '<span class="badge-active">Active</span>'
+            elif days_left > 0:
+                badge = '<span class="badge-pending">Expiring Soon</span>'
+            else:
+                badge = '<span class="badge-expired">Expired</span>'
+            
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No policies found. Click 'Add New Policy' to get started.")
+
+# ============================================
+# USER MANAGEMENT
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
@@ -1561,13 +1501,11 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
     st.subheader("Enterprise Management View")
     st.markdown("### Cross-Department Performance Overview")
     
-    # Get work plans for all departments
     work_plans = get_work_plans()
     
     if work_plans:
         df = pd.DataFrame(work_plans)
         
-        # Department performance summary
         st.markdown("#### Department Performance Summary")
         
         performance_data = []
@@ -1576,7 +1514,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
             total = len(dept_df)
             completed = len(dept_df[dept_df['status'] == 'Done'])
             avg_progress = dept_df['progress_percent'].mean()
-            total_budget = dept_df['budget_allocation'].sum()
+            total_budget = dept_df['budget_allocation'].fillna(0).sum()
             
             performance_data.append({
                 "Department": dept,
@@ -1591,7 +1529,6 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
             df_perf = pd.DataFrame(performance_data)
             st.dataframe(df_perf, use_container_width=True, hide_index=True)
         
-        # Strategic Pillar Analysis
         st.markdown("#### Strategic Pillar Analysis")
         pillar_summary = df.groupby('strategic_pillar').agg({
             'id': 'count',
@@ -1606,10 +1543,10 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
         fig.update_layout(height=400, xaxis_tickangle=-45)
         st.plotly_chart(fig, use_container_width=True)
     
-    # Tabs for detailed views
     tabs = st.tabs(["All Work Plans", "All Contracts", "All Policies"])
     
     with tabs[0]:
+        work_plans = get_work_plans()
         if work_plans:
             df = pd.DataFrame(work_plans)
             display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
