@@ -83,7 +83,7 @@ ACTIVITY_CATEGORIES = ["Strategic Plan", "Performance Contracting"]
 STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
 
 # ============================================
-# CUSTOM CSS - LIGHT THEME FIXES ONLY
+# CUSTOM CSS - LIGHT THEME WITH BLACK TEXT FIX
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -280,7 +280,7 @@ if st.session_state.theme == "light":
             border-radius: 2px;
         }}
         
-        /* Metric Cards */
+        /* Metric Cards - FORCE BLACK TEXT */
         .metric-card {{
             background: {HELB_WHITE};
             border-radius: 12px;
@@ -290,8 +290,11 @@ if st.session_state.theme == "light":
             transition: all 0.3s ease;
         }}
         
-        /* Metric card text - BLACK for readability */
-        .metric-card b, .metric-card span, .metric-card div {{
+        .metric-card *,
+        .metric-card b,
+        .metric-card span,
+        .metric-card div,
+        .metric-card p {{
             color: {HELB_BLACK} !important;
         }}
         
@@ -348,7 +351,7 @@ if st.session_state.theme == "light":
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }}
         
-        /* Delete button */
+        /* Delete button - Red */
         .stButton > button[key*="delete"] {{
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
         }}
@@ -374,7 +377,7 @@ if st.session_state.theme == "light":
             color: {HELB_BLACK} !important;
         }}
         
-        /* Expander content area */
+        /* Expander content area - FORCE BLACK TEXT */
         .streamlit-expanderContent {{
             background-color: {HELB_WHITE} !important;
             border: 1px solid #D1D5DB !important;
@@ -383,12 +386,17 @@ if st.session_state.theme == "light":
             padding: 1rem !important;
         }}
         
-        /* Expander content text - BLACK */
+        /* FORCE ALL TEXT IN EXPANDER CONTENT TO BE BLACK */
+        .streamlit-expanderContent * {{
+            color: {HELB_BLACK} !important;
+        }}
+        
         .streamlit-expanderContent p, 
         .streamlit-expanderContent span, 
         .streamlit-expanderContent div,
         .streamlit-expanderContent label,
-        .streamlit-expanderContent strong {{
+        .streamlit-expanderContent strong,
+        .streamlit-expanderContent b {{
             color: {HELB_BLACK} !important;
         }}
         
@@ -1044,10 +1052,11 @@ if choice == "📋 Work Plans":
                                     st.rerun()
                         
                         with col_delete:
+                            # Only show delete button for admin users
                             if st.session_state.user_role == "admin":
                                 if st.button(f"🗑️ Delete", key=f"delete_{plan['id']}"):
                                     if delete_work_plan(plan['id']):
-                                        st.success("✅ Deleted successfully!")
+                                        st.success("✅ Activity deleted successfully!")
                                         st.rerun()
                     
                     st.markdown("---")
@@ -1283,7 +1292,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS (simplified - working)
+# CONTRACTS
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Tracker")
@@ -1326,25 +1335,33 @@ elif choice == "📄 Contracts":
             days_left = (end_date - datetime.now().date()).days
             
             if days_left > 30:
-                badge = "🟢 Active"
+                color = "🟢"
+                badge = '<span class="badge-active">Active</span>'
             elif days_left > 0:
-                badge = "🟡 Expiring Soon"
+                color = "🟡"
+                badge = '<span class="badge-pending">Expiring Soon</span>'
             else:
-                badge = "🔴 Expired"
+                color = "🔴"
+                badge = '<span class="badge-expired">Expired</span>'
             
             st.markdown(f"""
             <div class='metric-card'>
-                <b>{badge} - {contract['contract_title']}</b><br>
-                Vendor: {contract['vendor_name']}<br>
-                End Date: {contract['end_date']} | {days_left} days remaining<br>
-                Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
     else:
         st.info("No contracts found. Click 'Add New Contract' to get started.")
 
 # ============================================
-# POLICIES (simplified - working)
+# POLICIES
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Monitor")
@@ -1375,23 +1392,28 @@ elif choice == "📋 Policies":
             days_left = (expiry - datetime.now().date()).days
             
             if days_left > 90:
-                badge = "🟢 Active"
+                badge = '<span class="badge-active">Active</span>'
             elif days_left > 0:
-                badge = "🟡 Expiring Soon"
+                badge = '<span class="badge-pending">Expiring Soon</span>'
             else:
-                badge = "🔴 Expired"
+                badge = '<span class="badge-expired">Expired</span>'
             
             st.markdown(f"""
             <div class='metric-card'>
-                <b>{badge} - 📜 {policy['policy_name']}</b><br>
-                Expires: {policy['expiry_date']} ({days_left} days left)
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
     else:
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# USER MANAGEMENT
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
