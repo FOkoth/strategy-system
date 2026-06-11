@@ -17,6 +17,7 @@ HELB_BLUE = "#00529B"
 HELB_DARK = "#1F2937"
 HELB_WHITE = "#FFFFFF"
 HELB_GRAY = "#F9FAFB"
+HELB_BLACK = "#000000"
 
 # ============================================
 # THEME MANAGEMENT
@@ -67,7 +68,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# CUSTOM CSS - ONLY FIX TEXT COLORS ON GREEN BACKGROUND
+# CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -143,7 +144,7 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        /* Headers - Keep green */
+        /* Headers */
         h1, h2, h3, h4 {{
             color: {HELB_GREEN} !important;
             font-weight: 600 !important;
@@ -155,7 +156,7 @@ if st.session_state.theme == "light":
             margin-bottom: 25px;
         }}
         
-        /* Dashboard Header - KEEP THE GREEN BACKGROUND */
+        /* Dashboard Header */
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -172,7 +173,6 @@ if st.session_state.theme == "light":
             gap: 1rem;
         }}
         
-        /* Header text - MAKE SURE TEXT IS WHITE */
         .dashboard-header h1 {{
             color: white !important;
             margin: 0;
@@ -187,7 +187,7 @@ if st.session_state.theme == "light":
             font-size: 0.7rem;
         }}
         
-        /* Login Container - Keep green */
+        /* Login Container */
         .login-container {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 20px;
@@ -209,7 +209,7 @@ if st.session_state.theme == "light":
             margin-top: 0.5rem;
         }}
         
-        /* KPI Cards - Keep green gradient, make ALL text white */
+        /* KPI Cards */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
@@ -314,7 +314,7 @@ if st.session_state.theme == "light":
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }}
         
-        /* Expander header */
+        /* EXPANDER HEADER - MAKE TEXT BLACK AND VISIBLE */
         .streamlit-expanderHeader {{
             background-color: {HELB_WHITE} !important;
             border-radius: 8px !important;
@@ -322,13 +322,17 @@ if st.session_state.theme == "light":
         }}
         
         .streamlit-expanderHeader p {{
-            color: {HELB_DARK} !important;
-            font-size: 0.8rem !important;
+            color: {HELB_BLACK} !important;
+            font-size: 0.9rem !important;
             font-weight: 600 !important;
         }}
         
         .streamlit-expanderHeader:hover {{
             background-color: {HELB_GRAY} !important;
+        }}
+        
+        .streamlit-expanderHeader:hover p {{
+            color: {HELB_BLACK} !important;
         }}
         
         /* Expander content area */
@@ -352,6 +356,7 @@ if st.session_state.theme == "light":
         .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
             font-size: 0.7rem !important;
             font-weight: 500 !important;
+            color: {HELB_BLACK} !important;
         }}
         
         /* Tabs */
@@ -527,12 +532,14 @@ else:
             border: 1px solid #4a4a6a !important;
         }}
         
+        /* Dark mode expander */
         .streamlit-expanderHeader {{
             background-color: #2d2d44 !important;
         }}
         
         .streamlit-expanderHeader p {{
             color: {HELB_GOLD} !important;
+            font-size: 0.9rem !important;
         }}
         
         .stTabs [data-baseweb="tab-list"] {{
