@@ -149,17 +149,9 @@ if st.session_state.theme == "light":
             font-weight: 600 !important;
         }}
         
-        h1 {{
-            font-size: 1.5rem !important;
-        }}
-        
-        h2 {{
-            font-size: 1.2rem !important;
-        }}
-        
-        h3 {{
-            font-size: 1rem !important;
-        }}
+        h1 {{ font-size: 1.5rem !important; }}
+        h2 {{ font-size: 1.2rem !important; }}
+        h3 {{ font-size: 1rem !important; }}
         
         .stMarkdown h4, .stMarkdown h3 {{
             color: {HELB_DARK} !important;
@@ -598,7 +590,7 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# SESSION STATE
+# SESSION STATE INITIALIZATION
 # ============================================
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -608,19 +600,19 @@ if "authenticated" not in st.session_state:
     st.session_state.user_name = None
     st.session_state.user_fullname = None
     st.session_state.user_id = None
-    st.session_state.user_dept_name = None
+    st.session_state.user_dept_name = ""
 
 # ============================================
 # HELPER FUNCTIONS
 # ============================================
 def get_department_name(dept_id):
     if dept_id is None:
-        return "N/A"
+        return "No Department"
     try:
         result = supabase.table("departments").select("name").eq("id", dept_id).execute()
-        return result.data[0]["name"] if result.data else "Unknown"
+        return result.data[0]["name"] if result.data else "Unknown Department"
     except:
-        return "Unknown"
+        return "Unknown Department"
 
 def get_filtered_data(table_name):
     if st.session_state.user_role in ["admin", "management"]:
@@ -777,12 +769,12 @@ with st.sidebar:
         """, unsafe_allow_html=True)
     
     # Format user info properly - Name, Department, Role on separate lines
-    role_display = st.session_state.user_role.replace('_', ' ').title()
+    role_display = st.session_state.user_role.replace('_', ' ').title() if st.session_state.user_role else "User"
     dept_display = st.session_state.user_dept_name if st.session_state.user_dept_name else "No Department"
     
     st.markdown(f"""
     <div class='sidebar-user-info'>
-        <strong>{st.session_state.user_fullname}</strong>
+        <strong>{st.session_state.user_fullname or "User"}</strong>
         <span class='dept'>{dept_display}</span>
         <span class='role'>{role_display}</span>
     </div>
