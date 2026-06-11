@@ -11,16 +11,14 @@ import requests
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
-HELB_GREEN = "#00843D"      # HELB Green - Primary
-HELB_GOLD = "#FFB81C"        # HELB Gold - Accent
-HELB_BLUE = "#00529B"        # HELB Blue - Secondary
-HELB_DARK = "#1F2937"        # Dark text
-HELB_BLACK = "#000000"       # Black text for inputs
-HELB_WHITE = "#FFFFFF"       # White background
-HELB_GRAY = "#F3F4F6"        # Light gray for cards
-HELB_LIGHT_GREEN = "#E8F5E9"  # Very light green for accents
+HELB_GREEN = "#00843D"
+HELB_GOLD = "#FFB81C"
+HELB_BLUE = "#00529B"
+HELB_DARK = "#1F2937"
+HELB_WHITE = "#FFFFFF"
+HELB_GRAY = "#F3F4F6"
 
-# Page config - Light theme by default
+# Page config
 st.set_page_config(
     page_title="HELB Strategy Performance System",
     page_icon="🏦",
@@ -29,68 +27,40 @@ st.set_page_config(
 )
 
 # ============================================
-# LOAD HELB LOGO FROM URL
+# LOAD HELB LOGO
 # ============================================
 def get_logo_base64():
-    """Load HELB logo from URL and convert to base64 with transparency"""
     try:
-        # Get logo URL from secrets or use default
         logo_url = st.secrets.get("HELB_LOGO_URL", "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png")
         response = requests.get(logo_url, timeout=10)
         if response.status_code == 200:
-            # Open image from bytes
             img = Image.open(BytesIO(response.content))
-            # Ensure image has transparency (RGBA mode)
             if img.mode != 'RGBA':
                 img = img.convert('RGBA')
-            # Create transparent background
             transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
-            transparent_img.paste(img, (0, 0), img if img.mode == 'RGBA' else None)
-            # Resize for different uses while maintaining aspect ratio
+            transparent_img.paste(img, (0, 0), img)
             return {
                 "large": resize_and_encode(transparent_img, 250, 100),
                 "medium": resize_and_encode(transparent_img, 150, 60),
                 "small": resize_and_encode(transparent_img, 80, 32),
-                "original": base64.b64encode(response.content).decode()
             }
-    except Exception as e:
-        st.warning(f"Could not load logo from URL: {e}")
-    
-    # Fallback to local file
-    try:
-        img = Image.open("HELB Logo.png")
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-        transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
-        transparent_img.paste(img, (0, 0), img if img.mode == 'RGBA' else None)
-        return {
-            "large": resize_and_encode(transparent_img, 250, 100),
-            "medium": resize_and_encode(transparent_img, 150, 60),
-            "small": resize_and_encode(transparent_img, 80, 32),
-            "original": None
-        }
     except:
-        return None
+        pass
+    return None
 
 def resize_and_encode(img, width, height):
-    """Resize image maintaining aspect ratio and return base64 with transparency"""
-    # Calculate new size maintaining aspect ratio
     img_copy = img.copy()
     img_copy.thumbnail((width, height), Image.Resampling.LANCZOS)
-    
-    # Ensure RGBA mode for transparency
     if img_copy.mode != 'RGBA':
         img_copy = img_copy.convert('RGBA')
-    
     buffered = BytesIO()
-    img_copy.save(buffered, format="PNG", optimize=True, transparency=None)
+    img_copy.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
 
-# Load logo once
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# CUSTOM CSS - Light Themed (Inspired by reference code)
+# CLEAN CSS - Inspired by reference code
 # ============================================
 st.markdown("""
 <style>
@@ -99,9 +69,9 @@ st.markdown("""
     footer {visibility: hidden;}
     .stAppDeployButton {display: none;}
     
-    /* Force main background to white */
-    .stApp, .main, .block-container {
-        background-color: #FFFFFF !important;
+    /* Main background white */
+    .stApp {
+        background-color: #FFFFFF;
     }
     
     /* Sidebar - Solid Green */
@@ -110,22 +80,20 @@ st.markdown("""
         padding-top: 1rem;
     }
     
-    /* Sidebar text white */
     [data-testid="stSidebar"] * {
         color: white !important;
     }
     
     /* Sidebar user info */
     .sidebar-user-info {
-        background-color: rgba(255,255,255,0.15) !important;
+        background-color: rgba(255,255,255,0.15);
         padding: 0.8rem;
         border-radius: 10px;
         margin: 0.5rem 0;
         text-align: center;
-        border: 1px solid rgba(255,255,255,0.2);
     }
     
-    /* Navigation radio buttons - Gold */
+    /* Navigation buttons - Gold */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         background-color: #FFB81C !important;
         color: #1F2937 !important;
@@ -133,49 +101,17 @@ st.markdown("""
         padding: 10px 15px !important;
         margin: 5px 0 !important;
         font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-        transform: translateX(5px);
-        filter: brightness(1.05);
     }
     
     /* Logout button */
     [data-testid="stSidebar"] .stButton > button {
         background-color: rgba(255,255,255,0.2) !important;
         color: white !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
-    }
-    
-    /* Expander styling - Light gray header */
-    .streamlit-expanderHeader {
-        background-color: #F3F4F6 !important;
-        border-radius: 8px !important;
-        color: #00843D !important;
-        font-weight: 600 !important;
-        border: 1px solid #E5E7EB !important;
-    }
-    
-    /* Expander content - White background */
-    .streamlit-expanderContent {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E5E7EB !important;
-        border-top: none !important;
-        border-radius: 0 0 8px 8px !important;
-        padding: 1rem !important;
     }
     
     /* Headers */
-    h1, h2, h3, h4, h5, h6 {
+    h1, h2, h3 {
         color: #00843D !important;
-        font-weight: 600 !important;
-    }
-    
-    h1 {
-        border-bottom: 3px solid #FFB81C;
-        padding-bottom: 15px;
-        margin-bottom: 25px;
     }
     
     /* Dashboard Header */
@@ -193,8 +129,6 @@ st.markdown("""
         color: white !important;
         margin: 0;
         font-size: 1.2rem;
-        font-weight: 600;
-        border-bottom: none;
     }
     
     .dashboard-header p {
@@ -215,13 +149,11 @@ st.markdown("""
         color: white;
         font-size: 1.5rem;
         font-weight: 700;
-        margin: 0;
     }
     
     .login-subtitle {
         color: rgba(255,255,255,0.85);
         font-size: 0.85rem;
-        margin-top: 0.5rem;
     }
     
     /* KPI Cards */
@@ -230,12 +162,6 @@ st.markdown("""
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .kpi-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
     }
     
     .kpi-label {
@@ -243,7 +169,6 @@ st.markdown("""
         text-transform: uppercase;
         color: #FFB81C;
         font-weight: 600;
-        letter-spacing: 0.5px;
     }
     
     .kpi-value {
@@ -251,7 +176,6 @@ st.markdown("""
         font-weight: 700;
         margin: 0.3rem 0;
         color: white;
-        line-height: 1.2;
     }
     
     .progress-bar {
@@ -259,23 +183,20 @@ st.markdown("""
         background: rgba(255,255,255,0.3);
         border-radius: 2px;
         overflow: hidden;
-        margin-top: 0.5rem;
     }
     
     .progress-fill {
         height: 100%;
         background: #FFB81C;
-        border-radius: 2px;
     }
     
-    /* Metric Cards - White background */
+    /* Metric Cards */
     .metric-card {
         background: #FFFFFF;
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         border-left: 4px solid #FFB81C;
-        transition: all 0.3s ease;
         border: 1px solid #E5E7EB;
     }
     
@@ -311,54 +232,29 @@ st.markdown("""
     .stButton > button {
         background-color: #00843D !important;
         color: white !important;
-        border: none !important;
         border-radius: 8px !important;
-        padding: 10px 20px !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
     }
     
-    .stButton > button:hover {
-        background-color: #00529B !important;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    
-    /* Danger button */
-    div[data-testid="column"]:has(button[key*="delete"]) button {
-        background-color: #dc2626 !important;
-    }
-    
-    div[data-testid="column"]:has(button[key*="delete"]) button:hover {
-        background-color: #b91c1c !important;
-    }
-    
-    /* Tabs - Light theme */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
         background-color: #F3F4F6;
         padding: 0.5rem;
         border-radius: 12px;
-        margin-bottom: 1rem;
-        border: 1px solid #E5E7EB;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 0.5rem 1.2rem;
-        font-weight: 500;
-        font-size: 0.8rem;
-        color: #1F2937;
-        white-space: nowrap;
-        transition: all 0.2s;
-        background-color: transparent;
     }
     
     .stTabs [aria-selected="true"] {
         background-color: #FFB81C !important;
         color: #1F2937 !important;
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background-color: #F3F4F6 !important;
+        border-radius: 8px !important;
+        color: #00843D !important;
+        font-weight: 600 !important;
     }
     
     /* Footer */
@@ -369,43 +265,6 @@ st.markdown("""
         font-size: 0.7rem;
         border-top: 1px solid #E5E7EB;
         margin-top: 2rem;
-        background-color: #FFFFFF;
-    }
-    
-    /* Input fields - White background, black text */
-    .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input {
-        background-color: white !important;
-        color: #000000 !important;
-        border: 1px solid #D1D5DB !important;
-        border-radius: 6px !important;
-    }
-    
-    /* Input labels - Black */
-    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {
-        color: #000000 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Form background white */
-    .stForm {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Info boxes */
-    .stInfo {
-        background-color: #E8F5E9 !important;
-        border-left-color: #00843D !important;
-    }
-    
-    /* Success/Error/Warning */
-    .stAlert {
-        background-color: #F3F4F6 !important;
-        border-left: 4px solid #FFB81C !important;
-    }
-    
-    /* Main text color */
-    .stApp p, .stApp span, .stApp div, .stApp label {
-        color: #000000 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -452,7 +311,6 @@ def get_filtered_data(table_name):
         return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
 
 def get_all_users():
-    """Get all users for admin management"""
     try:
         result = supabase.table("users").select("*").execute()
         return result.data
@@ -460,7 +318,6 @@ def get_all_users():
         return []
 
 def delete_user(username):
-    """Delete a user"""
     try:
         supabase.table("users").delete().eq("username", username).execute()
         return True
@@ -468,7 +325,6 @@ def delete_user(username):
         return False
 
 def update_user_role(username, new_role, department_id):
-    """Update user role and department"""
     try:
         supabase.table("users").update({
             "role": new_role,
@@ -479,7 +335,6 @@ def update_user_role(username, new_role, department_id):
         return False
 
 def reset_user_password(username, new_password):
-    """Reset user password"""
     try:
         supabase.table("users").update({
             "password_hash": new_password
@@ -489,7 +344,6 @@ def reset_user_password(username, new_password):
         return False
 
 def create_new_user(username, full_name, password, role, department_id):
-    """Create a new user"""
     try:
         existing = supabase.table("users").select("*").eq("username", username.lower()).execute()
         if existing.data:
@@ -512,15 +366,14 @@ def create_new_user(username, full_name, password, role, department_id):
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Display logo with transparent background
         if LOGO_BASE64 and LOGO_BASE64.get("large"):
-            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["large"]}" style="width: 220px; height: auto; margin-bottom: 1rem; background: transparent;">'
+            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["large"]}" style="width: 220px; height: auto; margin-bottom: 1rem;">'
         else:
-            logo_html = '<div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>'
+            logo_html = '<div style="font-size: 3rem;">🏦</div>'
         
         st.markdown(f"""
         <div class='login-container'>
-            <div class='login-logo'>{logo_html}</div>
+            <div>{logo_html}</div>
             <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
             <p class='login-subtitle'>Strategy Performance Management System</p>
         </div>
@@ -529,8 +382,8 @@ if not st.session_state.authenticated:
         st.markdown("<br>", unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username", placeholder="Enter your username")
-            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
             submitted = st.form_submit_button("Login", use_container_width=True)
             
             if submitted:
@@ -556,20 +409,20 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ============================================
-# MAIN APPLICATION (LOGGED IN)
+# MAIN APPLICATION
 # ============================================
 
-# Dashboard Header with logo
+# Header
 col_header, col_refresh = st.columns([6, 1])
 with col_header:
     if LOGO_BASE64 and LOGO_BASE64.get("small"):
-        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["small"]}" style="width: 40px; height: auto; background: transparent;">'
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64["small"]}" style="width: 40px; height: auto;">'
     else:
-        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
+        logo_html = '<div>🏦</div>'
     
     st.markdown(f"""
     <div class='dashboard-header'>
-        <div class='header-left'>
+        <div style='display: flex; align-items: center; gap: 1rem;'>
             {logo_html}
             <div>
                 <h1>HELB Strategy Performance Management System</h1>
@@ -579,20 +432,15 @@ with col_header:
     </div>
     """, unsafe_allow_html=True)
 with col_refresh:
-    if st.button("🔄 Refresh", key="global_refresh"):
+    if st.button("🔄 Refresh"):
         st.rerun()
 
-# Sidebar with logo
+# Sidebar
 with st.sidebar:
     if LOGO_BASE64 and LOGO_BASE64.get("medium"):
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64["medium"]}" style="width: 130px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{LOGO_BASE64["medium"]}" style="width: 120px;"></div>', unsafe_allow_html=True)
     else:
-        st.markdown("""
-        <div style='text-align: center; padding: 0.5rem 0;'>
-            <div style='font-size: 2rem;'>🏦</div>
-            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; font-size: 2rem;'>🏦</div>", unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class='sidebar-user-info'>
@@ -603,7 +451,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Navigation menu
     menu_options = ["📊 Dashboard", "✅ Action Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
         menu_options.append("👥 User Management")
@@ -628,7 +475,6 @@ if choice == "📊 Dashboard":
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
     
-    # KPI Cards
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -703,7 +549,6 @@ if choice == "📊 Dashboard":
         </div>
         """, unsafe_allow_html=True)
     
-    # Progress Chart
     if plans and len(plans) > 0:
         st.subheader("📈 Department Performance Overview")
         df = pd.DataFrame(plans)
@@ -719,14 +564,7 @@ if choice == "📊 Dashboard":
                         title="My Department's Action Plan Progress",
                         color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
         
-        fig.update_layout(
-            barmode='group', 
-            bargap=0.3, 
-            plot_bgcolor=HELB_WHITE,
-            paper_bgcolor=HELB_WHITE,
-            title_font_color=HELB_GREEN,
-            title_font_size=16
-        )
+        fig.update_layout(barmode='group', bargap=0.3, plot_bgcolor=HELB_WHITE, paper_bgcolor=HELB_WHITE)
         st.plotly_chart(fig, use_container_width=True)
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
@@ -912,16 +750,13 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# ENHANCED USER MANAGEMENT (ADMIN ONLY)
+# USER MANAGEMENT
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
     
-    # Get all departments for dropdown
     depts = supabase.table("departments").select("id,name").execute().data
     dept_options = {d["name"]: d["id"] for d in depts}
-    
-    # Get all users
     users = get_all_users()
     
     tab1, tab2, tab3 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User"])
@@ -963,7 +798,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                 selected_user_str = st.selectbox("Select User to Edit", user_options)
                 selected_username = selected_user_str.split(" - ")[0]
                 
-                # Get current user data
                 current_user = next((u for u in users if u['username'] == selected_username), None)
                 if current_user:
                     col1, col2 = st.columns(2)
@@ -976,7 +810,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                         default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
                         new_department = st.selectbox("Department", dept_list, index=default_index)
                     
-                    # Password reset option
                     reset_password = st.checkbox("Reset Password")
                     new_password = None
                     if reset_password:
@@ -984,14 +817,12 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                         confirm_new = st.text_input("Confirm New Password", type="password")
                     
                     if st.button("Save Changes", use_container_width=True):
-                        # Update role and department
                         dept_id = dept_options.get(new_department) if new_department != "None" else None
                         if update_user_role(selected_username, new_role, dept_id):
                             st.success(f"✅ Role and department updated for {selected_username}")
                         else:
                             st.error("Failed to update role/department")
                         
-                        # Reset password if requested
                         if reset_password and new_password:
                             if new_password == confirm_new and len(new_password) >= 4:
                                 if reset_user_password(selected_username, new_password):
@@ -1033,7 +864,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
         else:
             st.info("No users found")
     
-    # Display current users table
     st.markdown("---")
     st.markdown("### Current Users")
     if users:
@@ -1059,7 +889,6 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
     depts = supabase.table("departments").select("*").execute().data
     dept_names = {d["id"]: d["name"] for d in depts}
     
-    # Department performance summary
     st.markdown("#### Department Performance Summary")
     
     performance_data = []
@@ -1086,7 +915,6 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
         df = pd.DataFrame(performance_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
     
-    # Tabs for detailed views
     tabs = st.tabs(["All Action Plans", "All Contracts", "All Policies"])
     
     with tabs[0]:
