@@ -90,7 +90,7 @@ def resize_and_encode(img, width, height):
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# CUSTOM CSS - Light Themed Professional HELB Design
+# CUSTOM CSS - Light Themed (Inspired by reference code)
 # ============================================
 st.markdown("""
 <style>
@@ -100,17 +100,8 @@ st.markdown("""
     .stAppDeployButton {display: none;}
     
     /* Force main background to white */
-    .stApp {
+    .stApp, .main, .block-container {
         background-color: #FFFFFF !important;
-    }
-    
-    .main {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Make all text dark/black by default */
-    .stApp, .stApp p, .stApp span, .stApp div, .stApp label {
-        color: #000000 !important;
     }
     
     /* Sidebar - Solid Green */
@@ -119,7 +110,7 @@ st.markdown("""
         padding-top: 1rem;
     }
     
-    /* Sidebar text should be white */
+    /* Sidebar text white */
     [data-testid="stSidebar"] * {
         color: white !important;
     }
@@ -134,7 +125,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.2);
     }
     
-    /* Navigation radio buttons */
+    /* Navigation radio buttons - Gold */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         background-color: #FFB81C !important;
         color: #1F2937 !important;
@@ -157,7 +148,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.3) !important;
     }
     
-    /* Expander header styling */
+    /* Expander styling - Light gray header */
     .streamlit-expanderHeader {
         background-color: #F3F4F6 !important;
         border-radius: 8px !important;
@@ -166,49 +157,13 @@ st.markdown("""
         border: 1px solid #E5E7EB !important;
     }
     
-    /* CRITICAL FIX: Force ALL expander content to white */
-    div[data-testid="stExpander"] div[data-testid="stExpanderContent"],
-    div[data-testid="stExpander"] div[data-testid="stExpanderContent"] *,
-    .streamlit-expanderContent,
-    .streamlit-expanderContent div,
-    .streamlit-expanderContent .stMarkdown,
-    .streamlit-expanderContent .stForm,
-    .streamlit-expanderContent [data-testid="stForm"],
-    .streamlit-expanderContent .stTextInput,
-    .streamlit-expanderContent .stSelectbox,
-    .streamlit-expanderContent .stDateInput,
-    .streamlit-expanderContent .stNumberInput,
-    .streamlit-expanderContent .stSlider,
-    .streamlit-expanderContent .stCheckbox,
-    .streamlit-expanderContent .stButton,
-    .streamlit-expanderContent .stColumns,
-    .streamlit-expanderContent [data-testid="column"],
-    .streamlit-expanderContent .stTextInput input,
-    .streamlit-expanderContent .stSelectbox div,
-    .streamlit-expanderContent .stDateInput input,
-    .streamlit-expanderContent .stNumberInput input {
+    /* Expander content - White background */
+    .streamlit-expanderContent {
         background-color: #FFFFFF !important;
-    }
-    
-    /* Input Labels - Black */
-    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {
-        color: #000000 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Input fields - White background, black text */
-    .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input {
-        background-color: white !important;
-        color: #000000 !important;
-        border: 1px solid #D1D5DB !important;
-        border-radius: 6px !important;
-    }
-    
-    /* Form background white */
-    .stForm {
-        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
+        border-top: none !important;
+        border-radius: 0 0 8px 8px !important;
         padding: 1rem !important;
-        border-radius: 8px !important;
     }
     
     /* Headers */
@@ -225,25 +180,48 @@ st.markdown("""
     
     /* Dashboard Header */
     .dashboard-header {
-        background-color: #FFFFFF !important;
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
         padding: 0.8rem 1.5rem;
         border-radius: 12px;
         margin-bottom: 1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border: 1px solid #E5E7EB;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .dashboard-header h1 {
+        color: white !important;
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-bottom: none;
+    }
+    
+    .dashboard-header p {
+        color: rgba(255,255,255,0.85);
+        margin: 0;
+        font-size: 0.7rem;
     }
     
     /* Login Container */
     .login-container {
-        background-color: #FFFFFF !important;
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        border: 1px solid #E5E7EB;
+    }
+    
+    .login-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .login-subtitle {
+        color: rgba(255,255,255,0.85);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
     }
     
     /* KPI Cards */
@@ -253,6 +231,11 @@ st.markdown("""
         padding: 1rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
     }
     
     .kpi-label {
@@ -285,7 +268,7 @@ st.markdown("""
         border-radius: 2px;
     }
     
-    /* Metric Cards */
+    /* Metric Cards - White background */
     .metric-card {
         background: #FFFFFF;
         border-radius: 12px;
@@ -341,7 +324,16 @@ st.markdown("""
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     
-    /* Tabs */
+    /* Danger button */
+    div[data-testid="column"]:has(button[key*="delete"]) button {
+        background-color: #dc2626 !important;
+    }
+    
+    div[data-testid="column"]:has(button[key*="delete"]) button:hover {
+        background-color: #b91c1c !important;
+    }
+    
+    /* Tabs - Light theme */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
         background-color: #F3F4F6;
@@ -351,10 +343,22 @@ st.markdown("""
         border: 1px solid #E5E7EB;
     }
     
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: #1F2937;
+        white-space: nowrap;
+        transition: all 0.2s;
+        background-color: transparent;
+    }
+    
     .stTabs [aria-selected="true"] {
         background-color: #FFB81C !important;
         color: #1F2937 !important;
         font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     /* Footer */
@@ -368,45 +372,40 @@ st.markdown("""
         background-color: #FFFFFF;
     }
     
-    /* Main content area */
-    .block-container {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* All containers should be white */
-    .element-container, .stMarkdown, .stAlert, .stSuccess, .stError, .stWarning, .stInfo {
-        background-color: transparent !important;
-    }
-    
-    /* Column backgrounds */
-    div[data-testid="column"] {
-        background-color: transparent !important;
-    }
-    
-    /* Specific fix for expander content area - OVERRIDE EVERYTHING */
-    div[data-testid="stExpander"] div[data-testid="stExpanderContent"] {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Force all input fields to have white background */
-    input, textarea, select {
-        background-color: #FFFFFF !important;
+    /* Input fields - White background, black text */
+    .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input {
+        background-color: white !important;
         color: #000000 !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 6px !important;
     }
     
-    /* Force Streamlit containers to be white */
-    .stTextInput, .stSelectbox, .stDateInput, .stNumberInput, .stSlider, .stCheckbox {
-        background-color: transparent !important;
+    /* Input labels - Black */
+    .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label, .stSlider label, .stCheckbox label {
+        color: #000000 !important;
+        font-weight: 500 !important;
     }
     
-    /* Make sure the main content area is white */
-    .main .block-container {
+    /* Form background white */
+    .stForm {
         background-color: #FFFFFF !important;
     }
     
-    /* Fix any remaining dark backgrounds */
-    .st-emotion-cache-1y4p8pa, .st-emotion-cache-16idsys {
-        background-color: #FFFFFF !important;
+    /* Info boxes */
+    .stInfo {
+        background-color: #E8F5E9 !important;
+        border-left-color: #00843D !important;
+    }
+    
+    /* Success/Error/Warning */
+    .stAlert {
+        background-color: #F3F4F6 !important;
+        border-left: 4px solid #FFB81C !important;
+    }
+    
+    /* Main text color */
+    .stApp p, .stApp span, .stApp div, .stApp label {
+        color: #000000 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -726,8 +725,7 @@ if choice == "📊 Dashboard":
             plot_bgcolor=HELB_WHITE,
             paper_bgcolor=HELB_WHITE,
             title_font_color=HELB_GREEN,
-            title_font_size=16,
-            font_color=HELB_BLACK
+            title_font_size=16
         )
         st.plotly_chart(fig, use_container_width=True)
     
