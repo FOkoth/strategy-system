@@ -368,10 +368,10 @@ if st.session_state.theme == "light":
             padding: 1rem !important;
         }}
         
-        /* Input fields */
+        /* Input fields - ALL TEXT BLACK */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: white !important;
-            color: black !important;
+            color: {HELB_BLACK} !important;
             border: 1px solid #D1D5DB !important;
             border-radius: 6px !important;
             font-size: 0.75rem !important;
@@ -380,6 +380,15 @@ if st.session_state.theme == "light":
         .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
             font-size: 0.7rem !important;
             font-weight: 500 !important;
+            color: {HELB_BLACK} !important;
+        }}
+        
+        /* Text area specific */
+        .stTextArea textarea {{
+            color: {HELB_BLACK} !important;
+        }}
+        
+        .stTextArea label {{
             color: {HELB_BLACK} !important;
         }}
         
@@ -433,6 +442,11 @@ if st.session_state.theme == "light":
             background-color: {HELB_GREEN} !important;
             color: white !important;
             padding: 10px !important;
+        }}
+        
+        /* Placeholder text */
+        .stTextInput input::placeholder, .stTextArea textarea::placeholder {{
+            color: #9CA3AF !important;
         }}
     </style>
     """
@@ -554,6 +568,11 @@ else:
             background-color: #2d2d44 !important;
             color: white !important;
             border: 1px solid #4a4a6a !important;
+            font-size: 0.75rem !important;
+        }}
+        
+        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
+            color: #e0e0e0 !important;
         }}
         
         /* Dark mode expander */
@@ -606,11 +625,13 @@ supabase = init_supabase()
 # WORK PLAN FUNCTIONS
 # ============================================
 def get_work_plans():
-    """Get work plans based on user role"""
+    """Get work plans based on user role - Department sees only their department, Management sees all"""
     try:
         if st.session_state.user_role in ["admin", "management"]:
+            # Management and Admin see ALL work plans (institution-wide)
             result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
         else:
+            # Department champions see only their department's work plans
             result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).order("created_at", desc=True).execute()
         return result.data
     except Exception as e:
@@ -632,15 +653,6 @@ def update_work_plan_status(plan_id, new_status, progress_percent=None):
         if progress_percent is not None:
             update_data["progress_percent"] = progress_percent
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
-        return True
-    except:
-        return False
-
-def update_work_plan(plan_id, data):
-    """Update work plan"""
-    try:
-        data["updated_at"] = datetime.now().isoformat()
-        supabase.table("work_plan").update(data).eq("id", plan_id).execute()
         return True
     except:
         return False
@@ -862,8 +874,13 @@ with st.sidebar:
 # WORK PLANS MODULE
 # ============================================
 if choice == "📋 Work Plans":
-    st.markdown("<h2>📋 Institution-Wide Work Plan</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='margin-bottom: 1rem;'>Strategic planning and performance management across all pillars</p>", unsafe_allow_html=True)
+    # Dynamic title based on user role
+    if st.session_state.user_role in ["admin", "management"]:
+        st.markdown("<h2>📋 Institution-Wide Work Plan</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 1rem;'>Enterprise-wide strategic planning and performance management</p>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<h2>📋 {st.session_state.user_dept_name} Department Work Plan</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='margin-bottom: 1rem;'>Departmental strategic planning and performance management</p>", unsafe_allow_html=True)
     
     work_plans = get_work_plans()
     
@@ -915,7 +932,7 @@ if choice == "📋 Work Plans":
                         "progress_percent": 0,
                         "department_id": st.session_state.user_dept,
                         "department_name": st.session_state.user_dept_name,
-                        "created_by": st.session_state.user_id,
+                        "created_by": st.session_state.user_id if st.session_state.user_id else None,
                         "created_at": datetime.now().isoformat()
                     }
                     
@@ -930,7 +947,10 @@ if choice == "📋 Work Plans":
     # TAB 2: VIEW ALL ACTIVITIES
     # ============================================
     with tab_view:
-        st.markdown("### All Work Plan Activities")
+        if st.session_state.user_role in ["admin", "management"]:
+            st.markdown("### All Department Work Plans (Institution-Wide)")
+        else:
+            st.markdown(f"### {st.session_state.user_dept_name} Department Work Plan Activities")
         
         if work_plans:
             # Add filters
@@ -942,6 +962,14 @@ if choice == "📋 Work Plans":
             with col_filter3:
                 category_filter = st.multiselect("Filter by Category", ACTIVITY_CATEGORIES, default=[])
             
+            # Add department filter for management
+            if st.session_state.user_role in ["admin", "management"]:
+                with col_filter1:
+                    departments_list = list(set([p.get("department_name", "Unknown") for p in work_plans if p.get("department_name")]))
+                    dept_filter = st.multiselect("Filter by Department", departments_list, default=[])
+            else:
+                dept_filter = []
+            
             filtered_plans = work_plans
             if pillar_filter:
                 filtered_plans = [p for p in filtered_plans if p.get("strategic_pillar") in pillar_filter]
@@ -949,6 +977,8 @@ if choice == "📋 Work Plans":
                 filtered_plans = [p for p in filtered_plans if p.get("status") in status_filter]
             if category_filter:
                 filtered_plans = [p for p in filtered_plans if p.get("activity_category") in category_filter]
+            if dept_filter:
+                filtered_plans = [p for p in filtered_plans if p.get("department_name") in dept_filter]
             
             st.markdown(f"**Showing {len(filtered_plans)} activities**")
             
@@ -963,7 +993,11 @@ if choice == "📋 Work Plans":
                 due_date = datetime.strptime(plan["due_date"], "%Y-%m-%d").date()
                 days_left = (due_date - datetime.now().date()).days
                 
-                with st.expander(f"📌 {plan['planned_activity'][:80]}... - {plan.get('strategic_pillar', 'N/A')}", expanded=False):
+                expander_title = f"📌 {plan['planned_activity'][:80]}... - {plan.get('strategic_pillar', 'N/A')}"
+                if st.session_state.user_role in ["admin", "management"] and plan.get('department_name'):
+                    expander_title += f" - {plan.get('department_name', 'N/A')}"
+                
+                with st.expander(expander_title, expanded=False):
                     col1, col2 = st.columns([2, 1])
                     
                     with col1:
@@ -980,8 +1014,8 @@ if choice == "📋 Work Plans":
                     
                     with col2:
                         st.markdown(f"**Status:** {badge}", unsafe_allow_html=True)
-                        if plan.get('budget_allocation'):
-                            st.markdown(f"**Budget:** <span class='budget-highlight'>KES {plan.get('budget_allocation', 0):,.2f}</span>", unsafe_allow_html=True)
+                        if plan.get('budget_allocation') and plan.get('budget_allocation') > 0:
+                            st.markdown(f"**Budget:** KES {plan.get('budget_allocation', 0):,.2f}")
                         else:
                             st.markdown("**Budget:** Not applicable")
                         
@@ -1025,7 +1059,10 @@ if choice == "📋 Work Plans":
     # TAB 3: PERFORMANCE DASHBOARD
     # ============================================
     with tab_dashboard:
-        st.markdown("### 📊 Work Plan Performance Dashboard")
+        if st.session_state.user_role in ["admin", "management"]:
+            st.markdown("### 📊 Institution-Wide Work Plan Performance Dashboard")
+        else:
+            st.markdown(f"### 📊 {st.session_state.user_dept_name} Department Performance Dashboard")
         
         if work_plans:
             df = pd.DataFrame(work_plans)
@@ -1039,7 +1076,7 @@ if choice == "📋 Work Plans":
                 <div class='kpi-card'>
                     <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
                     <div class='kpi-value'>{total_activities}</div>
-                    <div class='kpi-sub'>Across all departments</div>
+                    <div class='kpi-sub'>Total work plan items</div>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -1089,30 +1126,35 @@ if choice == "📋 Work Plans":
             
             with col_chart2:
                 st.markdown("#### Budget Allocation by Pillar")
-                budget_by_pillar = df.groupby('strategic_pillar')['budget_allocation'].sum().reset_index()
-                fig = px.pie(budget_by_pillar, values='budget_allocation', names='strategic_pillar',
-                            title="Budget Distribution by Pillar",
-                            color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE, "#FF6B6B", "#4ECDC4"])
+                budget_data = df[df['budget_allocation'].notna() & (df['budget_allocation'] > 0)]
+                if not budget_data.empty:
+                    budget_by_pillar = budget_data.groupby('strategic_pillar')['budget_allocation'].sum().reset_index()
+                    fig = px.pie(budget_by_pillar, values='budget_allocation', names='strategic_pillar',
+                                title="Budget Distribution by Pillar",
+                                color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE, "#FF6B6B", "#4ECDC4"])
+                    fig.update_layout(height=400)
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("No budget data available for chart")
+            
+            # Department performance (for management view)
+            if st.session_state.user_role in ["admin", "management"]:
+                st.markdown("#### Department Performance Overview")
+                dept_performance = df.groupby('department_name').agg({
+                    'id': 'count',
+                    'status': lambda x: (x == 'Done').sum(),
+                    'progress_percent': 'mean'
+                }).reset_index()
+                dept_performance.columns = ['Department', 'Total Activities', 'Completed', 'Avg Progress %']
+                dept_performance['Completion Rate %'] = (dept_performance['Completed'] / dept_performance['Total Activities'] * 100).round(1)
+                
+                fig = px.bar(dept_performance, x='Department', y='Completion Rate %',
+                            title="Completion Rate by Department",
+                            color='Completion Rate %', color_continuous_scale='Greens',
+                            text='Completion Rate %')
+                fig.update_traces(textposition='outside')
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
-            
-            st.markdown("#### Department Performance Overview")
-            
-            dept_performance = df.groupby('department_name').agg({
-                'id': 'count',
-                'status': lambda x: (x == 'Done').sum(),
-                'progress_percent': 'mean'
-            }).reset_index()
-            dept_performance.columns = ['Department', 'Total Activities', 'Completed', 'Avg Progress %']
-            dept_performance['Completion Rate %'] = (dept_performance['Completed'] / dept_performance['Total Activities'] * 100).round(1)
-            
-            fig = px.bar(dept_performance, x='Department', y='Completion Rate %',
-                        title="Completion Rate by Department",
-                        color='Completion Rate %', color_continuous_scale='Greens',
-                        text='Completion Rate %')
-            fig.update_traces(textposition='outside')
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
             
             # Detailed Data Table
             with st.expander("📋 Detailed Work Plan Data", expanded=False):
@@ -1365,7 +1407,7 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT
+# USER MANAGEMENT (ADMIN ONLY)
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
