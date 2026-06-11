@@ -81,7 +81,6 @@ STRATEGIC_PILLARS = [
 ]
 
 ACTIVITY_CATEGORIES = ["SP Deliverable", "PC Deliverable"]
-STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
 
 # Quarter to Months Mapping
 QUARTER_MONTHS = {
@@ -91,7 +90,6 @@ QUARTER_MONTHS = {
     "Q4 (Apr-Jun)": ["April", "May", "June"]
 }
 
-# All months in order
 ALL_MONTHS = ["January", "February", "March", "April", "May", "June", 
               "July", "August", "September", "October", "November", "December"]
 
@@ -114,7 +112,6 @@ def get_quarter_from_month(month):
         return "Q4 (Apr-Jun)"
 
 def get_months_for_quarter(quarter):
-    """Return list of months for the selected quarter"""
     if quarter == "All":
         return ALL_MONTHS
     return QUARTER_MONTHS.get(quarter, ALL_MONTHS)
@@ -170,7 +167,6 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     df['due_month'] = df['due_date_dt'].dt.month
     df['due_year'] = df['due_date_dt'].dt.year
     
-    # Filter by Financial Year (July - June)
     if financial_year and financial_year != "All":
         start_year = int(financial_year.split('/')[0])
         end_year = int(financial_year.split('/')[1])
@@ -178,7 +174,6 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
                ((df['due_year'] == end_year) & (df['due_month'] <= 6))
         df = df[mask]
     
-    # Filter by Quarter
     if quarter and quarter != "All":
         if quarter == "Q1 (Jul-Sep)":
             df = df[df['due_month'].isin([7, 8, 9])]
@@ -189,7 +184,6 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
         elif quarter == "Q4 (Apr-Jun)":
             df = df[df['due_month'].isin([4, 5, 6])]
     
-    # Filter by Month
     if month and month != "All":
         month_num = {
             "January": 1, "February": 2, "March": 3, "April": 4,
@@ -228,25 +222,27 @@ if st.session_state.theme == "light":
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        /* Navigation radio buttons - Green background for selected */
+        /* Navigation - Gold by default, Green when selected */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GRAY} !important;
-            color: {HELB_BLACK} !important;
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
             border-radius: 8px !important;
             padding: 8px 12px !important;
             margin: 4px 0 !important;
             font-weight: 600 !important;
             font-size: 0.8rem !important;
-        }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
+            transition: all 0.3s ease !important;
         }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_BLACK} !important;
+            transform: translateX(5px);
+            filter: brightness(1.05);
+        }}
+        
+        /* Selected menu item - Green background */
+        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
+            background-color: {HELB_GREEN} !important;
+            color: white !important;
         }}
         
         [data-testid="stSidebar"] .stButton > button {{
@@ -304,11 +300,7 @@ if st.session_state.theme == "light":
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             border-left: 4px solid {HELB_GOLD};
         }}
-        
-        /* Make all text black in metric cards */
-        .metric-card * {{
-            color: {HELB_BLACK} !important;
-        }}
+        .metric-card * {{ color: {HELB_BLACK} !important; }}
         
         /* Status Badges */
         .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
@@ -340,10 +332,7 @@ if st.session_state.theme == "light":
             border: 1px solid #D1D5DB !important;
             font-size: 0.75rem !important;
         }}
-        
-        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
-            color: {HELB_BLACK} !important;
-        }}
+        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{ color: {HELB_BLACK} !important; }}
         
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
@@ -353,15 +342,9 @@ if st.session_state.theme == "light":
         /* Footer */
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
-        /* Dataframe */
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: {HELB_BLACK} !important; font-size: 0.7rem; }}
-        
-        /* General text */
-        .stMarkdown, .stMarkdown p, .stMarkdown div {{
-            color: {HELB_BLACK} !important;
-        }}
-        
+        .stMarkdown, .stMarkdown p, .stMarkdown div {{ color: {HELB_BLACK} !important; }}
         hr {{ margin: 0.5rem 0; }}
     </style>
     """
@@ -389,8 +372,8 @@ else:
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: #2d2d44 !important;
-            color: white !important;
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
             border-radius: 8px !important;
             padding: 8px 12px !important;
             margin: 4px 0 !important;
@@ -399,7 +382,7 @@ else:
         }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_GREEN} !important;
+            background-color: #0f3460 !important;
             color: white !important;
         }}
         
@@ -536,43 +519,6 @@ def delete_work_plan(plan_id):
         return True
     except:
         return False
-
-def filter_work_plans_by_date(df, financial_year, quarter, month):
-    if df.empty:
-        return df
-    
-    df = df.copy()
-    df['due_date_dt'] = pd.to_datetime(df['due_date'])
-    df['due_month'] = df['due_date_dt'].dt.month
-    df['due_year'] = df['due_date_dt'].dt.year
-    
-    if financial_year and financial_year != "All":
-        start_year = int(financial_year.split('/')[0])
-        end_year = int(financial_year.split('/')[1])
-        mask = ((df['due_year'] == start_year) & (df['due_month'] >= 7)) | \
-               ((df['due_year'] == end_year) & (df['due_month'] <= 6))
-        df = df[mask]
-    
-    if quarter and quarter != "All":
-        if quarter == "Q1 (Jul-Sep)":
-            df = df[df['due_month'].isin([7, 8, 9])]
-        elif quarter == "Q2 (Oct-Dec)":
-            df = df[df['due_month'].isin([10, 11, 12])]
-        elif quarter == "Q3 (Jan-Mar)":
-            df = df[df['due_month'].isin([1, 2, 3])]
-        elif quarter == "Q4 (Apr-Jun)":
-            df = df[df['due_month'].isin([4, 5, 6])]
-    
-    if month and month != "All":
-        month_num = {
-            "January": 1, "February": 2, "March": 3, "April": 4,
-            "May": 5, "June": 6, "July": 7, "August": 8,
-            "September": 9, "October": 10, "November": 11, "December": 12
-        }.get(month, 0)
-        if month_num:
-            df = df[df['due_month'] == month_num]
-    
-    return df
 
 # ============================================
 # SESSION STATE INITIALIZATION
@@ -788,23 +734,16 @@ if choice == "📋 Work Plans":
     else:
         st.markdown(f"<h2>📋 {st.session_state.user_dept_name} Department Work Plan</h2>", unsafe_allow_html=True)
     
-    # Filter Bar with dynamic month options based on quarter selection
+    # Filter Bar
     st.markdown("### 📅 Period Filters")
-    
-    # Get current selections
-    current_quarter = st.session_state.get("temp_quarter", "All")
-    
     col_fy, col_q, col_m = st.columns(3)
     with col_fy:
         financial_years = ["All"] + get_financial_years()
         selected_fy = st.selectbox("Financial Year", financial_years, key="fy_filter_workplan", index=0)
-    
     with col_q:
         quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
         selected_q = st.selectbox("Quarter", quarters, key="q_filter_workplan", index=0)
-    
     with col_m:
-        # Get available months based on selected quarter
         available_months = get_months_for_quarter(selected_q)
         selected_m = st.selectbox("Month", ["All"] + available_months, key="m_filter_workplan", index=0)
     
@@ -986,7 +925,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - ORGANIZED WITH TABS (Bar Charts instead of Pie)
+# DASHBOARD - WITH CORRECTED CHARTS
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1044,7 +983,6 @@ elif choice == "📊 Dashboard":
                     filtered_df = filtered_df[filtered_df['department_name'].isin(selected_dept_filter)]
     else:
         filtered_df = pd.DataFrame()
-        df_plans = pd.DataFrame()
     
     # Create Tabs
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
@@ -1074,45 +1012,51 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Row 2: Bar Charts (replaced pie charts)
+            # Row 2: Charts - DOUGHNUT chart for Status Distribution (as requested)
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
                 status_counts = filtered_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                colors_map = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
-                fig = px.bar(status_counts, x='Status', y='Count', color='Status',
-                            color_discrete_map=colors_map, text='Count')
-                fig.update_traces(textposition='outside')
-                fig.update_layout(height=350, showlegend=False, margin=dict(l=20, r=20, t=30, b=20))
+                colors = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
+                fig = go.Figure(data=[go.Pie(
+                    labels=status_counts['Status'],
+                    values=status_counts['Count'],
+                    hole=0.4,
+                    marker=dict(colors=[colors.get(s, HELB_GRAY) for s in status_counts['Status']]),
+                    textinfo='label+percent',
+                    textposition='auto'
+                )])
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
             with col_chart2:
-                st.markdown("#### Progress by Strategic Pillar")
+                st.markdown("#### Progress by Strategic Pillar (Horizontal Bar Chart)")
                 pillar_progress = filtered_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
                 pillar_progress.columns = ['Pillar', 'Progress %']
-                fig = px.bar(pillar_progress, x='Pillar', y='Progress %',
+                pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
+                fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
                             color='Progress %', color_continuous_scale='Greens',
                             text='Progress %')
                 fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-                fig.update_layout(height=350, xaxis_tickangle=-45, margin=dict(l=20, r=20, t=30, b=80))
+                fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 3: More Bar Charts
+            # Row 3: Department Performance - ALL departments, Horizontal Bar Chart
+            st.markdown("#### Department Performance (All Departments)")
+            dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
+            dept_progress.columns = ['Department', 'Progress %']
+            dept_progress = dept_progress.sort_values('Progress %', ascending=True)
+            fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
+                        color='Progress %', color_continuous_scale='Greens',
+                        text='Progress %')
+            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+            fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Row 4: Activity Category Breakdown (Bar Chart)
             col_chart3, col_chart4 = st.columns(2)
             with col_chart3:
-                st.markdown("#### Department Performance (Top 10)")
-                dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
-                dept_progress.columns = ['Department', 'Progress %']
-                dept_progress = dept_progress.sort_values('Progress %', ascending=False).head(10)
-                fig = px.bar(dept_progress, x='Department', y='Progress %',
-                            color='Progress %', color_continuous_scale='Greens',
-                            text='Progress %')
-                fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-                fig.update_layout(height=350, xaxis_tickangle=-45, margin=dict(l=20, r=20, t=30, b=80))
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col_chart4:
                 st.markdown("#### Activity Category Breakdown")
                 category_stats = filtered_df['activity_category'].value_counts().reset_index()
                 category_stats.columns = ['Category', 'Count']
@@ -1123,32 +1067,32 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 4: Quarterly Trend (Bar Chart)
-            st.markdown("#### Quarterly Performance Trend")
-            quarterly_data = filtered_df.groupby('quarter').agg({
-                'id': 'count',
-                'calculated_progress': 'mean'
-            }).reset_index()
-            quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
-            quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
-            quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
-            quarterly_data = quarterly_data.sort_values('Quarter')
-            
-            fig = go.Figure()
-            fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
-                                 name='Activities', marker_color=HELB_GREEN,
-                                 text=quarterly_data['Activities'], textposition='outside'))
-            fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
-                                     name='Avg Progress %', marker_color=HELB_GOLD,
-                                     line=dict(width=3), yaxis='y2'))
-            fig.update_layout(
-                height=350,
-                yaxis_title="Number of Activities",
-                yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-                margin=dict(l=20, r=60, t=30, b=20)
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            with col_chart4:
+                st.markdown("#### Quarterly Performance Trend")
+                quarterly_data = filtered_df.groupby('quarter').agg({
+                    'id': 'count',
+                    'calculated_progress': 'mean'
+                }).reset_index()
+                quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
+                quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
+                quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
+                quarterly_data = quarterly_data.sort_values('Quarter')
+                
+                fig = go.Figure()
+                fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
+                                     name='Activities', marker_color=HELB_GREEN,
+                                     text=quarterly_data['Activities'], textposition='outside'))
+                fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
+                                         name='Avg Progress %', marker_color=HELB_GOLD,
+                                         line=dict(width=3), yaxis='y2'))
+                fig.update_layout(
+                    height=350,
+                    yaxis_title="Number of Activities",
+                    yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                    margin=dict(l=20, r=60, t=30, b=20)
+                )
+                st.plotly_chart(fig, use_container_width=True)
             
             # Row 5: Alerts
             st.markdown("### ⚠️ Priority Alerts")
