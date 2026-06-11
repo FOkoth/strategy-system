@@ -69,7 +69,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# THEME-BASED CSS - RESTORED ORIGINAL STYLING
+# THEME-BASED CSS - RESTORED ORIGINAL STYLING WITH FIXES
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -127,9 +127,14 @@ if st.session_state.theme == "light":
         }}
         
         /* Headers */
-        h1, h2, h3 {{
+        h1, h2, h3, h4 {{
             color: {HELB_GREEN} !important;
             font-weight: 600 !important;
+        }}
+        
+        /* FIX: Make subheaders visible (dark text on white background) */
+        .stMarkdown h4, .stMarkdown h3 {{
+            color: {HELB_DARK} !important;
         }}
         
         h1 {{
@@ -273,7 +278,7 @@ if st.session_state.theme == "light":
             font-weight: 600;
         }}
         
-        /* Buttons - IMPORTANT: White text on green */
+        /* Buttons - White text on green */
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
@@ -287,6 +292,16 @@ if st.session_state.theme == "light":
         .stButton > button:hover {{
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white !important;
+        }}
+        
+        /* FIX: Expander header hover text color */
+        .streamlit-expanderHeader:hover {{
+            color: {HELB_GREEN} !important;
+        }}
+        
+        .streamlit-expanderHeader p:hover {{
+            color: {HELB_GREEN} !important;
         }}
         
         /* Input fields - White background, black text */
@@ -338,6 +353,11 @@ if st.session_state.theme == "light":
             font-size: 0.7rem;
             border-top: 1px solid #E5E7EB;
             margin-top: 2rem;
+        }}
+        
+        /* FIX: Make all subheader text visible (dark color) */
+        .stMarkdown, .stMarkdown p, .stMarkdown div {{
+            color: {HELB_DARK} !important;
         }}
         
         /* Theme toggle button */
@@ -392,7 +412,7 @@ else:
             color: white !important;
         }}
         
-        h1, h2, h3 {{
+        h1, h2, h3, h4 {{
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
         }}
@@ -439,7 +459,7 @@ else:
             border-left: 4px solid {HELB_GOLD};
         }}
         
-        /* Buttons - White text */
+        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             color: white !important;
@@ -449,7 +469,7 @@ else:
             font-weight: 600 !important;
         }}
         
-        /* Input fields - Dark background, light text */
+        /* Input fields */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: #2d2d44 !important;
             color: white !important;
@@ -1115,12 +1135,13 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
 # ============================================
 elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
-    st.markdown("### Cross-Department Performance Overview")
+    # FIX: Changed from st.markdown to st.subheader to ensure visibility
+    st.subheader("Cross-Department Performance Overview")
     
     depts = supabase.table("departments").select("*").execute().data
     dept_names = {d["id"]: d["name"] for d in depts}
     
-    st.markdown("#### Department Performance Summary")
+    st.subheader("Department Performance Summary")
     
     performance_data = []
     for dept in depts:
