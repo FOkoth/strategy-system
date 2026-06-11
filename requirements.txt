@@ -1,7 +1,13 @@
 streamlit
+supabase
 pandas
 plotly
-supabase
-bcrypt
-pillow
+Pillow
 requests
+python-dateutil
+numpy
+supabase-py
+postgrest-py
+gotrue
+realtime
+storage3
