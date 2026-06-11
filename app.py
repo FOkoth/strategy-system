@@ -83,7 +83,7 @@ ACTIVITY_CATEGORIES = ["Strategic Plan", "Performance Contracting"]
 STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS - LIGHT THEME FIXES ONLY
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -96,6 +96,11 @@ if st.session_state.theme == "light":
         /* Main container - White background */
         .main, .stApp {{
             background-color: {HELB_WHITE} !important;
+        }}
+        
+        /* MAKE ALL TEXT BLACK ON WHITE BACKGROUND */
+        .stMarkdown, .stMarkdown p, .stMarkdown div, .stMarkdown span {{
+            color: {HELB_BLACK} !important;
         }}
         
         /* Sidebar - HELB Green */
@@ -285,6 +290,11 @@ if st.session_state.theme == "light":
             transition: all 0.3s ease;
         }}
         
+        /* Metric card text - BLACK for readability */
+        .metric-card b, .metric-card span, .metric-card div {{
+            color: {HELB_BLACK} !important;
+        }}
+        
         /* Status Badges */
         .badge-active {{
             background-color: {HELB_GREEN};
@@ -338,6 +348,11 @@ if st.session_state.theme == "light":
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }}
         
+        /* Delete button */
+        .stButton > button[key*="delete"] {{
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+        }}
+        
         /* Expander header */
         .streamlit-expanderHeader {{
             background-color: {HELB_WHITE} !important;
@@ -368,7 +383,16 @@ if st.session_state.theme == "light":
             padding: 1rem !important;
         }}
         
-        /* Input fields - ALL TEXT BLACK */
+        /* Expander content text - BLACK */
+        .streamlit-expanderContent p, 
+        .streamlit-expanderContent span, 
+        .streamlit-expanderContent div,
+        .streamlit-expanderContent label,
+        .streamlit-expanderContent strong {{
+            color: {HELB_BLACK} !important;
+        }}
+        
+        /* Input fields */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: white !important;
             color: {HELB_BLACK} !important;
@@ -389,6 +413,16 @@ if st.session_state.theme == "light":
         }}
         
         .stTextArea label {{
+            color: {HELB_BLACK} !important;
+        }}
+        
+        /* Slider */
+        .stSlider label {{
+            color: {HELB_BLACK} !important;
+        }}
+        
+        /* Checkbox */
+        .stCheckbox label {{
             color: {HELB_BLACK} !important;
         }}
         
@@ -427,12 +461,6 @@ if st.session_state.theme == "light":
             margin-top: 2rem;
         }}
         
-        /* General text */
-        .stMarkdown, .stMarkdown p, .stMarkdown div {{
-            color: {HELB_DARK} !important;
-            font-size: 0.75rem !important;
-        }}
-        
         /* Dataframe */
         .dataframe {{
             font-size: 0.8rem;
@@ -444,26 +472,43 @@ if st.session_state.theme == "light":
             padding: 10px !important;
         }}
         
+        .dataframe td {{
+            color: {HELB_BLACK} !important;
+        }}
+        
         /* Placeholder text */
         .stTextInput input::placeholder, .stTextArea textarea::placeholder {{
             color: #9CA3AF !important;
         }}
+        
+        /* Caption text */
+        .stCaption, caption {{
+            color: #6B7280 !important;
+        }}
+        
+        /* Info boxes */
+        .stAlert {{
+            background-color: {HELB_GRAY} !important;
+            border-left: 4px solid {HELB_GOLD} !important;
+        }}
+        
+        .stAlert p {{
+            color: {HELB_BLACK} !important;
+        }}
     </style>
     """
 else:
+    # Dark theme - leave as is (working perfectly)
     THEME_CSS = f"""
     <style>
-        /* Hide Streamlit branding */
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
-        /* Main container - Dark background */
         .main, .stApp {{
             background-color: #1a1a2e !important;
         }}
         
-        /* Sidebar - Dark Blue */
         [data-testid="stSidebar"] {{
             background-color: #0f3460 !important;
             padding-top: 1rem;
@@ -481,22 +526,9 @@ else:
             text-align: center;
         }}
         
-        .sidebar-user-info strong {{
-            font-size: 0.85rem;
-            display: block;
-            margin-bottom: 5px;
-        }}
-        
-        .sidebar-user-info .dept {{
-            font-size: 0.7rem;
-            display: block;
-            margin-bottom: 3px;
-        }}
-        
-        .sidebar-user-info .role {{
-            font-size: 0.65rem;
-            display: block;
-        }}
+        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
+        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
+        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
@@ -514,10 +546,7 @@ else:
             font-size: 0.75rem !important;
         }}
         
-        h1, h2, h3, h4 {{
-            color: {HELB_GOLD} !important;
-            font-weight: 600 !important;
-        }}
+        h1, h2, h3, h4 {{ color: {HELB_GOLD} !important; font-weight: 600 !important; }}
         
         .dashboard-header {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
@@ -529,10 +558,7 @@ else:
             justify-content: space-between;
         }}
         
-        .dashboard-header h1 {{
-            color: white !important;
-            font-size: 1.2rem;
-        }}
+        .dashboard-header h1 {{ color: white !important; font-size: 1.2rem; }}
         
         .login-container {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
@@ -571,28 +597,13 @@ else:
             font-size: 0.75rem !important;
         }}
         
-        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
-            color: #e0e0e0 !important;
-        }}
+        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{ color: #e0e0e0 !important; }}
         
-        /* Dark mode expander */
-        .streamlit-expanderHeader {{
-            background-color: #2d2d44 !important;
-        }}
+        .streamlit-expanderHeader {{ background-color: #2d2d44 !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; font-size: 0.9rem !important; }}
         
-        .streamlit-expanderHeader p {{
-            color: {HELB_GOLD} !important;
-            font-size: 0.9rem !important;
-        }}
-        
-        .stTabs [data-baseweb="tab-list"] {{
-            background: #2d2d44;
-        }}
-        
-        .stTabs [aria-selected="true"] {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
-        }}
+        .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
         
         .footer {{
             text-align: center;
@@ -602,9 +613,7 @@ else:
             margin-top: 2rem;
         }}
         
-        .stMarkdown, p, span, div, label {{
-            color: #e0e0e0 !important;
-        }}
+        .stMarkdown, p, span, div, label {{ color: #e0e0e0 !important; }}
     </style>
     """
 
@@ -625,20 +634,17 @@ supabase = init_supabase()
 # WORK PLAN FUNCTIONS
 # ============================================
 def get_work_plans():
-    """Get work plans based on user role - Department sees only their department, Management sees all"""
+    """Get work plans based on user role"""
     try:
         if st.session_state.user_role in ["admin", "management"]:
-            # Management and Admin see ALL work plans (institution-wide)
             result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
         else:
-            # Department champions see only their department's work plans
             result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).order("created_at", desc=True).execute()
         return result.data
     except Exception as e:
         return []
 
 def add_work_plan(data):
-    """Add a new work plan item"""
     try:
         result = supabase.table("work_plan").insert(data).execute()
         return True
@@ -647,7 +653,6 @@ def add_work_plan(data):
         return False
 
 def update_work_plan_status(plan_id, new_status, progress_percent=None):
-    """Update work plan status"""
     try:
         update_data = {"status": new_status, "updated_at": datetime.now().isoformat()}
         if progress_percent is not None:
@@ -658,7 +663,7 @@ def update_work_plan_status(plan_id, new_status, progress_percent=None):
         return False
 
 def delete_work_plan(plan_id):
-    """Delete work plan"""
+    """Delete work plan - Admin only"""
     try:
         supabase.table("work_plan").delete().eq("id", plan_id).execute()
         return True
@@ -874,7 +879,6 @@ with st.sidebar:
 # WORK PLANS MODULE
 # ============================================
 if choice == "📋 Work Plans":
-    # Dynamic title based on user role
     if st.session_state.user_role in ["admin", "management"]:
         st.markdown("<h2>📋 Institution-Wide Work Plan</h2>", unsafe_allow_html=True)
         st.markdown("<p style='margin-bottom: 1rem;'>Enterprise-wide strategic planning and performance management</p>", unsafe_allow_html=True)
@@ -907,8 +911,6 @@ if choice == "📋 Work Plans":
                 annual_target = st.text_input("Annual Target*", placeholder="e.g., 90% satisfaction rate")
                 due_date = st.date_input("Due Date*")
                 activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
-                
-                # Auto-fill department info
                 dept_name = st.session_state.user_dept_name if st.session_state.user_dept_name else "Current Department"
                 st.text_input("Department", value=dept_name, disabled=True)
             
@@ -941,7 +943,7 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
                     else:
-                        st.error("Failed to add work plan activity. Please ensure the database table exists.")
+                        st.error("Failed to add work plan activity.")
     
     # ============================================
     # TAB 2: VIEW ALL ACTIVITIES
@@ -953,7 +955,6 @@ if choice == "📋 Work Plans":
             st.markdown(f"### {st.session_state.user_dept_name} Department Work Plan Activities")
         
         if work_plans:
-            # Add filters
             col_filter1, col_filter2, col_filter3 = st.columns(3)
             with col_filter1:
                 pillar_filter = st.multiselect("Filter by Pillar", STRATEGIC_PILLARS, default=[])
@@ -962,7 +963,6 @@ if choice == "📋 Work Plans":
             with col_filter3:
                 category_filter = st.multiselect("Filter by Category", ACTIVITY_CATEGORIES, default=[])
             
-            # Add department filter for management
             if st.session_state.user_role in ["admin", "management"]:
                 with col_filter1:
                     departments_list = list(set([p.get("department_name", "Unknown") for p in work_plans if p.get("department_name")]))
@@ -1047,7 +1047,7 @@ if choice == "📋 Work Plans":
                             if st.session_state.user_role == "admin":
                                 if st.button(f"🗑️ Delete", key=f"delete_{plan['id']}"):
                                     if delete_work_plan(plan['id']):
-                                        st.success("Deleted successfully!")
+                                        st.success("✅ Deleted successfully!")
                                         st.rerun()
                     
                     st.markdown("---")
@@ -1067,7 +1067,6 @@ if choice == "📋 Work Plans":
         if work_plans:
             df = pd.DataFrame(work_plans)
             
-            # KPI Cards
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
@@ -1137,7 +1136,6 @@ if choice == "📋 Work Plans":
                 else:
                     st.info("No budget data available for chart")
             
-            # Department performance (for management view)
             if st.session_state.user_role in ["admin", "management"]:
                 st.markdown("#### Department Performance Overview")
                 dept_performance = df.groupby('department_name').agg({
@@ -1156,7 +1154,6 @@ if choice == "📋 Work Plans":
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Detailed Data Table
             with st.expander("📋 Detailed Work Plan Data", expanded=False):
                 display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
                                'performance_indicator', 'budget_allocation', 'status', 
@@ -1286,7 +1283,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS
+# CONTRACTS (simplified - working)
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Tracker")
@@ -1329,33 +1326,25 @@ elif choice == "📄 Contracts":
             days_left = (end_date - datetime.now().date()).days
             
             if days_left > 30:
-                color = "🟢"
-                badge = '<span class="badge-active">Active</span>'
+                badge = "🟢 Active"
             elif days_left > 0:
-                color = "🟡"
-                badge = '<span class="badge-pending">Expiring Soon</span>'
+                badge = "🟡 Expiring Soon"
             else:
-                color = "🔴"
-                badge = '<span class="badge-expired">Expired</span>'
+                badge = "🔴 Expired"
             
             st.markdown(f"""
             <div class='metric-card'>
-                <div style='display:flex; justify-content:space-between; align-items:center;'>
-                    <div>
-                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
-                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
-                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
-                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
-                    </div>
-                    <div>{badge}</div>
-                </div>
+                <b>{badge} - {contract['contract_title']}</b><br>
+                Vendor: {contract['vendor_name']}<br>
+                End Date: {contract['end_date']} | {days_left} days remaining<br>
+                Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}
             </div>
             """, unsafe_allow_html=True)
     else:
         st.info("No contracts found. Click 'Add New Contract' to get started.")
 
 # ============================================
-# POLICIES
+# POLICIES (simplified - working)
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Monitor")
@@ -1386,21 +1375,16 @@ elif choice == "📋 Policies":
             days_left = (expiry - datetime.now().date()).days
             
             if days_left > 90:
-                badge = '<span class="badge-active">Active</span>'
+                badge = "🟢 Active"
             elif days_left > 0:
-                badge = '<span class="badge-pending">Expiring Soon</span>'
+                badge = "🟡 Expiring Soon"
             else:
-                badge = '<span class="badge-expired">Expired</span>'
+                badge = "🔴 Expired"
             
             st.markdown(f"""
             <div class='metric-card'>
-                <div style='display:flex; justify-content:space-between; align-items:center;'>
-                    <div>
-                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
-                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
-                    </div>
-                    <div>{badge}</div>
-                </div>
+                <b>{badge} - 📜 {policy['policy_name']}</b><br>
+                Expires: {policy['expiry_date']} ({days_left} days left)
             </div>
             """, unsafe_allow_html=True)
     else:
