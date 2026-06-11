@@ -3,6 +3,7 @@ from supabase import create_client
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
+import plotly.graph_objects as go
 from PIL import Image
 import base64
 from io import BytesIO
@@ -67,7 +68,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# CUSTOM CSS - ONLY FIX TEXT COLORS ON GREEN BACKGROUND
+# CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -143,7 +144,7 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        /* Headers - Keep green */
+        /* Headers */
         h1, h2, h3, h4 {{
             color: {HELB_GREEN} !important;
             font-weight: 600 !important;
@@ -155,7 +156,7 @@ if st.session_state.theme == "light":
             margin-bottom: 25px;
         }}
         
-        /* Dashboard Header - KEEP THE GREEN BACKGROUND */
+        /* Dashboard Header */
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -172,7 +173,6 @@ if st.session_state.theme == "light":
             gap: 1rem;
         }}
         
-        /* Header text - MAKE SURE TEXT IS WHITE */
         .dashboard-header h1 {{
             color: white !important;
             margin: 0;
@@ -181,13 +181,15 @@ if st.session_state.theme == "light":
             border-bottom: none;
         }}
         
+        /* Make the subtitle text GOLD */
         .dashboard-header p {{
-            color: rgba(255,255,255,0.85);
+            color: {HELB_GOLD} !important;
             margin: 0;
             font-size: 0.7rem;
+            font-weight: 500;
         }}
         
-        /* Login Container - Keep green */
+        /* Login Container */
         .login-container {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 20px;
@@ -209,7 +211,7 @@ if st.session_state.theme == "light":
             margin-top: 0.5rem;
         }}
         
-        /* KPI Cards - Keep green gradient, make ALL text white */
+        /* KPI Cards - ALL TEXT WHITE */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
@@ -227,7 +229,7 @@ if st.session_state.theme == "light":
         .kpi-label {{
             font-size: 0.7rem;
             text-transform: uppercase;
-            color: {HELB_GOLD} !important;
+            color: white !important;
             font-weight: 600;
             letter-spacing: 0.5px;
         }}
@@ -242,8 +244,9 @@ if st.session_state.theme == "light":
         
         .kpi-sub {{
             font-size: 0.6rem;
-            color: rgba(255,255,255,0.8) !important;
+            color: white !important;
             margin-top: 0.2rem;
+            opacity: 0.9;
         }}
         
         .progress-bar {{
@@ -491,6 +494,10 @@ else:
             font-size: 1.2rem;
         }}
         
+        .dashboard-header p {{
+            color: {HELB_GOLD} !important;
+        }}
+        
         .login-container {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             border-radius: 20px;
@@ -505,9 +512,9 @@ else:
             text-align: center;
         }}
         
-        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.7rem; }}
-        .kpi-value {{ color: white; font-size: 1.8rem; }}
-        .kpi-sub {{ color: rgba(255,255,255,0.8); font-size: 0.6rem; }}
+        .kpi-label {{ color: white !important; font-size: 0.7rem; }}
+        .kpi-value {{ color: white !important; font-size: 1.8rem; }}
+        .kpi-sub {{ color: white !important; font-size: 0.6rem; opacity: 0.9; }}
         
         .metric-card {{
             background: #16213e;
@@ -867,29 +874,58 @@ if choice == "📊 Dashboard":
         </div>
         """, unsafe_allow_html=True)
     
+    # Progress Chart - DOUGHNUT CHART for My Department
     if plans and len(plans) > 0:
         st.subheader("📈 Department Performance Overview")
         df = pd.DataFrame(plans)
+        
         if st.session_state.user_role in ["admin", "management"]:
+            # For admin/management - show bar chart
             depts = supabase.table("departments").select("id,name").execute().data
             dept_map = {d["id"]: d["name"] for d in depts}
             df["department"] = df["department_id"].map(dept_map)
             fig = px.bar(df, x="task_name", y="progress_percent", color="department", 
                         title="Action Plan Progress by Task",
                         color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
+            fig.update_layout(
+                barmode='group', 
+                bargap=0.3, 
+                plot_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
+                paper_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
+                title_font_color=HELB_GREEN, 
+                title_font_size=16
+            )
         else:
-            fig = px.bar(df, x="task_name", y="progress_percent", color="status",
-                        title="My Department's Action Plan Progress",
-                        color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
+            # For regular users - show DOUGHNUT chart
+            # Calculate completion stats
+            completed_tasks = sum(1 for p in plans if p.get("status") == "completed")
+            in_progress = sum(1 for p in plans if p.get("status") == "in progress")
+            not_started = sum(1 for p in plans if p.get("status") == "not started")
+            delayed = sum(1 for p in plans if p.get("status") == "delayed")
+            
+            # Create doughnut chart
+            fig = go.Figure(data=[go.Pie(
+                labels=['Completed', 'In Progress', 'Not Started', 'Delayed'],
+                values=[completed_tasks, in_progress, not_started, delayed],
+                hole=0.6,
+                marker=dict(colors=[HELB_GREEN, HELB_GOLD, HELB_GRAY, '#dc2626']),
+                textinfo='label+percent',
+                textposition='auto',
+                textfont=dict(size=12)
+            )])
+            
+            fig.update_layout(
+                title="Task Status Distribution",
+                title_font_color=HELB_GREEN,
+                title_font_size=16,
+                annotations=[dict(text=f'Total<br>{len(plans)} Tasks', x=0.5, y=0.5, font_size=14, showarrow=False)],
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+                plot_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
+                paper_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
+                height=450
+            )
         
-        fig.update_layout(
-            barmode='group', 
-            bargap=0.3, 
-            plot_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
-            paper_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
-            title_font_color=HELB_GREEN, 
-            title_font_size=16
-        )
         st.plotly_chart(fig, use_container_width=True)
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
