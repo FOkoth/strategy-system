@@ -1517,7 +1517,7 @@ if choice == "📋 Work Plans":
             
             # Achievement vs Target Chart
             st.markdown("#### 🎯 Target Achievement Analysis")
-            achievement_data = df[df['calculated_progress'] > 0].head(10]
+            achievement_data = df[df['calculated_progress'] > 0].head(10)
             if not achievement_data.empty:
                 fig = go.Figure()
                 fig.add_trace(go.Bar(
