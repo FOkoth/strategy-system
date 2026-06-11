@@ -132,7 +132,7 @@ if st.session_state.theme == "light":
             font-weight: 600 !important;
         }}
         
-        /* FIX: Make subheaders visible (dark text on white background) */
+        /* Make subheaders visible */
         .stMarkdown h4, .stMarkdown h3 {{
             color: {HELB_DARK} !important;
         }}
@@ -295,13 +295,34 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
-        /* FIX: Expander header hover text color */
+        /* FIX: Expander header styling - White background, Black text */
+        .streamlit-expanderHeader {{
+            background-color: {HELB_WHITE} !important;
+            border-radius: 8px !important;
+            color: {HELB_DARK} !important;
+            font-weight: 600 !important;
+            border: 1px solid #D1D5DB !important;
+        }}
+        
+        .streamlit-expanderHeader p {{
+            color: {HELB_DARK} !important;
+        }}
+        
         .streamlit-expanderHeader:hover {{
-            color: {HELB_GREEN} !important;
+            background-color: {HELB_GRAY} !important;
+            color: {HELB_DARK} !important;
         }}
         
         .streamlit-expanderHeader p:hover {{
-            color: {HELB_GREEN} !important;
+            color: {HELB_DARK} !important;
+        }}
+        
+        /* Expander content area */
+        .streamlit-expanderContent {{
+            background-color: {HELB_WHITE} !important;
+            border: 1px solid #D1D5DB !important;
+            border-top: none !important;
+            border-radius: 0 0 8px 8px !important;
         }}
         
         /* Input fields - White background, black text */
@@ -310,14 +331,6 @@ if st.session_state.theme == "light":
             color: black !important;
             border: 1px solid #D1D5DB !important;
             border-radius: 6px !important;
-        }}
-        
-        /* Expander */
-        .streamlit-expanderHeader {{
-            background-color: {HELB_GRAY} !important;
-            border-radius: 8px !important;
-            color: {HELB_GREEN} !important;
-            font-weight: 600 !important;
         }}
         
         /* Tabs */
@@ -355,7 +368,7 @@ if st.session_state.theme == "light":
             margin-top: 2rem;
         }}
         
-        /* FIX: Make all subheader text visible (dark color) */
+        /* Make all markdown text visible */
         .stMarkdown, .stMarkdown p, .stMarkdown div {{
             color: {HELB_DARK} !important;
         }}
@@ -476,8 +489,13 @@ else:
             border: 1px solid #4a4a6a !important;
         }}
         
+        /* Expander header - Dark mode */
         .streamlit-expanderHeader {{
             background-color: #2d2d44 !important;
+            color: {HELB_GOLD} !important;
+        }}
+        
+        .streamlit-expanderHeader p {{
             color: {HELB_GOLD} !important;
         }}
         
@@ -1135,7 +1153,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
 # ============================================
 elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
-    # FIX: Changed from st.markdown to st.subheader to ensure visibility
     st.subheader("Cross-Department Performance Overview")
     
     depts = supabase.table("departments").select("*").execute().data
