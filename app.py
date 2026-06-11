@@ -79,7 +79,8 @@ STRATEGIC_PILLARS = [
     "5. Strategy"
 ]
 
-ACTIVITY_CATEGORIES = ["Strategic Plan", "Performance Contracting"]
+# Updated Activity Categories
+ACTIVITY_CATEGORIES = ["SP Deliverable", "PC Deliverable"]
 STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
 
 # Financial Years (July - June)
@@ -510,6 +511,20 @@ if st.session_state.theme == "light":
             margin-bottom: 0.3rem;
         }}
         
+        /* Days left badge */
+        .days-left {{
+            font-size: 0.7rem;
+            color: #6B7280;
+            margin-left: 0.5rem;
+        }}
+        
+        .days-left-urgent {{
+            font-size: 0.7rem;
+            color: #dc2626;
+            margin-left: 0.5rem;
+            font-weight: bold;
+        }}
+        
         /* Footer */
         .footer {{
             text-align: center;
@@ -557,7 +572,7 @@ if st.session_state.theme == "light":
     </style>
     """
 else:
-    # Dark theme - leave as is
+    # Dark theme
     THEME_CSS = f"""
     <style>
         #MainMenu {{visibility: hidden;}}
@@ -700,7 +715,6 @@ supabase = init_supabase()
 # WORK PLAN FUNCTIONS
 # ============================================
 def get_work_plans():
-    """Get work plans based on user role"""
     try:
         if st.session_state.user_role in ["admin", "management"]:
             result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
@@ -728,6 +742,18 @@ def update_work_plan_status(plan_id, new_status, progress_percent=None):
     except:
         return False
 
+def update_work_plan_due_date(plan_id, new_due_date):
+    """Admin function to update due date"""
+    try:
+        update_data = {
+            "due_date": new_due_date.isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
+        return True
+    except:
+        return False
+
 def delete_work_plan(plan_id):
     try:
         supabase.table("work_plan").delete().eq("id", plan_id).execute()
@@ -736,7 +762,6 @@ def delete_work_plan(plan_id):
         return False
 
 def filter_work_plans_by_date(df, financial_year, quarter, month):
-    """Filter work plans by financial year, quarter, and month"""
     if df.empty:
         return df
     
@@ -745,16 +770,13 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     df['due_month'] = df['due_date_dt'].dt.month
     df['due_year'] = df['due_date_dt'].dt.year
     
-    # Filter by Financial Year (July - June)
     if financial_year and financial_year != "All":
         start_year = int(financial_year.split('/')[0])
         end_year = int(financial_year.split('/')[1])
-        # Financial year from July of start_year to June of end_year
         mask = ((df['due_year'] == start_year) & (df['due_month'] >= 7)) | \
                ((df['due_year'] == end_year) & (df['due_month'] <= 6))
         df = df[mask]
     
-    # Filter by Quarter
     if quarter and quarter != "All":
         if quarter == "Q1 (Jul-Sep)":
             df = df[df['due_month'].isin([7, 8, 9])]
@@ -765,7 +787,6 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
         elif quarter == "Q4 (Apr-Jun)":
             df = df[df['due_month'].isin([4, 5, 6])]
     
-    # Filter by Month
     if month and month != "All":
         month_num = {
             "January": 1, "February": 2, "March": 3, "April": 4,
@@ -776,6 +797,16 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
             df = df[df['due_month'] == month_num]
     
     return df
+
+def get_days_left_color(days_left):
+    if days_left < 0:
+        return "🔴 Expired"
+    elif days_left <= 7:
+        return f"🔴 {days_left} days left (Urgent)"
+    elif days_left <= 30:
+        return f"🟡 {days_left} days left"
+    else:
+        return f"🟢 {days_left} days left"
 
 # ============================================
 # SESSION STATE INITIALIZATION
@@ -993,11 +1024,8 @@ if choice == "📋 Work Plans":
         st.markdown(f"<h2>📋 {st.session_state.user_dept_name} Department Work Plan</h2>", unsafe_allow_html=True)
         st.markdown("<p style='margin-bottom: 1rem;'>Departmental strategic planning and performance management</p>", unsafe_allow_html=True)
     
-    # ============================================
-    # FILTER BAR
-    # ============================================
+    # Filter Bar
     st.markdown("### 📅 Period Filters")
-    
     col_fy, col_q, col_m = st.columns(3)
     with col_fy:
         financial_years = ["All"] + get_financial_years()
@@ -1014,13 +1042,11 @@ if choice == "📋 Work Plans":
     
     work_plans = get_work_plans()
     
-    # Apply filters to work plans
     if work_plans:
         df_plans = pd.DataFrame(work_plans)
         filtered_df = filter_work_plans_by_date(df_plans, selected_fy, selected_q, selected_m)
         filtered_plans = filtered_df.to_dict('records')
         
-        # Show filter summary
         filter_summary = []
         if selected_fy != "All":
             filter_summary.append(f"FY: {selected_fy}")
@@ -1091,7 +1117,7 @@ if choice == "📋 Work Plans":
                         st.error("Failed to add work plan activity.")
     
     # ============================================
-    # TAB 2: VIEW ALL ACTIVITIES (with filters)
+    # TAB 2: VIEW ALL ACTIVITIES
     # ============================================
     with tab_view:
         if st.session_state.user_role in ["admin", "management"]:
@@ -1100,7 +1126,6 @@ if choice == "📋 Work Plans":
             st.markdown(f"### {st.session_state.user_dept_name} Department Work Plan Activities")
         
         if filtered_plans:
-            # Additional filters for pillar, status, category
             col_filter1, col_filter2, col_filter3 = st.columns(3)
             with col_filter1:
                 pillar_filter = st.multiselect("Filter by Pillar", STRATEGIC_PILLARS, default=[])
@@ -1139,7 +1164,17 @@ if choice == "📋 Work Plans":
                 due_date = datetime.strptime(plan["due_date"], "%Y-%m-%d").date()
                 days_left = (due_date - datetime.now().date()).days
                 
-                expander_title = f"📌 {plan['planned_activity'][:80]}... - {plan.get('strategic_pillar', 'N/A')}"
+                # Create days left indicator for title
+                if days_left < 0:
+                    days_indicator = "🔴 (EXPIRED)"
+                elif days_left <= 7:
+                    days_indicator = f"🔴 ({days_left} days left - URGENT)"
+                elif days_left <= 30:
+                    days_indicator = f"🟡 ({days_left} days left)"
+                else:
+                    days_indicator = f"🟢 ({days_left} days left)"
+                
+                expander_title = f"📌 {plan['planned_activity'][:60]}... - {plan.get('strategic_pillar', 'N/A')} {days_indicator}"
                 if st.session_state.user_role in ["admin", "management"] and plan.get('department_name'):
                     expander_title += f" - {plan.get('department_name', 'N/A')}"
                 
@@ -1182,9 +1217,23 @@ if choice == "📋 Work Plans":
                             key=f"progress_{plan['id']}"
                         )
                         
+                        # Admin: Edit Due Date
+                        if st.session_state.user_role == "admin":
+                            st.markdown("---")
+                            st.markdown("**📅 Admin: Edit Due Date**")
+                            new_due_date = st.date_input(
+                                "New Due Date", 
+                                value=due_date,
+                                key=f"duedate_{plan['id']}"
+                            )
+                            if st.button(f"Update Due Date", key=f"updatedate_{plan['id']}"):
+                                if update_work_plan_due_date(plan['id'], new_due_date):
+                                    st.success("✅ Due date updated successfully!")
+                                    st.rerun()
+                        
                         col_update, col_delete = st.columns(2)
                         with col_update:
-                            if st.button(f"Update", key=f"update_{plan['id']}"):
+                            if st.button(f"Update Progress", key=f"update_{plan['id']}"):
                                 if update_work_plan_status(plan['id'], new_status, new_progress):
                                     st.success("✅ Updated successfully!")
                                     st.rerun()
@@ -1202,7 +1251,7 @@ if choice == "📋 Work Plans":
             st.info("No work plan activities found for the selected period. Click 'Add Work Plan Activity' to get started.")
     
     # ============================================
-    # TAB 3: PERFORMANCE DASHBOARD (with filters)
+    # TAB 3: PERFORMANCE DASHBOARD
     # ============================================
     with tab_dashboard:
         if st.session_state.user_role in ["admin", "management"]:
@@ -1285,7 +1334,6 @@ if choice == "📋 Work Plans":
                 else:
                     st.info("No budget data available for chart")
             
-            # Quarterly Performance Chart
             st.markdown("#### Quarterly Performance Trend")
             if not df.empty:
                 df['quarter'] = df['due_date_dt'].apply(lambda x: get_quarter_from_month(x.month))
@@ -1333,7 +1381,6 @@ if choice == "📋 Work Plans":
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Monthly Trend Chart
             st.markdown("#### Monthly Activity Trend")
             if not df.empty:
                 df['month_name'] = df['due_date_dt'].dt.strftime('%b %Y')
@@ -1344,6 +1391,21 @@ if choice == "📋 Work Plans":
                              markers=True, color_discrete_sequence=[HELB_GREEN])
                 fig.update_layout(height=350, xaxis_tickangle=-45)
                 st.plotly_chart(fig, use_container_width=True)
+            
+            # Overdue Activities Alert
+            st.markdown("#### ⚠️ Overdue Activities Alert")
+            df['days_left'] = (pd.to_datetime(df['due_date']) - pd.Timestamp.now()).dt.days
+            overdue_df = df[df['days_left'] < 0]
+            urgent_df = df[(df['days_left'] >= 0) & (df['days_left'] <= 7)]
+            
+            if not overdue_df.empty:
+                st.warning(f"🔴 **{len(overdue_df)} activities are overdue!** Please review and update.")
+                for _, row in overdue_df.head(5).iterrows():
+                    st.markdown(f"- {row['planned_activity'][:60]}... (Due: {row['due_date']}, Overdue by {abs(row['days_left'])} days)")
+            elif not urgent_df.empty:
+                st.info(f"🟡 **{len(urgent_df)} activities are due within 7 days.**")
+            else:
+                st.success("✅ No overdue activities. Great job!")
             
             with st.expander("📋 Detailed Work Plan Data", expanded=False):
                 display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
@@ -1474,7 +1536,6 @@ elif choice == "📊 Dashboard":
             """, unsafe_allow_html=True)
     
     with col4:
-        # Total Budget instead of Active Users
         if filtered_plans:
             total_budget = sum(w.get("budget_allocation", 0) or 0 for w in filtered_plans)
             st.markdown(f"""
@@ -1551,6 +1612,346 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS, POLICIES, USER MANAGEMENT, ENTERPRISE VIEW (unchanged from previous working version)
+# CONTRACTS (simplified - working)
 # ============================================
-# ... (rest of the code remains the same as your working version)
+elif choice == "📄 Contracts":
+    st.subheader("Contract Tracker")
+    
+    with st.expander("➕ Add New Contract", expanded=False):
+        with st.form("new_contract"):
+            col1, col2 = st.columns(2)
+            with col1:
+                title = st.text_input("Contract Title*")
+                vendor = st.text_input("Vendor*")
+            with col2:
+                end_date = st.date_input("End Date*")
+                auto_renew = st.checkbox("Auto-renewal")
+            
+            if st.form_submit_button("Save Contract", use_container_width=True):
+                if title and vendor:
+                    start_date = datetime.now().date()
+                    days_left = (end_date - start_date).days
+                    status = "expired" if days_left < 0 else ("expiring_soon" if days_left <= 30 else "active")
+                    
+                    supabase.table("contracts").insert({
+                        "contract_title": title,
+                        "vendor_name": vendor,
+                        "start_date": start_date.isoformat(),
+                        "end_date": end_date.isoformat(),
+                        "days_remaining": days_left,
+                        "status": status,
+                        "auto_renewal": auto_renew,
+                        "department_id": st.session_state.user_dept
+                    }).execute()
+                    st.success("Contract added successfully!")
+                    st.rerun()
+                else:
+                    st.error("Please fill all required fields")
+    
+    contracts = get_filtered_data("contracts")
+    if contracts:
+        for contract in contracts:
+            end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
+            days_left = (end_date - datetime.now().date()).days
+            
+            if days_left > 30:
+                color = "🟢"
+                badge = '<span class="badge-active">Active</span>'
+            elif days_left > 0:
+                color = "🟡"
+                badge = '<span class="badge-pending">Expiring Soon</span>'
+            else:
+                color = "🔴"
+                badge = '<span class="badge-expired">Expired</span>'
+            
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No contracts found. Click 'Add New Contract' to get started.")
+
+# ============================================
+# POLICIES (simplified - working)
+# ============================================
+elif choice == "📋 Policies":
+    st.subheader("Policy Monitor")
+    
+    with st.expander("➕ Add New Policy", expanded=False):
+        with st.form("new_policy"):
+            policy_name = st.text_input("Policy Name*")
+            expiry_date = st.date_input("Expiry Date*")
+            is_global = st.checkbox("Global Policy (applies to all departments)")
+            
+            if st.form_submit_button("Save Policy", use_container_width=True):
+                if policy_name:
+                    supabase.table("policies").insert({
+                        "policy_name": policy_name,
+                        "expiry_date": expiry_date.isoformat(),
+                        "department_id": None if is_global else st.session_state.user_dept,
+                        "status": "active"
+                    }).execute()
+                    st.success("Policy added successfully!")
+                    st.rerun()
+                else:
+                    st.error("Please enter a policy name")
+    
+    policies = get_filtered_data("policies")
+    if policies:
+        for policy in policies:
+            expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
+            days_left = (expiry - datetime.now().date()).days
+            
+            if days_left > 90:
+                badge = '<span class="badge-active">Active</span>'
+            elif days_left > 0:
+                badge = '<span class="badge-pending">Expiring Soon</span>'
+            else:
+                badge = '<span class="badge-expired">Expired</span>'
+            
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div style='display:flex; justify-content:space-between; align-items:center;'>
+                    <div>
+                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                    </div>
+                    <div>{badge}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No policies found. Click 'Add New Policy' to get started.")
+
+# ============================================
+# USER MANAGEMENT (ADMIN ONLY)
+# ============================================
+elif choice == "👥 User Management" and st.session_state.user_role == "admin":
+    st.subheader("User Management - Admin Panel")
+    
+    depts = supabase.table("departments").select("id,name").execute().data
+    dept_options = {d["name"]: d["id"] for d in depts}
+    users = get_all_users()
+    
+    tab1, tab2, tab3 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User"])
+    
+    with tab1:
+        with st.form("create_user_form"):
+            st.markdown("### Create New User Account")
+            col1, col2 = st.columns(2)
+            with col1:
+                new_username = st.text_input("Username*")
+                new_full_name = st.text_input("Full Name*")
+            with col2:
+                new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
+                new_department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
+            
+            new_password = st.text_input("Password*", type="password")
+            confirm_password = st.text_input("Confirm Password*", type="password")
+            
+            if st.form_submit_button("Create User", use_container_width=True):
+                if new_password != confirm_password:
+                    st.error("Passwords don't match")
+                elif not all([new_username, new_full_name, new_password]):
+                    st.error("Please fill all required fields")
+                else:
+                    dept_id = dept_options.get(new_department) if new_department != "None" else None
+                    success, message = create_new_user(new_username, new_full_name, new_password, new_role, dept_id)
+                    if success:
+                        st.success(f"✅ {message}")
+                        st.info(f"Username: {new_username} | Password: {new_password}")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {message}")
+    
+    with tab2:
+        st.markdown("### Edit User Role and Department")
+        if users:
+            user_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
+            if user_options:
+                selected_user_str = st.selectbox("Select User to Edit", user_options)
+                selected_username = selected_user_str.split(" - ")[0]
+                
+                current_user = next((u for u in users if u['username'] == selected_username), None)
+                if current_user:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], 
+                                               index=["department_champion", "management", "admin"].index(current_user['role']))
+                    with col2:
+                        current_dept = get_department_name(current_user['department_id'])
+                        dept_list = ["None"] + list(dept_options.keys())
+                        default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
+                        new_department = st.selectbox("Department", dept_list, index=default_index)
+                    
+                    reset_password = st.checkbox("Reset Password")
+                    new_password = None
+                    if reset_password:
+                        new_password = st.text_input("New Password", type="password")
+                        confirm_new = st.text_input("Confirm New Password", type="password")
+                    
+                    if st.button("Save Changes", use_container_width=True):
+                        dept_id = dept_options.get(new_department) if new_department != "None" else None
+                        if update_user_role(selected_username, new_role, dept_id):
+                            st.success(f"✅ Role and department updated for {selected_username}")
+                        else:
+                            st.error("Failed to update role/department")
+                        
+                        if reset_password and new_password:
+                            if new_password == confirm_new and len(new_password) >= 4:
+                                if reset_user_password(selected_username, new_password):
+                                    st.success(f"✅ Password reset for {selected_username}")
+                                    st.info(f"New password: {new_password}")
+                                else:
+                                    st.error("Failed to reset password")
+                            else:
+                                st.error("Passwords don't match or are too short")
+                        st.rerun()
+            else:
+                st.info("No other users to edit")
+        else:
+            st.info("No users found")
+    
+    with tab3:
+        st.markdown("### Delete User")
+        st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
+        
+        if users:
+            delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
+            if delete_options:
+                user_to_delete = st.selectbox("Select User to Delete", delete_options)
+                delete_username = user_to_delete.split(" - ")[0]
+                
+                confirm = st.checkbox(f"I understand that this will permanently delete user '{delete_username}'")
+                
+                if st.button("🗑️ Delete User", use_container_width=True):
+                    if confirm:
+                        if delete_user(delete_username):
+                            st.success(f"✅ User '{delete_username}' has been deleted!")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed to delete user '{delete_username}'")
+                    else:
+                        st.error("Please confirm deletion by checking the box")
+            else:
+                st.info("No other users to delete")
+        else:
+            st.info("No users found")
+    
+    st.markdown("---")
+    st.markdown("### Current Users")
+    if users:
+        user_display = []
+        for user in users:
+            dept_name = get_department_name(user['department_id']) if user['department_id'] else "N/A"
+            user_display.append({
+                "Username": user['username'],
+                "Full Name": user['full_name'],
+                "Role": user['role'].replace("_", " ").title(),
+                "Department": dept_name
+            })
+        df_users = pd.DataFrame(user_display)
+        st.dataframe(df_users, use_container_width=True, hide_index=True)
+
+# ============================================
+# ENTERPRISE VIEW
+# ============================================
+elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
+    st.subheader("Enterprise Management View")
+    st.markdown("### Cross-Department Performance Overview")
+    
+    work_plans = get_work_plans()
+    
+    if work_plans:
+        df = pd.DataFrame(work_plans)
+        
+        st.markdown("#### Department Performance Summary")
+        
+        performance_data = []
+        for dept in df['department_name'].unique():
+            dept_df = df[df['department_name'] == dept]
+            total = len(dept_df)
+            completed = len(dept_df[dept_df['status'] == 'Done'])
+            avg_progress = dept_df['progress_percent'].mean()
+            total_budget = dept_df['budget_allocation'].fillna(0).sum()
+            
+            performance_data.append({
+                "Department": dept,
+                "Total Activities": total,
+                "Completed": completed,
+                "Completion Rate": f"{(completed/total*100):.0f}%" if total > 0 else "0%",
+                "Avg Progress": f"{avg_progress:.0f}%",
+                "Budget (KES M)": f"{total_budget/1e6:.1f}"
+            })
+        
+        if performance_data:
+            df_perf = pd.DataFrame(performance_data)
+            st.dataframe(df_perf, use_container_width=True, hide_index=True)
+        
+        st.markdown("#### Strategic Pillar Analysis")
+        pillar_summary = df.groupby('strategic_pillar').agg({
+            'id': 'count',
+            'progress_percent': 'mean',
+            'budget_allocation': 'sum'
+        }).reset_index()
+        pillar_summary.columns = ['Strategic Pillar', 'Total Activities', 'Avg Progress %', 'Total Budget']
+        
+        fig = px.bar(pillar_summary, x='Strategic Pillar', y='Avg Progress %',
+                    title="Progress by Strategic Pillar",
+                    color='Avg Progress %', color_continuous_scale='Greens')
+        fig.update_layout(height=400, xaxis_tickangle=-45)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    tabs = st.tabs(["All Work Plans", "All Contracts", "All Policies"])
+    
+    with tabs[0]:
+        work_plans = get_work_plans()
+        if work_plans:
+            df = pd.DataFrame(work_plans)
+            display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
+                           'department_name', 'status', 'progress_percent', 'due_date']
+            st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+        else:
+            st.info("No work plans found")
+    
+    with tabs[1]:
+        all_contracts = supabase.table("contracts").select("*").execute().data
+        if all_contracts:
+            df = pd.DataFrame(all_contracts)
+            depts = supabase.table("departments").select("id,name").execute().data
+            dept_names = {d["id"]: d["name"] for d in depts}
+            df["department"] = df["department_id"].map(dept_names)
+            st.dataframe(df[["contract_title", "vendor_name", "department", "end_date", "status"]], use_container_width=True, hide_index=True)
+        else:
+            st.info("No contracts found")
+    
+    with tabs[2]:
+        all_policies = supabase.table("policies").select("*").execute().data
+        if all_policies:
+            df = pd.DataFrame(all_policies)
+            depts = supabase.table("departments").select("id,name").execute().data
+            dept_names = {d["id"]: d["name"] for d in depts}
+            df["department"] = df["department_id"].map(dept_names).fillna("Global")
+            st.dataframe(df[["policy_name", "department", "expiry_date"]], use_container_width=True, hide_index=True)
+        else:
+            st.info("No policies found")
+
+# ============================================
+# FOOTER
+# ============================================
+st.markdown("---")
+st.markdown("""
+<div class='footer'>
+    <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
+    <p>Powered by Streamlit | Work Plan Management | Secure & Real-time</p>
+</div>
+""", unsafe_allow_html=True)
