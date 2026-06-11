@@ -222,7 +222,7 @@ if st.session_state.theme == "light":
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        /* Navigation - ALL ITEMS GOLD background */
+        /* Navigation - ALL GOLD background */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
@@ -239,7 +239,7 @@ if st.session_state.theme == "light":
             filter: brightness(1.05);
         }}
         
-        /* Selected menu item - BLUE background with white text for light theme */
+        /* Selected - BLUE background for light theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
             background-color: {HELB_BLUE} !important;
             color: white !important;
@@ -278,7 +278,7 @@ if st.session_state.theme == "light":
         .login-title {{ color: white; font-size: 1.5rem; font-weight: 700; }}
         .login-subtitle {{ color: rgba(255,255,255,0.85); font-size: 0.85rem; }}
         
-        /* KPI Cards */
+        /* KPI Cards - GOLD label, WHITE value, WHITE subtext */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
@@ -371,7 +371,7 @@ else:
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        /* Navigation - ALL ITEMS GOLD background for dark theme */
+        /* Navigation - ALL GOLD background for dark theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
@@ -382,7 +382,7 @@ else:
             font-size: 0.8rem !important;
         }}
         
-        /* Selected menu item - GREEN background with white text for dark theme */
+        /* Selected - GREEN background for dark theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
             background-color: {HELB_GREEN} !important;
             color: white !important;
@@ -927,7 +927,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH EXACT CHART CHANGES
+# DASHBOARD - WITH EXACT CHANGES
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -936,7 +936,7 @@ elif choice == "📊 Dashboard":
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
     
-    # Compact Filters with dynamic month options
+    # Compact Filters
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
@@ -972,11 +972,9 @@ elif choice == "📊 Dashboard":
             lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
         )
         
-        # Apply filters
         filtered_df = filter_work_plans_by_date(df_plans, st.session_state.filter_financial_year, 
                                                  st.session_state.filter_quarter, st.session_state.filter_month)
         
-        # Department filter for management
         if st.session_state.user_role in ["admin", "management"]:
             departments_list = filtered_df['department_name'].unique().tolist() if not filtered_df.empty else []
             if departments_list:
@@ -994,7 +992,7 @@ elif choice == "📊 Dashboard":
     # ============================================
     with tab_work:
         if not filtered_df.empty:
-            # Row 1: Key Metrics
+            # Row 1: Key Metrics - KPI CARDS (Gold label, White value, White subtext)
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
@@ -1014,18 +1012,18 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Row 2: Charts - DOUGHNUT chart for Status Distribution (with percentages)
+            # Row 2: Charts
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
                 status_counts = filtered_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                colors = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
+                # DOUGHNUT CHART with percentages
                 fig = go.Figure(data=[go.Pie(
                     labels=status_counts['Status'],
                     values=status_counts['Count'],
                     hole=0.4,
-                    marker=dict(colors=[colors.get(s, HELB_GRAY) for s in status_counts['Status']]),
+                    marker=dict(colors=[HELB_GREEN, HELB_GOLD, '#dc2626']),
                     textinfo='label+percent',
                     textposition='auto'
                 )])
@@ -1033,10 +1031,11 @@ elif choice == "📊 Dashboard":
                 st.plotly_chart(fig, use_container_width=True)
             
             with col_chart2:
-                st.markdown("#### Progress by Strategic Pillar (Horizontal Bar Chart)")
+                st.markdown("#### Progress by Strategic Pillar")
                 pillar_progress = filtered_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
                 pillar_progress.columns = ['Pillar', 'Progress %']
                 pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
+                # HORIZONTAL BAR CHART
                 fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
                             color='Progress %', color_continuous_scale='Greens',
                             text='Progress %')
@@ -1044,11 +1043,12 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 3: Department Performance - ALL DEPARTMENTS (not top 10), Horizontal Bar Chart
-            st.markdown("#### Department Performance (All Departments)")
+            # Row 3: Department Performance - ALL DEPARTMENTS
+            st.markdown("#### Department Performance")
             dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
             dept_progress.columns = ['Department', 'Progress %']
             dept_progress = dept_progress.sort_values('Progress %', ascending=True)
+            # HORIZONTAL BAR CHART
             fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
                         color='Progress %', color_continuous_scale='Greens',
                         text='Progress %')
@@ -1056,7 +1056,7 @@ elif choice == "📊 Dashboard":
             fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
             st.plotly_chart(fig, use_container_width=True)
             
-            # Row 4: Activity Category Breakdown (Bar Chart)
+            # Row 4: Additional Charts
             col_chart3, col_chart4 = st.columns(2)
             with col_chart3:
                 st.markdown("#### Activity Category Breakdown")
