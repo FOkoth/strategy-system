@@ -222,7 +222,7 @@ if st.session_state.theme == "light":
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        /* Navigation - Gold by default, Green when selected */
+        /* Navigation - ALL ITEMS GOLD background */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
@@ -239,9 +239,9 @@ if st.session_state.theme == "light":
             filter: brightness(1.05);
         }}
         
-        /* Selected menu item - Green background */
+        /* Selected menu item - BLUE background with white text for light theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_GREEN} !important;
+            background-color: {HELB_BLUE} !important;
             color: white !important;
         }}
         
@@ -371,6 +371,7 @@ else:
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
+        /* Navigation - ALL ITEMS GOLD background for dark theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
@@ -381,8 +382,9 @@ else:
             font-size: 0.8rem !important;
         }}
         
+        /* Selected menu item - GREEN background with white text for dark theme */
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: #0f3460 !important;
+            background-color: {HELB_GREEN} !important;
             color: white !important;
         }}
         
@@ -925,7 +927,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH CORRECTED CHARTS
+# DASHBOARD - WITH EXACT CHART CHANGES
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1012,7 +1014,7 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Row 2: Charts - DOUGHNUT chart for Status Distribution (as requested)
+            # Row 2: Charts - DOUGHNUT chart for Status Distribution (with percentages)
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
@@ -1042,7 +1044,7 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 3: Department Performance - ALL departments, Horizontal Bar Chart
+            # Row 3: Department Performance - ALL DEPARTMENTS (not top 10), Horizontal Bar Chart
             st.markdown("#### Department Performance (All Departments)")
             dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
             dept_progress.columns = ['Department', 'Progress %']
