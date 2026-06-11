@@ -67,7 +67,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# THEME-BASED CSS
+# CUSTOM CSS - ONLY FIX TEXT COLORS ON GREEN BACKGROUND
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -143,70 +143,91 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        /* Headers */
+        /* Headers - Keep green */
         h1, h2, h3, h4 {{
             color: {HELB_GREEN} !important;
             font-weight: 600 !important;
         }}
         
-        /* Dashboard header title - Medium size */
+        h1 {{
+            border-bottom: 3px solid {HELB_GOLD};
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }}
+        
+        /* Dashboard Header - KEEP THE GREEN BACKGROUND */
+        .dashboard-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        
+        .header-left {{
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }}
+        
+        /* Header text - MAKE SURE TEXT IS WHITE */
         .dashboard-header h1 {{
             color: white !important;
             margin: 0;
-            font-size: 1.3rem !important;
+            font-size: 1.2rem;
             font-weight: 600;
             border-bottom: none;
         }}
         
-        h2 {{
-            font-size: 1.3rem !important;
+        .dashboard-header p {{
+            color: rgba(255,255,255,0.85);
+            margin: 0;
+            font-size: 0.7rem;
         }}
         
-        h3 {{
-            font-size: 1.1rem !important;
-        }}
-        
-        /* Login Container */
+        /* Login Container - Keep green */
         .login-container {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2.5rem;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }}
         
         .login-title {{
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             font-weight: 700;
             margin: 0;
         }}
         
         .login-subtitle {{
             color: rgba(255,255,255,0.85);
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             margin-top: 0.5rem;
         }}
         
-        /* KPI Cards */
+        /* KPI Cards - Keep green gradient, make ALL text white */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
             padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             text-align: center;
         }}
         
         .kpi-card:hover {{
             transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
         }}
         
         .kpi-label {{
             font-size: 0.7rem;
             text-transform: uppercase;
-            color: {HELB_GOLD};
+            color: {HELB_GOLD} !important;
             font-weight: 600;
             letter-spacing: 0.5px;
         }}
@@ -221,7 +242,7 @@ if st.session_state.theme == "light":
         
         .kpi-sub {{
             font-size: 0.6rem;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.8) !important;
             margin-top: 0.2rem;
         }}
         
@@ -242,39 +263,38 @@ if st.session_state.theme == "light":
         /* Metric Cards */
         .metric-card {{
             background: {HELB_WHITE};
-            border-radius: 10px;
-            padding: 0.8rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             border-left: 4px solid {HELB_GOLD};
             transition: all 0.3s ease;
-            font-size: 0.8rem;
         }}
         
         /* Status Badges */
         .badge-active {{
             background-color: {HELB_GREEN};
             color: white;
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 600;
         }}
         
         .badge-expiring {{
             background-color: {HELB_GOLD};
             color: {HELB_DARK};
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 600;
         }}
         
         .badge-expired {{
             background-color: #dc2626;
             color: white;
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 600;
         }}
         
@@ -284,16 +304,14 @@ if st.session_state.theme == "light":
             color: white !important;
             border: none !important;
             border-radius: 8px !important;
-            padding: 8px 16px !important;
+            padding: 10px 20px !important;
             font-weight: 600 !important;
-            font-size: 0.75rem !important;
             transition: all 0.3s ease !important;
         }}
         
         .stButton > button:hover {{
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            color: white !important;
         }}
         
         /* Expander header */
@@ -311,10 +329,6 @@ if st.session_state.theme == "light":
         
         .streamlit-expanderHeader:hover {{
             background-color: {HELB_GRAY} !important;
-        }}
-        
-        .streamlit-expanderHeader:hover p {{
-            color: {HELB_DARK} !important;
         }}
         
         /* Expander content area */
@@ -342,18 +356,18 @@ if st.session_state.theme == "light":
         
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{
-            gap: 0.3rem;
+            gap: 0.5rem;
             background: {HELB_GRAY};
-            padding: 0.3rem;
-            border-radius: 10px;
+            padding: 0.5rem;
+            border-radius: 12px;
             margin-bottom: 1rem;
         }}
         
         .stTabs [data-baseweb="tab"] {{
-            border-radius: 7px;
-            padding: 0.3rem 1rem;
+            border-radius: 8px;
+            padding: 0.5rem 1.2rem;
             font-weight: 500;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             color: {HELB_DARK};
             white-space: nowrap;
             background-color: {HELB_GRAY};
@@ -368,9 +382,9 @@ if st.session_state.theme == "light":
         /* Footer */
         .footer {{
             text-align: center;
-            padding: 1rem;
+            padding: 1.5rem;
             color: #6B7280;
-            font-size: 0.6rem;
+            font-size: 0.7rem;
             border-top: 1px solid #E5E7EB;
             margin-top: 2rem;
         }}
@@ -383,17 +397,13 @@ if st.session_state.theme == "light":
         
         /* Dataframe */
         .dataframe {{
-            font-size: 0.7rem !important;
+            font-size: 0.8rem;
         }}
         
-        /* Caption */
-        .stCaption, caption {{
-            font-size: 0.65rem !important;
-        }}
-        
-        /* Success/Error/Warning */
-        .stAlert {{
-            font-size: 0.7rem !important;
+        .dataframe th {{
+            background-color: {HELB_GREEN} !important;
+            color: white !important;
+            padding: 10px !important;
         }}
     </style>
     """
@@ -466,18 +476,25 @@ else:
             font-weight: 600 !important;
         }}
         
-        .dashboard-header h1 {{
-            color: white !important;
-            font-size: 1.3rem !important;
+        .dashboard-header {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }}
         
-        h2 {{ font-size: 1.3rem !important; }}
-        h3 {{ font-size: 1.1rem !important; }}
+        .dashboard-header h1 {{
+            color: white !important;
+            font-size: 1.2rem;
+        }}
         
         .login-container {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2.5rem;
             text-align: center;
         }}
         
@@ -494,22 +511,20 @@ else:
         
         .metric-card {{
             background: #16213e;
-            border-radius: 10px;
-            padding: 0.8rem;
+            border-radius: 12px;
+            padding: 1rem;
             border-left: 4px solid {HELB_GOLD};
         }}
         
         .stButton > button {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             color: white !important;
-            font-size: 0.75rem !important;
         }}
         
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: #2d2d44 !important;
             color: white !important;
             border: 1px solid #4a4a6a !important;
-            font-size: 0.75rem !important;
         }}
         
         .streamlit-expanderHeader {{
@@ -518,7 +533,6 @@ else:
         
         .streamlit-expanderHeader p {{
             color: {HELB_GOLD} !important;
-            font-size: 0.8rem !important;
         }}
         
         .stTabs [data-baseweb="tab-list"] {{
@@ -532,16 +546,14 @@ else:
         
         .footer {{
             text-align: center;
-            padding: 1rem;
+            padding: 1.5rem;
             color: #6B7280;
-            font-size: 0.6rem;
             border-top: 1px solid #2d2d44;
             margin-top: 2rem;
         }}
         
         .stMarkdown, p, span, div, label {{
             color: #e0e0e0 !important;
-            font-size: 0.75rem !important;
         }}
     </style>
     """
@@ -647,9 +659,9 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if LOGO_BASE64:
-            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 180px; height: auto; margin-bottom: 1rem; background: transparent;">'
+            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 200px; height: auto; margin-bottom: 1rem; background: transparent;">'
         else:
-            logo_html = '<div style="font-size: 2.5rem;">🏦</div>'
+            logo_html = '<div style="font-size: 3rem;">🏦</div>'
         
         st.markdown(f"""
         <div class='login-container'>
@@ -728,12 +740,12 @@ with col_refresh:
 # Sidebar
 with st.sidebar:
     if LOGO_BASE64:
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 100px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
     else:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
-            <div style='font-size: 1.8rem;'>🏦</div>
-            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.8rem;'>HELB</p>
+            <div style='font-size: 2rem;'>🏦</div>
+            <p style='color: white; font-weight: 700; margin: 0; font-size: 0.9rem;'>HELB</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -768,7 +780,7 @@ with st.sidebar:
 # DASHBOARD
 # ============================================
 if choice == "📊 Dashboard":
-    st.markdown("<h2 style='margin-bottom: 0.5rem;'>📊 Dashboard Overview</h2>", unsafe_allow_html=True)
+    st.subheader("Dashboard Overview")
     
     plans = get_filtered_data("action_plans")
     contracts = get_filtered_data("contracts")
@@ -856,7 +868,7 @@ if choice == "📊 Dashboard":
         """, unsafe_allow_html=True)
     
     if plans and len(plans) > 0:
-        st.markdown("<h3 style='margin-top: 1rem; margin-bottom: 0.5rem;'>📈 Department Performance Overview</h3>", unsafe_allow_html=True)
+        st.subheader("📈 Department Performance Overview")
         df = pd.DataFrame(plans)
         if st.session_state.user_role in ["admin", "management"]:
             depts = supabase.table("departments").select("id,name").execute().data
@@ -876,13 +888,11 @@ if choice == "📊 Dashboard":
             plot_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
             paper_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
             title_font_color=HELB_GREEN, 
-            title_font_size=16,
-            font_size=12,
-            title_x=0.5
+            title_font_size=16
         )
         st.plotly_chart(fig, use_container_width=True)
     
-    st.success(f"👋 Welcome back, {st.session_state.user_fullname}!")
+    st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
 # ACTION PLANS
@@ -1000,10 +1010,10 @@ elif choice == "📄 Contracts":
             <div class='metric-card'>
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
-                        <b style='font-size:14px;'>{color} {contract['contract_title']}</b><br>
-                        <span style='color:#666; font-size:11px;'>Vendor: {contract['vendor_name']}</span><br>
-                        <span style='color:#666; font-size:11px;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
-                        <span style='font-size:11px;'>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
+                        <b style='font-size:16px;'>{color} {contract['contract_title']}</b><br>
+                        <span style='color:#666;'>Vendor: {contract['vendor_name']}</span><br>
+                        <span style='color:#666;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                        <span>Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}</span>
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -1054,8 +1064,8 @@ elif choice == "📋 Policies":
             <div class='metric-card'>
                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                     <div>
-                        <b style='font-size:14px;'>📜 {policy['policy_name']}</b><br>
-                        <span style='color:#666; font-size:11px;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                        <b style='font-size:16px;'>📜 {policy['policy_name']}</b><br>
+                        <span style='color:#666;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
                     </div>
                     <div>{badge}</div>
                 </div>
@@ -1199,12 +1209,12 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
 # ============================================
 elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
-    st.subheader("Cross-Department Performance Overview")
+    st.markdown("### Cross-Department Performance Overview")
     
     depts = supabase.table("departments").select("*").execute().data
     dept_names = {d["id"]: d["name"] for d in depts}
     
-    st.subheader("Department Performance Summary")
+    st.markdown("#### Department Performance Summary")
     
     performance_data = []
     for dept in depts:
