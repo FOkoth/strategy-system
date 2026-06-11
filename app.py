@@ -149,49 +149,21 @@ if st.session_state.theme == "light":
             font-weight: 600 !important;
         }}
         
-        h1 {{ font-size: 1.5rem !important; }}
-        h2 {{ font-size: 1.2rem !important; }}
-        h3 {{ font-size: 1rem !important; }}
-        
-        .stMarkdown h4, .stMarkdown h3 {{
-            color: {HELB_DARK} !important;
-        }}
-        
-        h1 {{
-            border-bottom: 3px solid {HELB_GOLD};
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }}
-        
-        /* Dashboard Header */
-        .dashboard-header {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
-            padding: 0.5rem 1.2rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        
-        .header-left {{
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }}
-        
+        /* Dashboard header title - Medium size */
         .dashboard-header h1 {{
             color: white !important;
             margin: 0;
-            font-size: 1rem !important;
+            font-size: 1.3rem !important;
             font-weight: 600;
             border-bottom: none;
         }}
         
-        .dashboard-header p {{
-            color: rgba(255,255,255,0.85);
-            margin: 0;
-            font-size: 0.6rem !important;
+        h2 {{
+            font-size: 1.3rem !important;
+        }}
+        
+        h3 {{
+            font-size: 1.1rem !important;
         }}
         
         /* Login Container */
@@ -219,19 +191,20 @@ if st.session_state.theme == "light":
         /* KPI Cards */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
-            border-radius: 10px;
-            padding: 0.8rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             transition: all 0.3s ease;
+            text-align: center;
         }}
         
         .kpi-card:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         }}
         
         .kpi-label {{
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             color: {HELB_GOLD};
             font-weight: 600;
@@ -239,19 +212,25 @@ if st.session_state.theme == "light":
         }}
         
         .kpi-value {{
-            font-size: 1.4rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            margin: 0.2rem 0;
-            color: white;
+            margin: 0.3rem 0;
+            color: white !important;
             line-height: 1.2;
         }}
         
+        .kpi-sub {{
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: 0.2rem;
+        }}
+        
         .progress-bar {{
-            height: 3px;
+            height: 4px;
             background: rgba(255,255,255,0.3);
             border-radius: 2px;
             overflow: hidden;
-            margin-top: 0.3rem;
+            margin-top: 0.5rem;
         }}
         
         .progress-fill {{
@@ -317,7 +296,7 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
-        /* Expander header - White background, Black text */
+        /* Expander header */
         .streamlit-expanderHeader {{
             background-color: {HELB_WHITE} !important;
             border-radius: 8px !important;
@@ -487,24 +466,13 @@ else:
             font-weight: 600 !important;
         }}
         
-        h1 {{ font-size: 1.5rem !important; }}
-        h2 {{ font-size: 1.2rem !important; }}
-        h3 {{ font-size: 1rem !important; }}
-        
-        .dashboard-header {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-            padding: 0.5rem 1.2rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        
         .dashboard-header h1 {{
             color: white !important;
-            font-size: 1rem !important;
+            font-size: 1.3rem !important;
         }}
+        
+        h2 {{ font-size: 1.3rem !important; }}
+        h3 {{ font-size: 1.1rem !important; }}
         
         .login-container {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
@@ -515,12 +483,14 @@ else:
         
         .kpi-card {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-            border-radius: 10px;
-            padding: 0.8rem;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
         }}
         
-        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.65rem; }}
-        .kpi-value {{ color: white; font-size: 1.4rem; }}
+        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.7rem; }}
+        .kpi-value {{ color: white; font-size: 1.8rem; }}
+        .kpi-sub {{ color: rgba(255,255,255,0.8); font-size: 0.6rem; }}
         
         .metric-card {{
             background: #16213e;
@@ -702,7 +672,6 @@ if not st.session_state.authenticated:
                     if result.data:
                         user = result.data[0]
                         if password == user["password_hash"]:
-                            # Get department name
                             dept_name = get_department_name(user["department_id"])
                             
                             st.session_state.authenticated = True
@@ -730,9 +699,9 @@ if not st.session_state.authenticated:
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
 with col_header:
     if LOGO_BASE64:
-        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 35px; height: auto; background: transparent;">'
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 40px; height: auto; background: transparent;">'
     else:
-        logo_html = '<div style="font-size: 1.2rem;">🏦</div>'
+        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
     
     st.markdown(f"""
     <div class='dashboard-header'>
@@ -768,7 +737,6 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
     
-    # Format user info properly - Name, Department, Role on separate lines
     role_display = st.session_state.user_role.replace('_', ' ').title() if st.session_state.user_role else "User"
     dept_display = st.session_state.user_dept_name if st.session_state.user_dept_name else "No Department"
     
@@ -800,7 +768,7 @@ with st.sidebar:
 # DASHBOARD
 # ============================================
 if choice == "📊 Dashboard":
-    st.subheader("Dashboard Overview")
+    st.markdown("<h2 style='margin-bottom: 0.5rem;'>📊 Dashboard Overview</h2>", unsafe_allow_html=True)
     
     plans = get_filtered_data("action_plans")
     contracts = get_filtered_data("contracts")
@@ -818,6 +786,7 @@ if choice == "📊 Dashboard":
                 <div class='kpi-label'>📋 ACTION PLANS</div>
                 <div class='kpi-value'>{completed}/{total}</div>
                 <div class='progress-bar'><div class='progress-fill' style='width:{avg_progress}%;'></div></div>
+                <div class='kpi-sub'>Completion Progress</div>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -825,17 +794,19 @@ if choice == "📊 Dashboard":
             <div class='kpi-card'>
                 <div class='kpi-label'>📋 ACTION PLANS</div>
                 <div class='kpi-value'>0/0</div>
+                <div class='kpi-sub'>No plans yet</div>
             </div>
             """, unsafe_allow_html=True)
     
     with col2:
         if contracts:
             expiring = sum(1 for c in contracts if c.get("status") == "expiring_soon")
+            total_contracts = len(contracts)
             st.markdown(f"""
             <div class='kpi-card'>
                 <div class='kpi-label'>📄 CONTRACTS</div>
                 <div class='kpi-value'>{expiring}</div>
-                <div class='kpi-label' style='font-size:0.55rem;'>expiring within 30 days</div>
+                <div class='kpi-sub'>expiring within 30 days out of {total_contracts}</div>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -843,12 +814,14 @@ if choice == "📊 Dashboard":
             <div class='kpi-card'>
                 <div class='kpi-label'>📄 CONTRACTS</div>
                 <div class='kpi-value'>0</div>
+                <div class='kpi-sub'>No contracts yet</div>
             </div>
             """, unsafe_allow_html=True)
     
     with col3:
         if policies:
             expiring_policies = 0
+            total_policies = len(policies)
             for p in policies:
                 try:
                     expiry = datetime.strptime(p["expiry_date"], "%Y-%m-%d").date()
@@ -860,7 +833,7 @@ if choice == "📊 Dashboard":
             <div class='kpi-card'>
                 <div class='kpi-label'>📜 POLICIES</div>
                 <div class='kpi-value'>{expiring_policies}</div>
-                <div class='kpi-label' style='font-size:0.55rem;'>expiring within 90 days</div>
+                <div class='kpi-sub'>expiring within 90 days out of {total_policies}</div>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -868,6 +841,7 @@ if choice == "📊 Dashboard":
             <div class='kpi-card'>
                 <div class='kpi-label'>📜 POLICIES</div>
                 <div class='kpi-value'>0</div>
+                <div class='kpi-sub'>No policies yet</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -877,11 +851,12 @@ if choice == "📊 Dashboard":
         <div class='kpi-card'>
             <div class='kpi-label'>👥 ACTIVE USERS</div>
             <div class='kpi-value'>{users_count}</div>
+            <div class='kpi-sub'>System users</div>
         </div>
         """, unsafe_allow_html=True)
     
     if plans and len(plans) > 0:
-        st.subheader("📈 Department Performance Overview")
+        st.markdown("<h3 style='margin-top: 1rem; margin-bottom: 0.5rem;'>📈 Department Performance Overview</h3>", unsafe_allow_html=True)
         df = pd.DataFrame(plans)
         if st.session_state.user_role in ["admin", "management"]:
             depts = supabase.table("departments").select("id,name").execute().data
@@ -901,12 +876,13 @@ if choice == "📊 Dashboard":
             plot_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
             paper_bgcolor=HELB_WHITE if st.session_state.theme == "light" else "#1a1a2e",
             title_font_color=HELB_GREEN, 
-            title_font_size=14,
-            font_size=11
+            title_font_size=16,
+            font_size=12,
+            title_x=0.5
         )
         st.plotly_chart(fig, use_container_width=True)
     
-    st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
+    st.success(f"👋 Welcome back, {st.session_state.user_fullname}!")
 
 # ============================================
 # ACTION PLANS
