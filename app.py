@@ -45,6 +45,7 @@ st.set_page_config(
 # ============================================
 # LOAD HELB LOGO
 # ============================================
+@st.cache_data(ttl=3600)
 def get_logo_base64():
     try:
         logo_url = st.secrets.get("HELB_LOGO_URL", "https://raw.githubusercontent.com/YOUR_USERNAME/strategy-system/main/HELB%20Logo.png")
@@ -125,6 +126,67 @@ if "filter_quarter" not in st.session_state:
     st.session_state.filter_quarter = "All"
 if "filter_month" not in st.session_state:
     st.session_state.filter_month = "All"
+
+# Cache for work plans data
+@st.cache_data(ttl=60)  # Cache for 60 seconds
+def get_cached_work_plans(user_role, user_dept):
+    """Cached version of work plans fetch"""
+    try:
+        if user_role in ["admin", "management"]:
+            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
+        else:
+            result = supabase.table("work_plan").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
+        return result.data
+    except:
+        return []
+
+@st.cache_data(ttl=3600)
+def get_cached_departments():
+    """Cached departments with directorate info"""
+    try:
+        result = supabase.table("departments").select("*").order("name").execute()
+        depts = result.data
+        # Get all directorates in one query
+        dir_result = supabase.table("directorates").select("*").execute()
+        directorates = {d["id"]: d for d in dir_result.data}
+        
+        for dept in depts:
+            if dept.get("directorate_id") and dept["directorate_id"] in directorates:
+                dept["directorate_name"] = directorates[dept["directorate_id"]]["name"]
+                dept["director_name"] = directorates[dept["directorate_id"]]["director_name"]
+        return depts
+    except:
+        return []
+
+@st.cache_data(ttl=3600)
+def get_cached_directorates():
+    try:
+        result = supabase.table("directorates").select("*").order("name").execute()
+        return result.data
+    except:
+        return []
+
+@st.cache_data(ttl=60)
+def get_cached_contracts(user_role, user_dept):
+    try:
+        if user_role in ["admin", "management"]:
+            result = supabase.table("contracts").select("*").execute()
+        else:
+            result = supabase.table("contracts").select("*").eq("department_id", user_dept).execute()
+        return result.data
+    except:
+        return []
+
+@st.cache_data(ttl=60)
+def get_cached_policies(user_role, user_dept):
+    try:
+        if user_role in ["admin", "management"]:
+            result = supabase.table("policies").select("*").execute()
+        else:
+            result = supabase.table("policies").select("*").eq("department_id", user_dept).execute()
+        return result.data
+    except:
+        return []
 
 # ============================================
 # HELPER FUNCTIONS
@@ -207,27 +269,24 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
-# DIRECTORATE FUNCTIONS
+# DIRECTORATE FUNCTIONS (using cache)
 # ============================================
 def get_all_directorates():
-    try:
-        result = supabase.table("directorates").select("*").order("name").execute()
-        return result.data
-    except:
-        return []
+    return get_cached_directorates()
 
 def get_directorate_by_id(directorate_id):
-    try:
-        if not directorate_id:
-            return None
-        result = supabase.table("directorates").select("*").eq("id", directorate_id).execute()
-        return result.data[0] if result.data else None
-    except:
+    if not directorate_id:
         return None
+    directorates = get_cached_directorates()
+    for d in directorates:
+        if d["id"] == directorate_id:
+            return d
+    return None
 
 def add_directorate(name, director_name):
     try:
         supabase.table("directorates").insert({"name": name, "director_name": director_name}).execute()
+        st.cache_data.clear()
         return True, "Directorate added successfully"
     except Exception as e:
         return False, str(e)
@@ -239,55 +298,36 @@ def update_directorate(directorate_id, name, director_name):
             "director_name": director_name,
             "updated_at": datetime.now().isoformat()
         }).eq("id", directorate_id).execute()
+        st.cache_data.clear()
         return True, "Directorate updated successfully"
     except Exception as e:
         return False, str(e)
 
 def delete_directorate(directorate_id):
     try:
-        # Check if there are departments in this directorate
         depts = supabase.table("departments").select("id").eq("directorate_id", directorate_id).execute()
         if depts.data:
             return False, "Cannot delete directorate that has departments. Move departments first."
         supabase.table("directorates").delete().eq("id", directorate_id).execute()
+        st.cache_data.clear()
         return True, "Directorate deleted successfully"
     except Exception as e:
         return False, str(e)
 
 # ============================================
-# DEPARTMENT FUNCTIONS
+# DEPARTMENT FUNCTIONS (using cache)
 # ============================================
 def get_all_departments():
-    try:
-        result = supabase.table("departments").select("*").order("name").execute()
-        departments = result.data
-        # Add directorate info to each department
-        for dept in departments:
-            if dept.get("directorate_id"):
-                directorate = get_directorate_by_id(dept["directorate_id"])
-                if directorate:
-                    dept["directorate_name"] = directorate["name"]
-                    dept["director_name"] = directorate["director_name"]
-        return departments
-    except:
-        return []
+    return get_cached_departments()
 
 def get_department_by_id(dept_id):
-    try:
-        if not dept_id:
-            return None
-        result = supabase.table("departments").select("*").eq("id", dept_id).execute()
-        if result.data:
-            dept = result.data[0]
-            if dept.get("directorate_id"):
-                directorate = get_directorate_by_id(dept["directorate_id"])
-                if directorate:
-                    dept["directorate_name"] = directorate["name"]
-                    dept["director_name"] = directorate["director_name"]
-            return dept
+    if not dept_id:
         return None
-    except:
-        return None
+    departments = get_cached_departments()
+    for d in departments:
+        if d["id"] == dept_id:
+            return d
+    return None
 
 def add_department(dept_name, directorate_id, deputy_director_name):
     try:
@@ -296,6 +336,7 @@ def add_department(dept_name, directorate_id, deputy_director_name):
             "directorate_id": directorate_id if directorate_id else None,
             "deputy_director_name": deputy_director_name
         }).execute()
+        st.cache_data.clear()
         return True, "Department added successfully"
     except Exception as e:
         return False, str(e)
@@ -308,17 +349,18 @@ def update_department(dept_id, name, directorate_id, deputy_director_name):
             "deputy_director_name": deputy_director_name,
             "updated_at": datetime.now().isoformat()
         }).eq("id", dept_id).execute()
+        st.cache_data.clear()
         return True, "Department updated successfully"
     except Exception as e:
         return False, str(e)
 
 def delete_department(dept_id):
     try:
-        # Check if there are users in this department
         users = supabase.table("users").select("id").eq("department_id", dept_id).execute()
         if users.data:
             return False, "Cannot delete department that has users. Reassign users first."
         supabase.table("departments").delete().eq("id", dept_id).execute()
+        st.cache_data.clear()
         return True, "Department deleted successfully"
     except Exception as e:
         return False, str(e)
@@ -326,28 +368,19 @@ def delete_department(dept_id):
 def get_department_name(dept_id):
     if dept_id is None:
         return "No Department"
-    try:
-        result = supabase.table("departments").select("name").eq("id", dept_id).execute()
-        return result.data[0]["name"] if result.data else "Unknown Department"
-    except:
-        return "Unknown Department"
+    dept = get_department_by_id(dept_id)
+    return dept["name"] if dept else "Unknown Department"
 
 # ============================================
-# WORK PLAN FUNCTIONS
+# WORK PLAN FUNCTIONS (using cache)
 # ============================================
 def get_work_plans():
-    try:
-        if st.session_state.user_role in ["admin", "management"]:
-            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
-        else:
-            result = supabase.table("work_plan").select("*").eq("department_id", st.session_state.user_dept).order("created_at", desc=True).execute()
-        return result.data
-    except:
-        return []
+    return get_cached_work_plans(st.session_state.user_role, st.session_state.user_dept)
 
 def add_work_plan(data):
     try:
-        result = supabase.table("work_plan").insert(data).execute()
+        supabase.table("work_plan").insert(data).execute()
+        st.cache_data.clear()
         return True
     except:
         return False
@@ -361,6 +394,7 @@ def update_work_plan_progress(plan_id, actual_achievement, progress_percent, sta
             "updated_at": datetime.now().isoformat()
         }
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
+        st.cache_data.clear()
         return True
     except Exception as e:
         st.error(f"Update error: {e}")
@@ -373,6 +407,7 @@ def update_work_plan_due_date(plan_id, new_due_date):
             "updated_at": datetime.now().isoformat()
         }
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
+        st.cache_data.clear()
         return True
     except:
         return False
@@ -380,15 +415,18 @@ def update_work_plan_due_date(plan_id, new_due_date):
 def delete_work_plan(plan_id):
     try:
         supabase.table("work_plan").delete().eq("id", plan_id).execute()
+        st.cache_data.clear()
         return True
     except:
         return False
 
 def get_filtered_data(table_name):
-    if st.session_state.user_role in ["admin", "management"]:
-        return supabase.table(table_name).select("*").execute().data
+    if table_name == "contracts":
+        return get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
+    elif table_name == "policies":
+        return get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     else:
-        return supabase.table(table_name).select("*").eq("department_id", st.session_state.user_dept).execute().data
+        return []
 
 # ============================================
 # USER MANAGEMENT FUNCTIONS
@@ -403,6 +441,7 @@ def get_all_users():
 def delete_user(username):
     try:
         supabase.table("users").delete().eq("username", username).execute()
+        st.cache_data.clear()
         return True
     except:
         return False
@@ -413,6 +452,7 @@ def update_user_role(username, new_role, department_id):
             "role": new_role,
             "department_id": department_id if department_id != "None" else None
         }).eq("username", username).execute()
+        st.cache_data.clear()
         return True
     except:
         return False
@@ -422,6 +462,7 @@ def reset_user_password(username, new_password):
         supabase.table("users").update({
             "password_hash": new_password
         }).eq("username", username).execute()
+        st.cache_data.clear()
         return True
     except:
         return False
@@ -439,6 +480,7 @@ def create_new_user(username, full_name, password, role, department_id):
             "role": role,
             "department_id": department_id if department_id != "None" else None
         }).execute()
+        st.cache_data.clear()
         return True, "User created successfully"
     except Exception as e:
         return False, str(e)
@@ -457,7 +499,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS (condensed for performance)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -491,11 +533,6 @@ if st.session_state.theme == "light":
             font-weight: 600 !important;
             font-size: 0.8rem !important;
             transition: all 0.3s ease !important;
-        }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
-            transform: translateX(5px);
-            filter: brightness(1.05);
         }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
@@ -537,7 +574,6 @@ if st.session_state.theme == "light":
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
             padding: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
         }}
         .kpi-label {{ font-size: 0.7rem; text-transform: uppercase; color: {HELB_GOLD} !important; font-weight: 600; }}
@@ -550,16 +586,14 @@ if st.session_state.theme == "light":
             background: {HELB_WHITE};
             border-radius: 12px;
             padding: 1rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             border-left: 4px solid {HELB_GOLD};
         }}
         .metric-card * {{ color: {HELB_BLACK} !important; }}
         
-        .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
-        .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
-        .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
-        .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
-        .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
+        .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
+        .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
+        .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
+        .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
@@ -581,7 +615,6 @@ if st.session_state.theme == "light":
             border: 1px solid #D1D5DB !important;
             font-size: 0.75rem !important;
         }}
-        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{ color: {HELB_BLACK} !important; }}
         
         .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
         .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_BLACK}; }}
@@ -671,11 +704,6 @@ else:
         .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
-        
-        .badge-pending {{ background-color: #dc2626; color: white; }}
-        .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; }}
-        .badge-active {{ background-color: #00843D; color: white; }}
-        .badge-exceeded {{ background-color: #8B5CF6; color: white; }}
     </style>
     """
 
@@ -764,6 +792,7 @@ with col_theme:
 
 with col_refresh:
     if st.button("🔄 Refresh", key="global_refresh"):
+        st.cache_data.clear()
         st.rerun()
 
 # Sidebar
@@ -780,7 +809,7 @@ with st.sidebar:
     
     role_display = st.session_state.user_role.replace('_', ' ').title() if st.session_state.user_role else "User"
     
-    # Get department details with directorate
+    # Get department details with directorate (cached)
     dept_details = get_department_by_id(st.session_state.user_dept) if st.session_state.user_dept else None
     if dept_details:
         if dept_details.get("directorate_name"):
@@ -812,10 +841,11 @@ with st.sidebar:
     
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.clear()
+        st.cache_data.clear()
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE
+# WORK PLANS MODULE - OPTIMIZED
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -838,6 +868,7 @@ if choice == "📋 Work Plans":
     
     st.markdown("---")
     
+    # Get cached work plans
     work_plans = get_work_plans()
     
     if work_plans:
@@ -895,10 +926,49 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
     
-    # TAB 2: VIEW ALL ACTIVITIES
+    # TAB 2: VIEW ALL ACTIVITIES - OPTIMIZED
     with tab_view:
         if filtered_plans:
-            for plan in filtered_plans:
+            # Show filter summary
+            filter_summary = []
+            if selected_fy != "All":
+                filter_summary.append(f"FY: {selected_fy}")
+            if selected_q != "All":
+                filter_summary.append(f"Quarter: {selected_q}")
+            if selected_m != "All":
+                filter_summary.append(f"Month: {selected_m}")
+            if filter_summary:
+                st.info(f"📊 Showing activities for: {' | '.join(filter_summary)} | Total: {len(filtered_plans)} activities")
+            
+            # Additional filters for pillar, status, category
+            col_filter1, col_filter2, col_filter3 = st.columns(3)
+            with col_filter1:
+                pillar_filter = st.multiselect("Filter by Pillar", STRATEGIC_PILLARS, default=[])
+            with col_filter2:
+                status_filter = st.multiselect("Filter by Status", ["Pending", "In Progress", "Done"], default=[])
+            with col_filter3:
+                category_filter = st.multiselect("Filter by Category", ACTIVITY_CATEGORIES, default=[])
+            
+            if st.session_state.user_role in ["admin", "management"]:
+                with col_filter1:
+                    departments_list = list(set([p.get("department_name", "Unknown") for p in filtered_plans if p.get("department_name")]))
+                    dept_filter = st.multiselect("Filter by Department", departments_list, default=[])
+            else:
+                dept_filter = []
+            
+            final_plans = filtered_plans
+            if pillar_filter:
+                final_plans = [p for p in final_plans if p.get("strategic_pillar") in pillar_filter]
+            if status_filter:
+                final_plans = [p for p in final_plans if p.get("status") in status_filter]
+            if category_filter:
+                final_plans = [p for p in final_plans if p.get("activity_category") in category_filter]
+            if dept_filter:
+                final_plans = [p for p in final_plans if p.get("department_name") in dept_filter]
+            
+            st.markdown(f"**Showing {len(final_plans)} activities**")
+            
+            for plan in final_plans:
                 due_date = datetime.strptime(plan["due_date"], "%Y-%m-%d").date()
                 days_left = (due_date - datetime.now().date()).days
                 
@@ -992,7 +1062,7 @@ if choice == "📋 Work Plans":
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
-    # TAB 3: WORK PLAN DASHBOARD
+    # TAB 3: WORK PLAN DASHBOARD - OPTIMIZED
     with tab_dashboard:
         if filtered_plans:
             df = pd.DataFrame(filtered_plans)
@@ -1016,14 +1086,15 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD
+# DASHBOARD - OPTIMIZED
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
     
+    # Get all data once with caching
     work_plans = get_work_plans()
-    contracts = get_filtered_data("contracts")
-    policies = get_filtered_data("policies")
+    contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
+    policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     
     # Compact Filters
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
@@ -1345,7 +1416,7 @@ elif choice == "📄 Contracts":
                 else:
                     st.error("Please fill all required fields")
     
-    contracts = get_filtered_data("contracts")
+    contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
     if contracts:
         for contract in contracts:
             end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
@@ -1402,7 +1473,7 @@ elif choice == "📋 Policies":
                 else:
                     st.error("Please enter a policy name")
     
-    policies = get_filtered_data("policies")
+    policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     if policies:
         for policy in policies:
             expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
@@ -1430,15 +1501,15 @@ elif choice == "📋 Policies":
         st.info("No policies found. Click 'Add New Policy' to get started.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# USER MANAGEMENT (ADMIN ONLY) - OPTIMIZED
 # ============================================
 elif choice == "👥 User Management" and st.session_state.user_role == "admin":
     st.subheader("User Management - Admin Panel")
     
-    # Get data
-    directorates = get_all_directorates()
+    # Get data once with caching
+    directorates = get_cached_directorates()
     directorate_options = {d["name"]: d["id"] for d in directorates}
-    departments = get_all_departments()
+    departments = get_cached_departments()
     dept_options = {d["name"]: d["id"] for d in departments}
     users = get_all_users()
     
@@ -1688,7 +1759,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                 with col1:
                     st.write(f"• **{dir_item['name']}** - Director: {dir_item.get('director_name', 'Not assigned')}")
                 with col2:
-                    # Show department count
                     dept_count = len([d for d in departments if d.get('directorate_id') == dir_item['id']])
                     st.caption(f"{dept_count} departments")
                 with col3:
@@ -1767,7 +1837,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
             st.info("No work plans found")
     
     with tabs[1]:
-        all_contracts = supabase.table("contracts").select("*").execute().data
+        all_contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
         if all_contracts:
             df = pd.DataFrame(all_contracts)
             st.dataframe(df[["contract_title", "vendor_name", "end_date", "status"]], use_container_width=True, hide_index=True)
@@ -1775,7 +1845,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
             st.info("No contracts found")
     
     with tabs[2]:
-        all_policies = supabase.table("policies").select("*").execute().data
+        all_policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if all_policies:
             df = pd.DataFrame(all_policies)
             st.dataframe(df[["policy_name", "expiry_date", "status"]], use_container_width=True, hide_index=True)
