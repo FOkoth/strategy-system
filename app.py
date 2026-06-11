@@ -230,6 +230,15 @@ def get_directorate_by_id(directorate_id):
             return d
     return None
 
+def get_directorate_for_department(department_id):
+    """Get directorate name for a given department"""
+    if not department_id:
+        return None
+    dept = get_department_by_id(department_id)
+    if dept and dept.get("directorate_name"):
+        return dept["directorate_name"]
+    return None
+
 def add_directorate(name, director_name):
     try:
         supabase.table("directorates").insert({"name": name, "director_name": director_name}).execute()
@@ -381,10 +390,8 @@ def add_work_plan(data):
     except:
         return False
 
-# FIXED: Convert progress_percent to integer to avoid database error
 def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
     try:
-        # Convert progress_percent to integer (round down)
         progress_int = int(progress_percent) if progress_percent else 0
         
         update_data = {
@@ -509,6 +516,11 @@ if st.session_state.theme == "light":
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
+        
+        /* Login page text - BLACK for visibility */
+        .stTextInput label {{
+            color: {HELB_BLACK} !important;
+        }}
         
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
@@ -636,6 +648,11 @@ else:
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: #1a1a2e !important; }}
+        
+        /* Login page text - WHITE for visibility in dark mode */
+        .stTextInput label {{
+            color: white !important;
+        }}
         
         [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
@@ -881,6 +898,10 @@ if choice == "📋 Work Plans":
     # TAB 1: ADD NEW WORK PLAN ACTIVITY
     with tab_add:
         st.markdown("### Add New Work Plan Activity")
+        
+        # Get directorate for the user's department (auto-populate)
+        user_directorate = get_directorate_for_department(st.session_state.user_dept)
+        
         with st.form("add_work_plan_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -896,6 +917,8 @@ if choice == "📋 Work Plans":
                 activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
                 dept_name = st.session_state.user_dept_name if st.session_state.user_dept_name else "Current Department"
                 st.text_input("Department", value=dept_name, disabled=True)
+                # Auto-populate Directorate field
+                st.text_input("Directorate", value=user_directorate or "Not assigned", disabled=True)
             
             if st.form_submit_button("Save Work Plan Activity", use_container_width=True):
                 if not key_result_area or not planned_activity or not performance_indicator or not annual_target:
@@ -1165,11 +1188,13 @@ elif choice == "📊 Dashboard":
                 st.markdown("#### Status Distribution")
                 status_counts = filtered_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
+                # FIXED COLORS: Done = Green, In Progress = Amber/Gold, Not Started = Red
+                color_map = {'Completed': '#00843D', 'In Progress': '#FFB81C', 'Not Started': '#dc2626'}
                 fig = go.Figure(data=[go.Pie(
                     labels=status_counts['Status'],
                     values=status_counts['Count'],
                     hole=0.4,
-                    marker=dict(colors=[HELB_GREEN, HELB_GOLD, '#dc2626']),
+                    marker=dict(colors=[color_map.get(s, '#808080') for s in status_counts['Status']]),
                     textinfo='label+percent',
                     textposition='auto'
                 )])
