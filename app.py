@@ -83,6 +83,18 @@ STRATEGIC_PILLARS = [
 ACTIVITY_CATEGORIES = ["SP Deliverable", "PC Deliverable"]
 STATUS_OPTIONS = ["Pending", "In Progress", "Done"]
 
+# Quarter to Months Mapping
+QUARTER_MONTHS = {
+    "Q1 (Jul-Sep)": ["July", "August", "September"],
+    "Q2 (Oct-Dec)": ["October", "November", "December"],
+    "Q3 (Jan-Mar)": ["January", "February", "March"],
+    "Q4 (Apr-Jun)": ["April", "May", "June"]
+}
+
+# All months in order
+ALL_MONTHS = ["January", "February", "March", "April", "May", "June", 
+              "July", "August", "September", "October", "November", "December"]
+
 def get_financial_years():
     current_year = datetime.now().year
     years = []
@@ -100,6 +112,12 @@ def get_quarter_from_month(month):
         return "Q3 (Jan-Mar)"
     else:
         return "Q4 (Apr-Jun)"
+
+def get_months_for_quarter(quarter):
+    """Return list of months for the selected quarter"""
+    if quarter == "All":
+        return ALL_MONTHS
+    return QUARTER_MONTHS.get(quarter, ALL_MONTHS)
 
 # ============================================
 # SESSION STATE FOR FILTERS
@@ -160,7 +178,7 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
                ((df['due_year'] == end_year) & (df['due_month'] <= 6))
         df = df[mask]
     
-    # Filter by Quarter - Q1 (Jul-Sep), Q2 (Oct-Dec), Q3 (Jan-Mar), Q4 (Apr-Jun)
+    # Filter by Quarter
     if quarter and quarter != "All":
         if quarter == "Q1 (Jul-Sep)":
             df = df[df['due_month'].isin([7, 8, 9])]
@@ -195,6 +213,7 @@ if st.session_state.theme == "light":
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
         
+        /* Sidebar */
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
         
@@ -209,14 +228,25 @@ if st.session_state.theme == "light":
         .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
+        /* Navigation radio buttons - Green background for selected */
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
+            background-color: {HELB_GRAY} !important;
+            color: {HELB_BLACK} !important;
             border-radius: 8px !important;
             padding: 8px 12px !important;
             margin: 4px 0 !important;
             font-weight: 600 !important;
             font-size: 0.8rem !important;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
+            background-color: {HELB_GREEN} !important;
+            color: white !important;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label:hover {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_BLACK} !important;
         }}
         
         [data-testid="stSidebar"] .stButton > button {{
@@ -225,9 +255,11 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
+        /* Headers */
         h1, h2, h3, h4 {{ color: {HELB_GREEN} !important; font-weight: 600 !important; }}
         h1 {{ border-bottom: 3px solid {HELB_GOLD}; padding-bottom: 15px; margin-bottom: 25px; }}
         
+        /* Dashboard Header */
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -240,6 +272,7 @@ if st.session_state.theme == "light":
         .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
         .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
         
+        /* Login Container */
         .login-container {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 20px;
@@ -249,6 +282,7 @@ if st.session_state.theme == "light":
         .login-title {{ color: white; font-size: 1.5rem; font-weight: 700; }}
         .login-subtitle {{ color: rgba(255,255,255,0.85); font-size: 0.85rem; }}
         
+        /* KPI Cards */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
@@ -262,6 +296,7 @@ if st.session_state.theme == "light":
         .progress-bar {{ height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.5rem; }}
         .progress-fill {{ height: 100%; background: {HELB_GOLD}; border-radius: 2px; }}
         
+        /* Metric Cards */
         .metric-card {{
             background: {HELB_WHITE};
             border-radius: 12px;
@@ -270,12 +305,19 @@ if st.session_state.theme == "light":
             border-left: 4px solid {HELB_GOLD};
         }}
         
+        /* Make all text black in metric cards */
+        .metric-card * {{
+            color: {HELB_BLACK} !important;
+        }}
+        
+        /* Status Badges */
         .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }}
         
+        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
@@ -285,11 +327,13 @@ if st.session_state.theme == "light":
         }}
         .stButton > button[key*="delete"] {{ background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; }}
         
+        /* Expander */
         .streamlit-expanderHeader {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; }}
         .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.85rem !important; font-weight: 600 !important; }}
         .streamlit-expanderContent {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; border-top: none !important; padding: 1rem !important; }}
         .streamlit-expanderContent * {{ color: {HELB_BLACK} !important; }}
         
+        /* Input fields */
         .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
             background-color: white !important;
             color: {HELB_BLACK} !important;
@@ -297,14 +341,26 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
-        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_DARK}; }}
-        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; font-weight: 600; }}
+        .stTextInput label, .stSelectbox label, .stDateInput label, .stNumberInput label {{
+            color: {HELB_BLACK} !important;
+        }}
         
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
+        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_BLACK}; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_BLACK} !important; font-weight: 600; }}
+        
+        /* Footer */
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
+        /* Dataframe */
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: {HELB_BLACK} !important; font-size: 0.7rem; }}
+        
+        /* General text */
+        .stMarkdown, .stMarkdown p, .stMarkdown div {{
+            color: {HELB_BLACK} !important;
+        }}
         
         hr {{ margin: 0.5rem 0; }}
     </style>
@@ -333,13 +389,18 @@ else:
         .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
+            background-color: #2d2d44 !important;
+            color: white !important;
             border-radius: 8px !important;
             padding: 8px 12px !important;
             margin: 4px 0 !important;
             font-weight: 600 !important;
             font-size: 0.8rem !important;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
+            background-color: {HELB_GREEN} !important;
+            color: white !important;
         }}
         
         h1, h2, h3, h4 {{ color: {HELB_GOLD} !important; font-weight: 600 !important; }}
@@ -475,6 +536,43 @@ def delete_work_plan(plan_id):
         return True
     except:
         return False
+
+def filter_work_plans_by_date(df, financial_year, quarter, month):
+    if df.empty:
+        return df
+    
+    df = df.copy()
+    df['due_date_dt'] = pd.to_datetime(df['due_date'])
+    df['due_month'] = df['due_date_dt'].dt.month
+    df['due_year'] = df['due_date_dt'].dt.year
+    
+    if financial_year and financial_year != "All":
+        start_year = int(financial_year.split('/')[0])
+        end_year = int(financial_year.split('/')[1])
+        mask = ((df['due_year'] == start_year) & (df['due_month'] >= 7)) | \
+               ((df['due_year'] == end_year) & (df['due_month'] <= 6))
+        df = df[mask]
+    
+    if quarter and quarter != "All":
+        if quarter == "Q1 (Jul-Sep)":
+            df = df[df['due_month'].isin([7, 8, 9])]
+        elif quarter == "Q2 (Oct-Dec)":
+            df = df[df['due_month'].isin([10, 11, 12])]
+        elif quarter == "Q3 (Jan-Mar)":
+            df = df[df['due_month'].isin([1, 2, 3])]
+        elif quarter == "Q4 (Apr-Jun)":
+            df = df[df['due_month'].isin([4, 5, 6])]
+    
+    if month and month != "All":
+        month_num = {
+            "January": 1, "February": 2, "March": 3, "April": 4,
+            "May": 5, "June": 6, "July": 7, "August": 8,
+            "September": 9, "October": 10, "November": 11, "December": 12
+        }.get(month, 0)
+        if month_num:
+            df = df[df['due_month'] == month_num]
+    
+    return df
 
 # ============================================
 # SESSION STATE INITIALIZATION
@@ -690,19 +788,25 @@ if choice == "📋 Work Plans":
     else:
         st.markdown(f"<h2>📋 {st.session_state.user_dept_name} Department Work Plan</h2>", unsafe_allow_html=True)
     
-    # Filter Bar
+    # Filter Bar with dynamic month options based on quarter selection
     st.markdown("### 📅 Period Filters")
+    
+    # Get current selections
+    current_quarter = st.session_state.get("temp_quarter", "All")
+    
     col_fy, col_q, col_m = st.columns(3)
     with col_fy:
         financial_years = ["All"] + get_financial_years()
         selected_fy = st.selectbox("Financial Year", financial_years, key="fy_filter_workplan", index=0)
+    
     with col_q:
         quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
         selected_q = st.selectbox("Quarter", quarters, key="q_filter_workplan", index=0)
+    
     with col_m:
-        months = ["All", "January", "February", "March", "April", "May", "June", 
-                  "July", "August", "September", "October", "November", "December"]
-        selected_m = st.selectbox("Month", months, key="m_filter_workplan", index=0)
+        # Get available months based on selected quarter
+        available_months = get_months_for_quarter(selected_q)
+        selected_m = st.selectbox("Month", ["All"] + available_months, key="m_filter_workplan", index=0)
     
     st.markdown("---")
     
@@ -882,7 +986,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - ORGANIZED WITH TABS
+# DASHBOARD - ORGANIZED WITH TABS (Bar Charts instead of Pie)
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -891,7 +995,7 @@ elif choice == "📊 Dashboard":
     contracts = get_filtered_data("contracts")
     policies = get_filtered_data("policies")
     
-    # Compact Filters
+    # Compact Filters with dynamic month options
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
@@ -904,10 +1008,9 @@ elif choice == "📊 Dashboard":
                                                         index=quarters.index(st.session_state.filter_quarter) if st.session_state.filter_quarter in quarters else 0,
                                                         key="q_filter_dash")
     with col_m_dash:
-        months = ["All", "January", "February", "March", "April", "May", "June", 
-                  "July", "August", "September", "October", "November", "December"]
-        st.session_state.filter_month = st.selectbox("Month", months,
-                                                      index=months.index(st.session_state.filter_month) if st.session_state.filter_month in months else 0,
+        available_months = get_months_for_quarter(st.session_state.filter_quarter)
+        st.session_state.filter_month = st.selectbox("Month", ["All"] + available_months,
+                                                      index=0 if st.session_state.filter_month == "All" or st.session_state.filter_month not in available_months else available_months.index(st.session_state.filter_month) + 1,
                                                       key="m_filter_dash")
     
     # Prepare work plan data
@@ -971,17 +1074,17 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Row 2: Charts
+            # Row 2: Bar Charts (replaced pie charts)
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
                 status_counts = filtered_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                colors = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
-                fig = px.pie(status_counts, values='Count', names='Status', hole=0.4,
-                            color='Status', color_discrete_map=colors)
-                fig.update_traces(textposition='inside', textinfo='percent+label')
-                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                colors_map = {'Completed': HELB_GREEN, 'In Progress': HELB_GOLD, 'Not Started': '#dc2626'}
+                fig = px.bar(status_counts, x='Status', y='Count', color='Status',
+                            color_discrete_map=colors_map, text='Count')
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=350, showlegend=False, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
             with col_chart2:
@@ -995,7 +1098,7 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, xaxis_tickangle=-45, margin=dict(l=20, r=20, t=30, b=80))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 3: More Charts
+            # Row 3: More Bar Charts
             col_chart3, col_chart4 = st.columns(2)
             with col_chart3:
                 st.markdown("#### Department Performance (Top 10)")
@@ -1020,7 +1123,7 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
-            # Row 4: Quarterly Trend
+            # Row 4: Quarterly Trend (Bar Chart)
             st.markdown("#### Quarterly Performance Trend")
             quarterly_data = filtered_df.groupby('quarter').agg({
                 'id': 'count',
@@ -1084,7 +1187,6 @@ elif choice == "📊 Dashboard":
         if contracts:
             df_contracts = pd.DataFrame(contracts)
             
-            # Key Metrics
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📄 TOTAL CONTRACTS</div><div class='kpi-value'>{len(df_contracts)}</div></div>", unsafe_allow_html=True)
@@ -1099,8 +1201,6 @@ elif choice == "📊 Dashboard":
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
             
             st.markdown("---")
-            
-            # Contracts List
             st.markdown("#### Contract Status Overview")
             for _, contract in df_contracts.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
@@ -1135,7 +1235,6 @@ elif choice == "📊 Dashboard":
         if policies:
             df_policies = pd.DataFrame(policies)
             
-            # Key Metrics
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📜 TOTAL POLICIES</div><div class='kpi-value'>{len(df_policies)}</div></div>", unsafe_allow_html=True)
@@ -1161,8 +1260,6 @@ elif choice == "📊 Dashboard":
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
             
             st.markdown("---")
-            
-            # Policies List
             st.markdown("#### Policy Status Overview")
             for policy in policies:
                 expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
