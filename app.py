@@ -870,7 +870,6 @@ if not st.session_state.authenticated:
 # MAIN APPLICATION
 # ============================================
 
-# Header with theme toggle
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
 with col_header:
     if LOGO_BASE64:
@@ -901,7 +900,6 @@ with col_refresh:
         st.cache_data.clear()
         st.rerun()
 
-# Sidebar
 with st.sidebar:
     if LOGO_BASE64:
         st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
@@ -1392,7 +1390,7 @@ elif choice == "📊 Dashboard":
             expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
             avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
             
-            # STYLED KPI CARDS - THIS IS THE FIX
+            # STYLED KPI CARDS - SAME AS WORK PLANS
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.markdown(f"""
@@ -1590,7 +1588,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# ENHANCED CONTRACTS SECTION
+# CONTRACTS SECTION
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
