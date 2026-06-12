@@ -433,13 +433,13 @@ def delete_work_plan(plan_id):
     except:
         return False
 
-def get_filtered_data(table_name):
-    if table_name == "contracts":
-        return get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
-    elif table_name == "policies":
-        return get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
-    else:
-        return []
+def update_work_plan_admin(plan_id, data):
+    try:
+        supabase.table("work_plan").update(data).eq("id", plan_id).execute()
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        return False
 
 # ============================================
 # ENHANCED CONTRACT FUNCTIONS
@@ -515,6 +515,22 @@ def update_vendor_performance(contract_id, performance_rating, compliance_status
     except Exception as e:
         return False
 
+def update_contract_admin(contract_id, data):
+    try:
+        supabase.table("contracts").update(data).eq("id", contract_id).execute()
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        return False
+
+def delete_contract(contract_id):
+    try:
+        supabase.table("contracts").delete().eq("id", contract_id).execute()
+        st.cache_data.clear()
+        return True
+    except:
+        return False
+
 # ============================================
 # ENHANCED POLICY FUNCTIONS
 # ============================================
@@ -539,32 +555,21 @@ def add_enhanced_policy(data):
     except Exception as e:
         return False, str(e)
 
-def update_policy_acknowledgment(policy_id, department_id, acknowledged, sensitization_completed):
+def update_policy_admin(policy_id, data):
     try:
-        # Get existing acknowledgments
-        result = supabase.table("policy_acknowledgments").select("*")\
-            .eq("policy_id", policy_id).eq("department_id", department_id).execute()
-        
-        if result.data:
-            supabase.table("policy_acknowledgments").update({
-                "acknowledged": acknowledged,
-                "sensitization_completed": sensitization_completed,
-                "acknowledged_at": datetime.now().isoformat() if acknowledged else None,
-                "updated_at": datetime.now().isoformat()
-            }).eq("id", result.data[0]["id"]).execute()
-        else:
-            supabase.table("policy_acknowledgments").insert({
-                "policy_id": policy_id,
-                "department_id": department_id,
-                "acknowledged": acknowledged,
-                "sensitization_completed": sensitization_completed,
-                "acknowledged_at": datetime.now().isoformat() if acknowledged else None,
-                "created_at": datetime.now().isoformat()
-            }).execute()
-        
+        supabase.table("policies").update(data).eq("id", policy_id).execute()
         st.cache_data.clear()
         return True
     except Exception as e:
+        return False
+
+def delete_policy(policy_id):
+    try:
+        supabase.table("policy_acknowledgments").delete().eq("policy_id", policy_id).execute()
+        supabase.table("policies").delete().eq("id", policy_id).execute()
+        st.cache_data.clear()
+        return True
+    except:
         return False
 
 def get_policy_acknowledgments(policy_id):
@@ -743,6 +748,15 @@ if st.session_state.theme == "light":
         }}
         .metric-card * {{ color: {HELB_BLACK} !important; }}
         
+        .admin-card {{
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid {HELB_GREEN};
+            margin-bottom: 1rem;
+        }}
+        .admin-card h4 {{ color: {HELB_GREEN} !important; margin-top: 0; }}
+        
         .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
@@ -846,6 +860,9 @@ else:
         .kpi-sub {{ color: rgba(255,255,255,0.7); font-size: 0.55rem; }}
         
         .metric-card {{ background: #16213e; border-radius: 10px; padding: 0.8rem; border-left: 4px solid {HELB_GOLD}; margin-bottom: 0.5rem; }}
+        
+        .admin-card {{ background: #1e293b; border-radius: 12px; padding: 1rem; border: 1px solid {HELB_GREEN}; margin-bottom: 1rem; }}
+        .admin-card h4 {{ color: {HELB_GOLD} !important; margin-top: 0; }}
         
         .stButton > button {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important; color: white !important; }}
         
@@ -986,7 +1003,7 @@ with st.sidebar:
     
     menu_options = ["📊 Dashboard", "📋 Work Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
-        menu_options.append("👥 User Management")
+        menu_options.append("⚙️ Admin Panel")
     if st.session_state.user_role in ["admin", "management"]:
         menu_options.append("🏢 Enterprise View")
     
@@ -1000,7 +1017,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE (unchanged - working fine)
+# WORK PLANS MODULE (User View)
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1442,7 +1459,6 @@ elif choice == "📊 Dashboard":
             expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
             avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
             
-            # STYLED KPI CARDS FOR CONTRACTS
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.markdown(f"""
@@ -1558,13 +1574,11 @@ elif choice == "📊 Dashboard":
         if policies:
             df_policies = pd.DataFrame(policies)
             
-            # Calculate policy metrics
             total_policies = len(df_policies)
             active_policies = len(df_policies[df_policies['status'] == 'active'])
             expiring_soon = len(df_policies[df_policies['status'] == 'expiring_soon'])
             expired_policies = len(df_policies[df_policies['status'] == 'expired'])
             
-            # STYLED KPI CARDS FOR POLICIES
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.markdown(f"""
@@ -1601,32 +1615,27 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Policy Analytics Charts
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
-                st.markdown("#### Policies by Category")
                 if 'category' in df_policies.columns:
+                    st.markdown("#### Policies by Category")
                     category_counts = df_policies['category'].value_counts().reset_index()
                     category_counts.columns = ['Category', 'Count']
                     fig = px.pie(category_counts, values='Count', names='Category', hole=0.4,
                                 color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE, "#8B5CF6", "#10B981"])
-                    fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                    fig.update_layout(height=350)
                     st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("Add categories to policies for analytics")
             
             with col_chart2:
-                st.markdown("#### Policy Scope Distribution")
                 if 'policy_scope' in df_policies.columns:
+                    st.markdown("#### Policy Scope Distribution")
                     scope_counts = df_policies['policy_scope'].value_counts().reset_index()
                     scope_counts.columns = ['Scope', 'Count']
                     fig = px.bar(scope_counts, x='Scope', y='Count', color='Count',
                                color_discrete_sequence=[HELB_GREEN], text='Count')
                     fig.update_traces(textposition='outside')
-                    fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                    fig.update_layout(height=350)
                     st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("Add policy scope for analytics")
             
             st.markdown("---")
             st.markdown("### 📋 Policy List")
@@ -1669,7 +1678,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (unchanged - working fine)
+# CONTRACTS SECTION (User View)
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -1787,81 +1796,12 @@ elif choice == "📄 Contracts":
                     st.error("Please fill required fields")
 
 # ============================================
-# ENHANCED POLICIES SECTION
+# POLICIES SECTION (User View)
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
     
-    tab_add, tab_view, tab_analytics = st.tabs(["➕ Add New Policy", "📋 View All Policies", "📊 Analytics Dashboard"])
-    
-    with tab_add:
-        st.markdown("### Add New Policy")
-        
-        with st.form("add_policy_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                policy_name = st.text_input("Policy Name*")
-                category = st.selectbox("Policy Category*", POLICY_CATEGORIES)
-                version = st.text_input("Version*", value="v1.0")
-                policy_scope = st.selectbox("Policy Scope*", POLICY_SCOPE)
-                policy_owner = st.text_input("Policy Owner*", placeholder="e.g., Head of HR")
-            with col2:
-                effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                expiry_date = st.date_input("Expiry Date*")
-                review_date = st.date_input("Next Review Date*")
-                policy_url = st.text_input("Policy Document URL", placeholder="https://...")
-            
-            st.markdown("#### Scope Details")
-            if policy_scope == "Institution-Wide":
-                st.info("This policy applies to the entire institution")
-                affected_entities = "All Departments"
-            elif policy_scope == "Committee":
-                committee_name = st.text_input("Committee Name", placeholder="e.g., Audit Committee")
-                affected_entities = f"Committee: {committee_name}" if committee_name else "Committee"
-            else:
-                departments = get_cached_departments()
-                dept_options = [d["name"] for d in departments]
-                affected_depts = st.multiselect("Affected Departments", dept_options)
-                affected_entities = ", ".join(affected_depts) if affected_depts else "Not specified"
-            
-            st.markdown("#### Compliance Tracking")
-            col1, col2 = st.columns(2)
-            with col1:
-                requires_acknowledgment = st.checkbox("Requires Staff Acknowledgment", value=True)
-            with col2:
-                requires_sensitization = st.checkbox("Requires Sensitization", value=True)
-            
-            change_log = st.text_area("Change Log / Summary", placeholder="Summary of policy changes or key provisions", height=100)
-            
-            if st.form_submit_button("Save Policy", use_container_width=True):
-                if policy_name and category and policy_owner:
-                    policy_data = {
-                        "policy_name": policy_name,
-                        "category": category,
-                        "version": version,
-                        "policy_scope": policy_scope,
-                        "affected_entities": affected_entities,
-                        "policy_owner": policy_owner,
-                        "effective_date": effective_date.isoformat(),
-                        "expiry_date": expiry_date.isoformat(),
-                        "review_date": review_date.isoformat(),
-                        "policy_url": policy_url if policy_url else None,
-                        "requires_acknowledgment": requires_acknowledgment,
-                        "requires_sensitization": requires_sensitization,
-                        "change_log": change_log,
-                        "department_id": st.session_state.user_dept if policy_scope == "Department-Specific" else None,
-                        "created_by": st.session_state.user_id
-                    }
-                    
-                    success, message = add_enhanced_policy(policy_data)
-                    if success:
-                        st.success(f"✅ {message}")
-                        st.balloons()
-                        st.rerun()
-                    else:
-                        st.error(f"❌ {message}")
-                else:
-                    st.error("Please fill all required fields (*)")
+    tab_view, tab_analytics = st.tabs(["📋 View All Policies", "📊 Analytics Dashboard"])
     
     with tab_view:
         policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
@@ -1902,14 +1842,13 @@ elif choice == "📋 Policies":
                         if policy.get('policy_url'):
                             st.markdown(f"[📄 View Document]({policy['policy_url']})")
         else:
-            st.info("No policies found. Click 'Add New Policy' to get started.")
+            st.info("No policies found.")
     
     with tab_analytics:
         policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if policies:
             df = pd.DataFrame(policies)
             
-            # KPI Row
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📜 TOTAL POLICIES</div><div class='kpi-value'>{len(df)}</div></div>", unsafe_allow_html=True)
@@ -1950,180 +1889,531 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# USER MANAGEMENT (ADMIN ONLY)
+# ADMIN PANEL (Admin Only)
 # ============================================
-elif choice == "👥 User Management" and st.session_state.user_role == "admin":
-    st.subheader("User Management - Admin Panel")
+elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
+    st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
+    st.markdown("Manage users, policies, contracts, work plans, departments, and directorates from one central location.")
     
-    directorates = get_cached_directorates()
-    directorate_options = {d["name"]: d["id"] for d in directorates}
-    departments = get_cached_departments()
-    dept_options = {d["name"]: d["id"] for d in departments}
-    users = get_all_users()
+    admin_tabs = st.tabs([
+        "👥 User Management", 
+        "📜 Policy Management", 
+        "📄 Contract Management", 
+        "📋 Work Plan Management",
+        "🏢 Department Management",
+        "🏛️ Directorate Management"
+    ])
     
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["➕ Create New User", "✏️ Edit User Role", "🗑️ Delete User", "🏢 Manage Departments", "🏛️ Manage Directorates"])
-    
-    with tab1:
-        with st.form("create_user_form"):
-            st.markdown("### Create New User Account")
-            col1, col2 = st.columns(2)
-            with col1:
-                new_username = st.text_input("Username*")
-                new_full_name = st.text_input("Full Name*")
-            with col2:
-                new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
-                new_department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
-            
-            new_password = st.text_input("Password*", type="password")
-            confirm_password = st.text_input("Confirm Password*", type="password")
-            
-            if st.form_submit_button("Create User", use_container_width=True):
-                if new_password != confirm_password:
-                    st.error("Passwords don't match")
-                elif not all([new_username, new_full_name, new_password]):
-                    st.error("Please fill all required fields")
-                else:
-                    dept_id = dept_options.get(new_department) if new_department != "None" else None
-                    success, message = create_new_user(new_username, new_full_name, new_password, new_role, dept_id)
-                    if success:
-                        st.success(f"✅ {message}")
-                        st.info(f"Username: {new_username} | Password: {new_password}")
-                        st.rerun()
-                    else:
-                        st.error(f"❌ {message}")
-    
-    with tab2:
-        st.markdown("### Edit User Role and Department")
-        if users:
-            user_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
-            if user_options:
-                selected_user_str = st.selectbox("Select User to Edit", user_options)
-                selected_username = selected_user_str.split(" - ")[0]
-                
-                current_user = next((u for u in users if u['username'] == selected_username), None)
-                if current_user:
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], 
-                                               index=["department_champion", "management", "admin"].index(current_user['role']))
-                    with col2:
-                        current_dept = get_department_name(current_user['department_id'])
-                        dept_list = ["None"] + list(dept_options.keys())
-                        default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
-                        new_department = st.selectbox("Department", dept_list, index=default_index)
+    # ========== TAB 1: USER MANAGEMENT ==========
+    with admin_tabs[0]:
+        st.markdown("### 👥 User Management")
+        
+        directorates = get_cached_directorates()
+        directorate_options = {d["name"]: d["id"] for d in directorates}
+        departments = get_cached_departments()
+        dept_options = {d["name"]: d["id"] for d in departments}
+        users = get_all_users()
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            with st.expander("➕ Create New User", expanded=False):
+                with st.form("admin_create_user"):
+                    st.markdown("#### Create User Account")
+                    new_username = st.text_input("Username*")
+                    new_full_name = st.text_input("Full Name*")
+                    new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
+                    new_department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
+                    new_password = st.text_input("Password*", type="password")
+                    confirm_password = st.text_input("Confirm Password*", type="password")
                     
-                    reset_password = st.checkbox("Reset Password")
-                    new_password = None
-                    if reset_password:
-                        new_password = st.text_input("New Password", type="password")
-                        confirm_new = st.text_input("Confirm New Password", type="password")
-                    
-                    if st.button("Save Changes", use_container_width=True):
-                        dept_id = dept_options.get(new_department) if new_department != "None" else None
-                        if update_user_role(selected_username, new_role, dept_id):
-                            st.success(f"✅ Role and department updated for {selected_username}")
+                    if st.form_submit_button("Create User", use_container_width=True):
+                        if new_password != confirm_password:
+                            st.error("Passwords don't match")
+                        elif not all([new_username, new_full_name, new_password]):
+                            st.error("Please fill all required fields")
                         else:
-                            st.error("Failed to update role/department")
-                        
-                        if reset_password and new_password:
-                            if new_password == confirm_new and len(new_password) >= 4:
-                                if reset_user_password(selected_username, new_password):
-                                    st.success(f"✅ Password reset for {selected_username}")
-                                    st.info(f"New password: {new_password}")
-                                else:
-                                    st.error("Failed to reset password")
+                            dept_id = dept_options.get(new_department) if new_department != "None" else None
+                            success, message = create_new_user(new_username, new_full_name, new_password, new_role, dept_id)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.info(f"Username: {new_username} | Password: {new_password}")
+                                st.rerun()
                             else:
-                                st.error("Passwords don't match or are too short")
-                        st.rerun()
-            else:
-                st.info("No other users to edit")
-        else:
-            st.info("No users found")
-    
-    with tab3:
-        st.markdown("### Delete User")
-        st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
+                                st.error(f"❌ {message}")
         
-        if users:
-            delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
-            if delete_options:
-                user_to_delete = st.selectbox("Select User to Delete", delete_options)
-                delete_username = user_to_delete.split(" - ")[0]
-                
-                confirm = st.checkbox(f"I understand that this will permanently delete user '{delete_username}'")
-                
-                if st.button("🗑️ Delete User", use_container_width=True):
-                    if confirm:
-                        if delete_user(delete_username):
-                            st.success(f"✅ User '{delete_username}' has been deleted!")
-                            st.rerun()
-                        else:
-                            st.error(f"❌ Failed to delete user '{delete_username}'")
-                    else:
-                        st.error("Please confirm deletion by checking the box")
-            else:
-                st.info("No other users to delete")
-        else:
-            st.info("No users found")
-    
-    with tab4:
-        st.markdown("### Manage Departments")
-        
-        with st.expander("➕ Add New Department", expanded=False):
-            with st.form("add_department_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    new_dept_name = st.text_input("Department Name*")
-                    new_dept_directorate = st.selectbox("Directorate*", ["None"] + list(directorate_options.keys()))
-                with col2:
-                    new_dept_deputy = st.text_input("Deputy Director Name", placeholder="e.g., Deputy Director - Department Name")
-                
-                if st.form_submit_button("Add Department", use_container_width=True):
-                    if new_dept_name:
-                        directorate_id = directorate_options.get(new_dept_directorate) if new_dept_directorate != "None" else None
-                        success, message = add_department(new_dept_name, directorate_id, new_dept_deputy)
-                        if success:
-                            st.success(f"✅ {message}")
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {message}")
-                    else:
-                        st.error("Please enter a department name")
-        
-        st.markdown("### Edit Existing Departments")
-        if departments:
-            dept_names = [d["name"] for d in departments]
-            selected_dept_name = st.selectbox("Select Department to Edit", dept_names, key="edit_dept_select")
-            
-            if selected_dept_name:
-                selected_dept = next((d for d in departments if d["name"] == selected_dept_name), None)
-                if selected_dept:
-                    with st.form("edit_department_form"):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            edit_dept_name = st.text_input("Department Name", value=selected_dept["name"])
-                            current_dir_name = ""
-                            if selected_dept.get("directorate_id"):
-                                dir_info = get_directorate_by_id(selected_dept["directorate_id"])
-                                if dir_info:
-                                    current_dir_name = dir_info["name"]
-                            edit_dept_directorate = st.selectbox("Directorate", ["None"] + list(directorate_options.keys()), 
-                                                                 index=0 if not current_dir_name else list(directorate_options.keys()).index(current_dir_name) + 1)
-                        with col2:
-                            edit_dept_deputy = st.text_input("Deputy Director Name", value=selected_dept.get("deputy_director_name", ""))
+        with col2:
+            with st.expander("✏️ Edit User", expanded=False):
+                st.markdown("#### Edit User Role and Department")
+                if users:
+                    user_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
+                    if user_options:
+                        selected_user_str = st.selectbox("Select User to Edit", user_options, key="admin_edit_user")
+                        selected_username = selected_user_str.split(" - ")[0]
                         
-                        if st.form_submit_button("Update Department", use_container_width=True):
-                            directorate_id = directorate_options.get(edit_dept_directorate) if edit_dept_directorate != "None" else None
-                            success, message = update_department(selected_dept["id"], edit_dept_name, directorate_id, edit_dept_deputy)
+                        current_user = next((u for u in users if u['username'] == selected_username), None)
+                        if current_user:
+                            new_role = st.selectbox("New Role", ["department_champion", "management", "admin"], 
+                                                   index=["department_champion", "management", "admin"].index(current_user['role']))
+                            current_dept = get_department_name(current_user['department_id'])
+                            dept_list = ["None"] + list(dept_options.keys())
+                            default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
+                            new_department = st.selectbox("Department", dept_list, index=default_index)
+                            
+                            reset_password = st.checkbox("Reset Password")
+                            new_password = None
+                            if reset_password:
+                                new_password = st.text_input("New Password", type="password")
+                                confirm_new = st.text_input("Confirm New Password", type="password")
+                            
+                            if st.button("Save Changes", use_container_width=True):
+                                dept_id = dept_options.get(new_department) if new_department != "None" else None
+                                if update_user_role(selected_username, new_role, dept_id):
+                                    st.success(f"✅ Role and department updated for {selected_username}")
+                                else:
+                                    st.error("Failed to update role/department")
+                                
+                                if reset_password and new_password:
+                                    if new_password == confirm_new and len(new_password) >= 4:
+                                        if reset_user_password(selected_username, new_password):
+                                            st.success(f"✅ Password reset for {selected_username}")
+                                            st.info(f"New password: {new_password}")
+                                        else:
+                                            st.error("Failed to reset password")
+                                    else:
+                                        st.error("Passwords don't match or are too short")
+                                st.rerun()
+        
+        with st.expander("🗑️ Delete User", expanded=False):
+            st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
+            if users:
+                delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
+                if delete_options:
+                    user_to_delete = st.selectbox("Select User to Delete", delete_options, key="admin_delete_user")
+                    delete_username = user_to_delete.split(" - ")[0]
+                    confirm = st.checkbox(f"I understand that this will permanently delete user '{delete_username}'")
+                    
+                    if st.button("🗑️ Delete User", use_container_width=True):
+                        if confirm:
+                            if delete_user(delete_username):
+                                st.success(f"✅ User '{delete_username}' has been deleted!")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Failed to delete user '{delete_username}'")
+                        else:
+                            st.error("Please confirm deletion")
+        
+        st.markdown("---")
+        st.markdown("### Current Users")
+        if users:
+            user_display = []
+            for user in users:
+                dept_name = get_department_name(user['department_id']) if user['department_id'] else "N/A"
+                user_display.append({
+                    "Username": user['username'],
+                    "Full Name": user['full_name'],
+                    "Role": user['role'].replace("_", " ").title(),
+                    "Department": dept_name
+                })
+            df_users = pd.DataFrame(user_display)
+            st.dataframe(df_users, use_container_width=True, hide_index=True)
+    
+    # ========== TAB 2: POLICY MANAGEMENT ==========
+    with admin_tabs[1]:
+        st.markdown("### 📜 Policy Management")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            with st.expander("➕ Add New Policy", expanded=False):
+                with st.form("admin_add_policy"):
+                    st.markdown("#### Policy Details")
+                    policy_name = st.text_input("Policy Name*")
+                    category = st.selectbox("Policy Category*", POLICY_CATEGORIES)
+                    version = st.text_input("Version*", value="v1.0")
+                    policy_scope = st.selectbox("Policy Scope*", POLICY_SCOPE)
+                    policy_owner = st.text_input("Policy Owner*")
+                    
+                    effective_date = st.date_input("Effective Date*", value=datetime.now().date())
+                    expiry_date = st.date_input("Expiry Date*")
+                    review_date = st.date_input("Next Review Date*")
+                    policy_url = st.text_input("Policy Document URL", placeholder="https://...")
+                    
+                    st.markdown("#### Scope Details")
+                    if policy_scope == "Institution-Wide":
+                        st.info("This policy applies to the entire institution")
+                        affected_entities = "All Departments"
+                    elif policy_scope == "Committee":
+                        committee_name = st.text_input("Committee Name")
+                        affected_entities = f"Committee: {committee_name}" if committee_name else "Committee"
+                    else:
+                        departments_list = get_cached_departments()
+                        dept_options_list = [d["name"] for d in departments_list]
+                        affected_depts = st.multiselect("Affected Departments", dept_options_list)
+                        affected_entities = ", ".join(affected_depts) if affected_depts else "Not specified"
+                    
+                    st.markdown("#### Compliance Tracking")
+                    requires_acknowledgment = st.checkbox("Requires Staff Acknowledgment", value=True)
+                    requires_sensitization = st.checkbox("Requires Sensitization", value=True)
+                    change_log = st.text_area("Change Log / Summary", height=80)
+                    
+                    if st.form_submit_button("Save Policy", use_container_width=True):
+                        if policy_name and category and policy_owner:
+                            policy_data = {
+                                "policy_name": policy_name,
+                                "category": category,
+                                "version": version,
+                                "policy_scope": policy_scope,
+                                "affected_entities": affected_entities,
+                                "policy_owner": policy_owner,
+                                "effective_date": effective_date.isoformat(),
+                                "expiry_date": expiry_date.isoformat(),
+                                "review_date": review_date.isoformat(),
+                                "policy_url": policy_url if policy_url else None,
+                                "requires_acknowledgment": requires_acknowledgment,
+                                "requires_sensitization": requires_sensitization,
+                                "change_log": change_log,
+                                "department_id": None if policy_scope != "Department-Specific" else None,
+                                "created_by": st.session_state.user_id
+                            }
+                            success, message = add_enhanced_policy(policy_data)
                             if success:
                                 st.success(f"✅ {message}")
                                 st.rerun()
                             else:
                                 st.error(f"❌ {message}")
+                        else:
+                            st.error("Please fill all required fields (*)")
+        
+        with col2:
+            with st.expander("✏️ Edit / Delete Policy", expanded=False):
+                st.markdown("#### Select Policy to Manage")
+                policies = get_cached_policies("admin", None)
+                if policies:
+                    policy_options = {p["id"]: f"{p['policy_name']} (v{p.get('version', '1.0')})" for p in policies}
+                    selected_policy_id = st.selectbox("Select Policy", list(policy_options.keys()), format_func=lambda x: policy_options[x], key="admin_edit_policy")
+                    
+                    if selected_policy_id:
+                        selected_policy = next((p for p in policies if p["id"] == selected_policy_id), None)
+                        if selected_policy:
+                            action = st.radio("Action", ["Edit Policy", "Delete Policy"], horizontal=True)
+                            
+                            if action == "Edit Policy":
+                                with st.form("admin_edit_policy_form"):
+                                    edit_name = st.text_input("Policy Name", value=selected_policy.get("policy_name", ""))
+                                    edit_category = st.selectbox("Category", POLICY_CATEGORIES, index=POLICY_CATEGORIES.index(selected_policy.get("category", "HR")) if selected_policy.get("category") in POLICY_CATEGORIES else 0)
+                                    edit_version = st.text_input("Version", value=selected_policy.get("version", "v1.0"))
+                                    edit_owner = st.text_input("Policy Owner", value=selected_policy.get("policy_owner", ""))
+                                    edit_expiry = st.date_input("Expiry Date", value=datetime.strptime(selected_policy["expiry_date"], "%Y-%m-%d").date())
+                                    edit_review = st.date_input("Review Date", value=datetime.strptime(selected_policy.get("review_date", selected_policy["expiry_date"]), "%Y-%m-%d").date())
+                                    
+                                    if st.form_submit_button("Update Policy", use_container_width=True):
+                                        update_data = {
+                                            "policy_name": edit_name,
+                                            "category": edit_category,
+                                            "version": edit_version,
+                                            "policy_owner": edit_owner,
+                                            "expiry_date": edit_expiry.isoformat(),
+                                            "review_date": edit_review.isoformat(),
+                                            "updated_at": datetime.now().isoformat()
+                                        }
+                                        if update_policy_admin(selected_policy_id, update_data):
+                                            st.success("✅ Policy updated successfully!")
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to update policy")
+                            
+                            elif action == "Delete Policy":
+                                st.warning(f"⚠️ Are you sure you want to delete '{selected_policy['policy_name']}'?")
+                                if st.button("Confirm Delete", use_container_width=True):
+                                    if delete_policy(selected_policy_id):
+                                        st.success("✅ Policy deleted successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete policy")
+                else:
+                    st.info("No policies found")
+        
+        st.markdown("---")
+        st.markdown("### All Policies")
+        all_policies = get_cached_policies("admin", None)
+        if all_policies:
+            df_policies_admin = pd.DataFrame(all_policies)
+            display_cols = ['policy_name', 'category', 'version', 'policy_scope', 'policy_owner', 'status', 'expiry_date']
+            st.dataframe(df_policies_admin[display_cols], use_container_width=True, hide_index=True)
+    
+    # ========== TAB 3: CONTRACT MANAGEMENT ==========
+    with admin_tabs[2]:
+        st.markdown("### 📄 Contract Management")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            with st.expander("➕ Add New Contract", expanded=False):
+                with st.form("admin_add_contract"):
+                    st.markdown("#### Contract Details")
+                    title = st.text_input("Contract Title*")
+                    vendor = st.text_input("Vendor Name*")
+                    contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
+                    amount_spent = st.number_input("Initial Amount Spent (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
+                    payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                    end_date = st.date_input("Contract End Date*")
+                    signed_date = st.date_input("Signed Date", value=datetime.now().date())
+                    auto_renew = st.checkbox("Auto-renewal")
+                    contract_url = st.text_input("Contract Document URL", placeholder="https://...")
+                    compliance_status = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
+                    department_id = st.selectbox("Department", ["None"] + list(dept_options.keys()))
+                    
+                    if st.form_submit_button("Save Contract", use_container_width=True):
+                        if title and vendor and contract_value > 0 and end_date:
+                            dept_id = dept_options.get(department_id) if department_id != "None" else None
+                            contract_data = {
+                                "contract_title": title,
+                                "vendor_name": vendor,
+                                "contract_value": contract_value,
+                                "amount_spent_to_date": amount_spent,
+                                "payment_terms": payment_terms,
+                                "start_date": datetime.now().date().isoformat(),
+                                "end_date": end_date.isoformat(),
+                                "signed_date": signed_date.isoformat(),
+                                "auto_renewal": auto_renew,
+                                "contract_url": contract_url if contract_url else None,
+                                "compliance_status": compliance_status,
+                                "vendor_performance": 0,
+                                "department_id": dept_id
+                            }
+                            success, message = add_enhanced_contract(contract_data)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        else:
+                            st.error("Please fill all required fields (*)")
+        
+        with col2:
+            with st.expander("✏️ Edit / Delete Contract", expanded=False):
+                st.markdown("#### Select Contract to Manage")
+                contracts = get_cached_contracts("admin", None)
+                if contracts:
+                    contract_options = {c["id"]: f"{c['contract_title']} - {c['vendor_name']}" for c in contracts}
+                    selected_contract_id = st.selectbox("Select Contract", list(contract_options.keys()), format_func=lambda x: contract_options[x], key="admin_edit_contract")
+                    
+                    if selected_contract_id:
+                        selected_contract = next((c for c in contracts if c["id"] == selected_contract_id), None)
+                        if selected_contract:
+                            action = st.radio("Action", ["Edit Contract", "Delete Contract"], horizontal=True)
+                            
+                            if action == "Edit Contract":
+                                with st.form("admin_edit_contract_form"):
+                                    edit_title = st.text_input("Contract Title", value=selected_contract.get("contract_title", ""))
+                                    edit_vendor = st.text_input("Vendor", value=selected_contract.get("vendor_name", ""))
+                                    edit_value = st.number_input("Contract Value", value=float(selected_contract.get("contract_value", 0)))
+                                    edit_spent = st.number_input("Amount Spent", value=float(selected_contract.get("amount_spent_to_date", 0)))
+                                    edit_end_date = st.date_input("End Date", value=datetime.strptime(selected_contract["end_date"], "%Y-%m-%d").date())
+                                    edit_status = st.selectbox("Status", ["active", "expiring_soon", "expired"], index=["active", "expiring_soon", "expired"].index(selected_contract.get("status", "active")))
+                                    
+                                    if st.form_submit_button("Update Contract", use_container_width=True):
+                                        update_data = {
+                                            "contract_title": edit_title,
+                                            "vendor_name": edit_vendor,
+                                            "contract_value": edit_value,
+                                            "amount_spent_to_date": edit_spent,
+                                            "end_date": edit_end_date.isoformat(),
+                                            "status": edit_status,
+                                            "updated_at": datetime.now().isoformat()
+                                        }
+                                        if update_contract_admin(selected_contract_id, update_data):
+                                            st.success("✅ Contract updated successfully!")
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to update contract")
+                            
+                            elif action == "Delete Contract":
+                                st.warning(f"⚠️ Are you sure you want to delete '{selected_contract['contract_title']}'?")
+                                if st.button("Confirm Delete", use_container_width=True):
+                                    if delete_contract(selected_contract_id):
+                                        st.success("✅ Contract deleted successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete contract")
+                else:
+                    st.info("No contracts found")
+        
+        st.markdown("---")
+        st.markdown("### All Contracts")
+        all_contracts = get_cached_contracts("admin", None)
+        if all_contracts:
+            df_contracts_admin = pd.DataFrame(all_contracts)
+            display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
+            st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
+    
+    # ========== TAB 4: WORK PLAN MANAGEMENT ==========
+    with admin_tabs[3]:
+        st.markdown("### 📋 Work Plan Management")
+        
+        work_plans = get_cached_work_plans("admin", None)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            with st.expander("➕ Add New Work Plan Activity", expanded=False):
+                with st.form("admin_add_workplan"):
+                    st.markdown("#### Work Plan Details")
+                    strategic_pillar = st.selectbox("Strategic Pillar*", STRATEGIC_PILLARS)
+                    key_result_area = st.text_input("Key Result Area*")
+                    planned_activity = st.text_area("Planned Activity*")
+                    performance_indicator = st.text_input("Performance Indicator*")
+                    annual_target = st.text_input("Annual Target*")
+                    due_date = st.date_input("Due Date*")
+                    activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
+                    budget_allocation = st.number_input("Budget Allocation (KES)", min_value=0.0, step=10000.0, format="%.2f")
+                    department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
+                    
+                    if st.form_submit_button("Save Work Plan", use_container_width=True):
+                        if key_result_area and planned_activity and performance_indicator and annual_target:
+                            dept_id = dept_options.get(department) if department != "None" else None
+                            dept_name = department if department != "None" else "Unknown"
+                            work_plan_data = {
+                                "strategic_pillar": strategic_pillar,
+                                "key_result_area": key_result_area,
+                                "planned_activity": planned_activity,
+                                "performance_indicator": performance_indicator,
+                                "annual_target": annual_target,
+                                "due_date": due_date.isoformat(),
+                                "activity_category": activity_category,
+                                "budget_allocation": budget_allocation if budget_allocation > 0 else None,
+                                "actual_achievement": 0,
+                                "status": "Pending",
+                                "progress_percent": 0,
+                                "department_id": dept_id,
+                                "department_name": dept_name,
+                                "created_by": st.session_state.user_id,
+                                "created_at": datetime.now().isoformat()
+                            }
+                            if add_work_plan(work_plan_data):
+                                st.success("✅ Work plan activity added successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to add work plan")
+                        else:
+                            st.error("Please fill all required fields (*)")
+        
+        with col2:
+            with st.expander("✏️ Edit / Delete Work Plan", expanded=False):
+                st.markdown("#### Select Work Plan to Manage")
+                if work_plans:
+                    wp_options = {w["id"]: f"{w['planned_activity'][:50]}... - {w.get('department_name', 'Unknown')}" for w in work_plans}
+                    selected_wp_id = st.selectbox("Select Work Plan", list(wp_options.keys()), format_func=lambda x: wp_options[x], key="admin_edit_workplan")
+                    
+                    if selected_wp_id:
+                        selected_wp = next((w for w in work_plans if w["id"] == selected_wp_id), None)
+                        if selected_wp:
+                            action = st.radio("Action", ["Edit Work Plan", "Delete Work Plan"], horizontal=True)
+                            
+                            if action == "Edit Work Plan":
+                                with st.form("admin_edit_workplan_form"):
+                                    edit_activity = st.text_area("Planned Activity", value=selected_wp.get("planned_activity", ""))
+                                    edit_target = st.text_input("Annual Target", value=selected_wp.get("annual_target", ""))
+                                    edit_due_date = st.date_input("Due Date", value=datetime.strptime(selected_wp["due_date"], "%Y-%m-%d").date())
+                                    edit_progress = st.number_input("Progress %", min_value=0, max_value=100, value=int(selected_wp.get("progress_percent", 0)))
+                                    edit_status = st.selectbox("Status", ["Pending", "In Progress", "Done"], index=["Pending", "In Progress", "Done"].index(selected_wp.get("status", "Pending")))
+                                    edit_actual = st.number_input("Actual Achievement", value=float(selected_wp.get("actual_achievement", 0)))
+                                    
+                                    if st.form_submit_button("Update Work Plan", use_container_width=True):
+                                        update_data = {
+                                            "planned_activity": edit_activity,
+                                            "annual_target": edit_target,
+                                            "due_date": edit_due_date.isoformat(),
+                                            "progress_percent": edit_progress,
+                                            "status": edit_status,
+                                            "actual_achievement": edit_actual,
+                                            "updated_at": datetime.now().isoformat()
+                                        }
+                                        if update_work_plan_admin(selected_wp_id, update_data):
+                                            st.success("✅ Work plan updated successfully!")
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to update work plan")
+                            
+                            elif action == "Delete Work Plan":
+                                st.warning(f"⚠️ Are you sure you want to delete this activity?")
+                                if st.button("Confirm Delete", use_container_width=True):
+                                    if delete_work_plan(selected_wp_id):
+                                        st.success("✅ Work plan deleted successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete work plan")
+                else:
+                    st.info("No work plans found")
+        
+        st.markdown("---")
+        st.markdown("### All Work Plans")
+        if work_plans:
+            df_wp_admin = pd.DataFrame(work_plans)
+            display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'due_date']
+            st.dataframe(df_wp_admin[display_cols], use_container_width=True, hide_index=True)
+    
+    # ========== TAB 5: DEPARTMENT MANAGEMENT ==========
+    with admin_tabs[4]:
+        st.markdown("### 🏢 Department Management")
+        
+        directorates = get_cached_directorates()
+        directorate_options = {d["name"]: d["id"] for d in directorates}
+        departments = get_cached_departments()
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            with st.expander("➕ Add New Department", expanded=False):
+                with st.form("admin_add_department"):
+                    new_dept_name = st.text_input("Department Name*")
+                    new_dept_directorate = st.selectbox("Directorate*", ["None"] + list(directorate_options.keys()))
+                    new_dept_deputy = st.text_input("Deputy Director Name")
+                    
+                    if st.form_submit_button("Add Department", use_container_width=True):
+                        if new_dept_name:
+                            directorate_id = directorate_options.get(new_dept_directorate) if new_dept_directorate != "None" else None
+                            success, message = add_department(new_dept_name, directorate_id, new_dept_deputy)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        else:
+                            st.error("Please enter a department name")
+        
+        with col2:
+            with st.expander("✏️ Edit Department", expanded=False):
+                if departments:
+                    dept_names = [d["name"] for d in departments]
+                    selected_dept_name = st.selectbox("Select Department to Edit", dept_names, key="admin_edit_dept")
+                    
+                    if selected_dept_name:
+                        selected_dept = next((d for d in departments if d["name"] == selected_dept_name), None)
+                        if selected_dept:
+                            with st.form("admin_edit_dept_form"):
+                                edit_dept_name = st.text_input("Department Name", value=selected_dept["name"])
+                                current_dir_name = ""
+                                if selected_dept.get("directorate_id"):
+                                    dir_info = get_directorate_by_id(selected_dept["directorate_id"])
+                                    if dir_info:
+                                        current_dir_name = dir_info["name"]
+                                edit_dept_directorate = st.selectbox("Directorate", ["None"] + list(directorate_options.keys()), 
+                                                                     index=0 if not current_dir_name else list(directorate_options.keys()).index(current_dir_name) + 1)
+                                edit_dept_deputy = st.text_input("Deputy Director Name", value=selected_dept.get("deputy_director_name", ""))
+                                
+                                if st.form_submit_button("Update Department", use_container_width=True):
+                                    directorate_id = directorate_options.get(edit_dept_directorate) if edit_dept_directorate != "None" else None
+                                    success, message = update_department(selected_dept["id"], edit_dept_name, directorate_id, edit_dept_deputy)
+                                    if success:
+                                        st.success(f"✅ {message}")
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ {message}")
         
         st.markdown("---")
         st.markdown("### Existing Departments")
-        
         if departments:
             for dept in departments:
                 col1, col2, col3 = st.columns([2, 1, 1])
@@ -2135,11 +2425,9 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                             directorate_info = f" ({dir_info['name']})"
                     deputy_info = f"\nDeputy: {dept.get('deputy_director_name', 'Not assigned')}" if dept.get('deputy_director_name') else ""
                     st.write(f"• {dept['name']}{directorate_info}{deputy_info}")
-                with col2:
-                    pass
                 with col3:
                     if dept['name'] not in ["Lending", "Strategy", "Finance", "ICT", "Human Resource"]:
-                        if st.button(f"🗑️ Delete", key=f"del_dept_{dept['id']}"):
+                        if st.button(f"🗑️ Delete", key=f"admin_del_dept_{dept['id']}"):
                             success, message = delete_department(dept['id'])
                             if success:
                                 st.success(f"✅ {message}")
@@ -2149,55 +2437,56 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
         else:
             st.info("No departments found")
     
-    with tab5:
-        st.markdown("### Manage Directorates")
+    # ========== TAB 6: DIRECTORATE MANAGEMENT ==========
+    with admin_tabs[5]:
+        st.markdown("### 🏛️ Directorate Management")
         
-        with st.expander("➕ Add New Directorate", expanded=False):
-            with st.form("add_directorate_form"):
-                col1, col2 = st.columns(2)
-                with col1:
+        directorates = get_cached_directorates()
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            with st.expander("➕ Add New Directorate", expanded=False):
+                with st.form("admin_add_directorate"):
                     new_dir_name = st.text_input("Directorate Name*")
-                with col2:
                     new_dir_director = st.text_input("Director Name*")
-                
-                if st.form_submit_button("Add Directorate", use_container_width=True):
-                    if new_dir_name and new_dir_director:
-                        success, message = add_directorate(new_dir_name, new_dir_director)
-                        if success:
-                            st.success(f"✅ {message}")
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {message}")
-                    else:
-                        st.error("Please fill all required fields")
-        
-        st.markdown("### Edit Existing Directorates")
-        if directorates:
-            dir_names = [d["name"] for d in directorates]
-            selected_dir_name = st.selectbox("Select Directorate to Edit", dir_names, key="edit_dir_select")
-            
-            if selected_dir_name:
-                selected_dir = next((d for d in directorates if d["name"] == selected_dir_name), None)
-                if selected_dir:
-                    with st.form("edit_directorate_form"):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            edit_dir_name = st.text_input("Directorate Name", value=selected_dir["name"])
-                        with col2:
-                            edit_dir_director = st.text_input("Director Name", value=selected_dir.get("director_name", ""))
-                        
-                        if st.form_submit_button("Update Directorate", use_container_width=True):
-                            success, message = update_directorate(selected_dir["id"], edit_dir_name, edit_dir_director)
+                    
+                    if st.form_submit_button("Add Directorate", use_container_width=True):
+                        if new_dir_name and new_dir_director:
+                            success, message = add_directorate(new_dir_name, new_dir_director)
                             if success:
                                 st.success(f"✅ {message}")
                                 st.rerun()
                             else:
                                 st.error(f"❌ {message}")
+                        else:
+                            st.error("Please fill all required fields")
+        
+        with col2:
+            with st.expander("✏️ Edit Directorate", expanded=False):
+                if directorates:
+                    dir_names = [d["name"] for d in directorates]
+                    selected_dir_name = st.selectbox("Select Directorate to Edit", dir_names, key="admin_edit_dir")
+                    
+                    if selected_dir_name:
+                        selected_dir = next((d for d in directorates if d["name"] == selected_dir_name), None)
+                        if selected_dir:
+                            with st.form("admin_edit_dir_form"):
+                                edit_dir_name = st.text_input("Directorate Name", value=selected_dir["name"])
+                                edit_dir_director = st.text_input("Director Name", value=selected_dir.get("director_name", ""))
+                                
+                                if st.form_submit_button("Update Directorate", use_container_width=True):
+                                    success, message = update_directorate(selected_dir["id"], edit_dir_name, edit_dir_director)
+                                    if success:
+                                        st.success(f"✅ {message}")
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ {message}")
         
         st.markdown("---")
         st.markdown("### Existing Directorates")
-        
         if directorates:
+            departments = get_cached_departments()
             for dir_item in directorates:
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
@@ -2207,7 +2496,7 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                     st.caption(f"{dept_count} departments")
                 with col3:
                     if dir_item['name'] not in ["Operations", "Human Resource & Administration", "Fund Management", "ICT", "CEO's Office"]:
-                        if st.button(f"🗑️ Delete", key=f"del_dir_{dir_item['id']}"):
+                        if st.button(f"🗑️ Delete", key=f"admin_del_dir_{dir_item['id']}"):
                             success, message = delete_directorate(dir_item['id'])
                             if success:
                                 st.success(f"✅ {message}")
@@ -2216,21 +2505,6 @@ elif choice == "👥 User Management" and st.session_state.user_role == "admin":
                                 st.error(f"❌ {message}")
         else:
             st.info("No directorates found")
-    
-    st.markdown("---")
-    st.markdown("### Current Users")
-    if users:
-        user_display = []
-        for user in users:
-            dept_name = get_department_name(user['department_id']) if user['department_id'] else "N/A"
-            user_display.append({
-                "Username": user['username'],
-                "Full Name": user['full_name'],
-                "Role": user['role'].replace("_", " ").title(),
-                "Department": dept_name
-            })
-        df_users = pd.DataFrame(user_display)
-        st.dataframe(df_users, use_container_width=True, hide_index=True)
 
 # ============================================
 # ENTERPRISE VIEW
