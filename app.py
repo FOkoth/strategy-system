@@ -203,6 +203,82 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     
     return df
 
+def filter_contracts_by_date(df, financial_year, quarter, month):
+    """Filter contracts based on financial year, quarter, and month"""
+    if df.empty:
+        return df
+    
+    df = df.copy()
+    df['end_date_dt'] = pd.to_datetime(df['end_date'])
+    df['end_month'] = df['end_date_dt'].dt.month
+    df['end_year'] = df['end_date_dt'].dt.year
+    
+    if financial_year and financial_year != "All":
+        start_year = int(financial_year.split('/')[0])
+        end_year = int(financial_year.split('/')[1])
+        mask = ((df['end_year'] == start_year) & (df['end_month'] >= 7)) | \
+               ((df['end_year'] == end_year) & (df['end_month'] <= 6))
+        df = df[mask]
+    
+    if quarter and quarter != "All":
+        if quarter == "Q1 (Jul-Sep)":
+            df = df[df['end_month'].isin([7, 8, 9])]
+        elif quarter == "Q2 (Oct-Dec)":
+            df = df[df['end_month'].isin([10, 11, 12])]
+        elif quarter == "Q3 (Jan-Mar)":
+            df = df[df['end_month'].isin([1, 2, 3])]
+        elif quarter == "Q4 (Apr-Jun)":
+            df = df[df['end_month'].isin([4, 5, 6])]
+    
+    if month and month != "All":
+        month_num = {
+            "January": 1, "February": 2, "March": 3, "April": 4,
+            "May": 5, "June": 6, "July": 7, "August": 8,
+            "September": 9, "October": 10, "November": 11, "December": 12
+        }.get(month, 0)
+        if month_num:
+            df = df[df['end_month'] == month_num]
+    
+    return df
+
+def filter_policies_by_date(df, financial_year, quarter, month):
+    """Filter policies based on financial year, quarter, and month"""
+    if df.empty:
+        return df
+    
+    df = df.copy()
+    df['expiry_date_dt'] = pd.to_datetime(df['expiry_date'])
+    df['expiry_month'] = df['expiry_date_dt'].dt.month
+    df['expiry_year'] = df['expiry_date_dt'].dt.year
+    
+    if financial_year and financial_year != "All":
+        start_year = int(financial_year.split('/')[0])
+        end_year = int(financial_year.split('/')[1])
+        mask = ((df['expiry_year'] == start_year) & (df['expiry_month'] >= 7)) | \
+               ((df['expiry_year'] == end_year) & (df['expiry_month'] <= 6))
+        df = df[mask]
+    
+    if quarter and quarter != "All":
+        if quarter == "Q1 (Jul-Sep)":
+            df = df[df['expiry_month'].isin([7, 8, 9])]
+        elif quarter == "Q2 (Oct-Dec)":
+            df = df[df['expiry_month'].isin([10, 11, 12])]
+        elif quarter == "Q3 (Jan-Mar)":
+            df = df[df['expiry_month'].isin([1, 2, 3])]
+        elif quarter == "Q4 (Apr-Jun)":
+            df = df[df['expiry_month'].isin([4, 5, 6])]
+    
+    if month and month != "All":
+        month_num = {
+            "January": 1, "February": 2, "March": 3, "April": 4,
+            "May": 5, "June": 6, "July": 7, "August": 8,
+            "September": 9, "October": 10, "November": 11, "December": 12
+        }.get(month, 0)
+        if month_num:
+            df = df[df['expiry_month'] == month_num]
+    
+    return df
+
 # ============================================
 # DATABASE FUNCTIONS
 # ============================================
@@ -651,23 +727,70 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS - FIXED FOR CONSISTENCY ACROSS DEVICES
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
     <style>
+        /* Force all text to be black/dark in light mode */
+        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
+        .stTextInput label, .stSelectbox label, .stDateInput label,
+        .stNumberInput label, .stTextArea label, .stCheckbox label,
+        div, span, p, label, .stMetric label, .stMetric div {{
+            color: #000000 !important;
+        }}
+        
+        /* But keep sidebar white text */
+        [data-testid="stSidebar"] * {{
+            color: white !important;
+        }}
+        
+        /* KPI cards specific - white text on gradient */
+        .kpi-card .kpi-label, .kpi-card .kpi-value, .kpi-card .kpi-sub,
+        .kpi-card .progress-bar, .kpi-card * {{
+            color: white !important;
+        }}
+        
+        /* Metric card text - black/dark */
+        .metric-card, .metric-card * {{
+            color: #000000 !important;
+        }}
+        
+        /* Tab text */
+        .stTabs [data-baseweb="tab"] {{
+            color: #000000 !important;
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            color: #000000 !important;
+            background-color: {HELB_GOLD} !important;
+        }}
+        
+        /* Expander header */
+        .streamlit-expanderHeader p {{
+            color: #000000 !important;
+        }}
+        
+        /* Input fields */
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: white !important;
+            color: #000000 !important;
+            border: 1px solid #D1D5DB !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {HELB_GREEN} !important;
+        }}
+        
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
         
-        .stTextInput label {{
-            color: {HELB_BLACK} !important;
-        }}
-        
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
-        [data-testid="stSidebar"] * {{ color: white !important; }}
         
         .sidebar-user-info {{
             background: rgba(255,255,255,0.15);
@@ -688,7 +811,6 @@ if st.session_state.theme == "light":
             margin: 4px 0 !important;
             font-weight: 600 !important;
             font-size: 0.8rem !important;
-            transition: all 0.3s ease !important;
         }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
@@ -702,7 +824,6 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        h1, h2, h3, h4 {{ color: {HELB_GREEN} !important; font-weight: 600 !important; }}
         h1 {{ border-bottom: 3px solid {HELB_GOLD}; padding-bottom: 15px; margin-bottom: 25px; }}
         
         .dashboard-header {{
@@ -746,7 +867,6 @@ if st.session_state.theme == "light":
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 0.5rem;
         }}
-        .metric-card * {{ color: {HELB_BLACK} !important; }}
         
         .admin-card {{
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
@@ -772,42 +892,61 @@ if st.session_state.theme == "light":
         }}
         .stButton > button[key*="delete"] {{ background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; }}
         
-        .streamlit-expanderHeader {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.85rem !important; font-weight: 600 !important; }}
-        .streamlit-expanderContent {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; border-top: none !important; padding: 1rem !important; }}
-        .streamlit-expanderContent * {{ color: {HELB_BLACK} !important; }}
-        
-        .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
-            background-color: white !important;
-            color: {HELB_BLACK} !important;
-            border: 1px solid #D1D5DB !important;
-            font-size: 0.75rem !important;
-        }}
-        
         .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
-        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_BLACK}; }}
-        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_BLACK} !important; font-weight: 600; }}
+        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
-        .dataframe td {{ color: {HELB_BLACK} !important; font-size: 0.7rem; }}
-        .stMarkdown, .stMarkdown p, .stMarkdown div {{ color: {HELB_BLACK} !important; }}
+        .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         hr {{ margin: 0.5rem 0; }}
     </style>
     """
 else:
     THEME_CSS = f"""
     <style>
+        /* Force all text to be light/white in dark mode */
+        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
+        .stTextInput label, .stSelectbox label, .stDateInput label,
+        .stNumberInput label, .stTextArea label, .stCheckbox label,
+        div, span, p, label, .stMetric label, .stMetric div {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* KPI cards */
+        .kpi-card .kpi-label, .kpi-card .kpi-value, .kpi-card .kpi-sub,
+        .kpi-card .progress-bar, .kpi-card * {{
+            color: white !important;
+        }}
+        
+        /* Metric card text */
+        .metric-card, .metric-card * {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* Tab text */
+        .stTabs [data-baseweb="tab"] {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* Input fields */
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #4a4a6a !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {HELB_GOLD} !important;
+        }}
+        
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: #1a1a2e !important; }}
-        
-        .stTextInput label {{
-            color: white !important;
-        }}
         
         [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
@@ -838,8 +977,6 @@ else:
             color: white !important;
         }}
         
-        h1, h2, h3, h4 {{ color: {HELB_GOLD} !important; font-weight: 600 !important; }}
-        
         .dashboard-header {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             padding: 0.8rem 1.5rem;
@@ -866,19 +1003,13 @@ else:
         
         .stButton > button {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important; color: white !important; }}
         
-        .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
-            background-color: #2d2d44 !important;
-            color: white !important;
-            border: 1px solid #4a4a6a !important;
-        }}
-        
-        .streamlit-expanderHeader {{ background-color: #2d2d44 !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
-        
         .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
         .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
+        
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
+        .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
     </style>
     """
 
@@ -1254,7 +1385,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD
+# DASHBOARD - WITH DYNAMIC FILTERS FIXED
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1263,23 +1394,28 @@ elif choice == "📊 Dashboard":
     contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
     policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     
+    # FILTERS - These now apply to ALL tabs
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
-        st.session_state.filter_financial_year = st.selectbox("Financial Year", financial_years, 
-                                                               index=financial_years.index(st.session_state.filter_financial_year) if st.session_state.filter_financial_year in financial_years else 0,
-                                                               key="fy_filter_dash")
+        selected_fy = st.selectbox("Financial Year", financial_years, 
+                                   index=financial_years.index(st.session_state.filter_financial_year) if st.session_state.filter_financial_year in financial_years else 0,
+                                   key="fy_filter_dash")
+        st.session_state.filter_financial_year = selected_fy
     with col_q_dash:
         quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
-        st.session_state.filter_quarter = st.selectbox("Quarter", quarters,
-                                                        index=quarters.index(st.session_state.filter_quarter) if st.session_state.filter_quarter in quarters else 0,
-                                                        key="q_filter_dash")
+        selected_q = st.selectbox("Quarter", quarters,
+                                   index=quarters.index(st.session_state.filter_quarter) if st.session_state.filter_quarter in quarters else 0,
+                                   key="q_filter_dash")
+        st.session_state.filter_quarter = selected_q
     with col_m_dash:
         available_months = get_months_for_quarter(st.session_state.filter_quarter)
-        st.session_state.filter_month = st.selectbox("Month", ["All"] + available_months,
-                                                      index=0 if st.session_state.filter_month == "All" or st.session_state.filter_month not in available_months else available_months.index(st.session_state.filter_month) + 1,
-                                                      key="m_filter_dash")
+        selected_m = st.selectbox("Month", ["All"] + available_months,
+                                   index=0 if st.session_state.filter_month == "All" or st.session_state.filter_month not in available_months else available_months.index(st.session_state.filter_month) + 1,
+                                   key="m_filter_dash")
+        st.session_state.filter_month = selected_m
     
+    # Apply filters to Work Plans
     if work_plans:
         df_plans = pd.DataFrame(work_plans)
         df_plans['due_date_dt'] = pd.to_datetime(df_plans['due_date'])
@@ -1297,37 +1433,51 @@ elif choice == "📊 Dashboard":
             lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
         )
         
-        filtered_df = filter_work_plans_by_date(df_plans, st.session_state.filter_financial_year, 
-                                                 st.session_state.filter_quarter, st.session_state.filter_month)
+        filtered_work_df = filter_work_plans_by_date(df_plans, selected_fy, selected_q, selected_m)
         
         if st.session_state.user_role in ["admin", "management"]:
-            departments_list = filtered_df['department_name'].unique().tolist() if not filtered_df.empty else []
+            departments_list = filtered_work_df['department_name'].unique().tolist() if not filtered_work_df.empty else []
             if departments_list:
                 selected_dept_filter = st.multiselect("Filter by Department", departments_list, default=[])
                 if selected_dept_filter:
-                    filtered_df = filtered_df[filtered_df['department_name'].isin(selected_dept_filter)]
+                    filtered_work_df = filtered_work_df[filtered_work_df['department_name'].isin(selected_dept_filter)]
     else:
-        filtered_df = pd.DataFrame()
+        filtered_work_df = pd.DataFrame()
+    
+    # Apply filters to Contracts
+    if contracts:
+        df_contracts_raw = pd.DataFrame(contracts)
+        filtered_contracts_df = filter_contracts_by_date(df_contracts_raw, selected_fy, selected_q, selected_m)
+    else:
+        filtered_contracts_df = pd.DataFrame()
+    
+    # Apply filters to Policies
+    if policies:
+        df_policies_raw = pd.DataFrame(policies)
+        filtered_policies_df = filter_policies_by_date(df_policies_raw, selected_fy, selected_q, selected_m)
+    else:
+        filtered_policies_df = pd.DataFrame()
     
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
     
+    # ========== WORK PLANS TAB ==========
     with tab_work:
-        if not filtered_df.empty:
+        if not filtered_work_df.empty:
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_work_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
             with col2:
-                completed = len(filtered_df[filtered_df['calculated_progress'] >= 100])
-                rate = (completed/len(filtered_df)*100) if len(filtered_df)>0 else 0
+                completed = len(filtered_work_df[filtered_work_df['calculated_progress'] >= 100])
+                rate = (completed/len(filtered_work_df)*100) if len(filtered_work_df)>0 else 0
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ COMPLETED</div><div class='kpi-value'>{rate:.0f}%</div><div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div></div>", unsafe_allow_html=True)
             with col3:
-                avg_progress = filtered_df['calculated_progress'].mean()
+                avg_progress = filtered_work_df['calculated_progress'].mean()
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📈 AVG PROGRESS</div><div class='kpi-value'>{avg_progress:.0f}%</div></div>", unsafe_allow_html=True)
             with col4:
-                total_budget = filtered_df['budget_allocation'].fillna(0).sum()
+                total_budget = filtered_work_df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 BUDGET</div><div class='kpi-value'>KES {total_budget/1e6:.1f}M</div></div>", unsafe_allow_html=True)
             with col5:
-                exceeded = len(filtered_df[filtered_df['exceeded'] == True])
+                exceeded = len(filtered_work_df[filtered_work_df['exceeded'] == True])
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🏆 EXCEEDED</div><div class='kpi-value'>{exceeded}</div></div>", unsafe_allow_html=True)
             
             st.markdown("---")
@@ -1335,7 +1485,7 @@ elif choice == "📊 Dashboard":
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
-                status_counts = filtered_df['status_group'].value_counts().reset_index()
+                status_counts = filtered_work_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
                 color_map = {'Completed': '#00843D', 'In Progress': '#FFB81C', 'Not Started': '#dc2626'}
                 fig = go.Figure(data=[go.Pie(
@@ -1351,7 +1501,7 @@ elif choice == "📊 Dashboard":
             
             with col_chart2:
                 st.markdown("#### Progress by Strategic Pillar")
-                pillar_progress = filtered_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
+                pillar_progress = filtered_work_df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
                 pillar_progress.columns = ['Pillar', 'Progress %']
                 pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
                 fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
@@ -1362,7 +1512,7 @@ elif choice == "📊 Dashboard":
                 st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("#### Department Performance")
-            dept_progress = filtered_df.groupby('department_name')['calculated_progress'].mean().reset_index()
+            dept_progress = filtered_work_df.groupby('department_name')['calculated_progress'].mean().reset_index()
             dept_progress.columns = ['Department', 'Progress %']
             dept_progress = dept_progress.sort_values('Progress %', ascending=True)
             fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
@@ -1375,7 +1525,7 @@ elif choice == "📊 Dashboard":
             col_chart3, col_chart4 = st.columns(2)
             with col_chart3:
                 st.markdown("#### Activity Category Breakdown")
-                category_stats = filtered_df['activity_category'].value_counts().reset_index()
+                category_stats = filtered_work_df['activity_category'].value_counts().reset_index()
                 category_stats.columns = ['Category', 'Count']
                 fig = px.bar(category_stats, x='Category', y='Count',
                             color='Count', color_discrete_sequence=[HELB_GREEN],
@@ -1386,7 +1536,7 @@ elif choice == "📊 Dashboard":
             
             with col_chart4:
                 st.markdown("#### Quarterly Performance Trend")
-                quarterly_data = filtered_df.groupby('quarter').agg({
+                quarterly_data = filtered_work_df.groupby('quarter').agg({
                     'id': 'count',
                     'calculated_progress': 'mean'
                 }).reset_index()
@@ -1414,8 +1564,8 @@ elif choice == "📊 Dashboard":
             st.markdown("### ⚠️ Priority Alerts")
             col_alert1, col_alert2 = st.columns(2)
             
-            overdue_df = filtered_df[(filtered_df['days_left'] < 0) & (filtered_df['calculated_progress'] < 100)]
-            urgent_df = filtered_df[(filtered_df['days_left'] >= 0) & (filtered_df['days_left'] <= 14) & (filtered_df['calculated_progress'] < 80)]
+            overdue_df = filtered_work_df[(filtered_work_df['days_left'] < 0) & (filtered_work_df['calculated_progress'] < 100)]
+            urgent_df = filtered_work_df[(filtered_work_df['days_left'] >= 0) & (filtered_work_df['days_left'] <= 14) & (filtered_work_df['calculated_progress'] < 80)]
             
             with col_alert1:
                 if not overdue_df.empty:
@@ -1434,14 +1584,15 @@ elif choice == "📊 Dashboard":
                     st.success("✅ No urgent at-risk activities")
             
             with st.expander("📥 Export Data", expanded=False):
-                csv = filtered_df.to_csv(index=False).encode('utf-8')
+                csv = filtered_work_df.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
             st.info("No work plan data available for the selected filters.")
     
+    # ========== CONTRACTS TAB WITH FILTERS ==========
     with tab_contracts:
-        if contracts:
-            df_contracts = pd.DataFrame(contracts)
+        if not filtered_contracts_df.empty:
+            df_contracts = filtered_contracts_df.copy()
             
             df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
             df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
@@ -1556,7 +1707,7 @@ elif choice == "📊 Dashboard":
                         <div style='flex:1;'>
                             <b>📄 {contract['contract_title']}</b>{budget_alert_badge}<br>
                             <span style='font-size:0.85rem;'>Vendor: {contract['vendor_name']}</span><br>
-                            <span style='font-size:0.8rem; color:#6B7280;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                            <span style='font-size:0.8rem;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
                             <span style='font-size:0.8rem;'>💰 Value: KES {contract.get('contract_value', 0):,.0f} | Spent: KES {contract.get('amount_spent_to_date', 0):,.0f} ({utilization:.0f}% used)</span><br>
                             <span style='font-size:0.8rem;'>⭐ Performance: {performance}/5 | Payment: {contract.get('payment_terms', 'Not specified')}</span>
                         </div>
@@ -1568,11 +1719,12 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("No contracts found.")
+            st.info("No contracts found for the selected filters.")
     
+    # ========== POLICIES TAB WITH FILTERS ==========
     with tab_policies:
-        if policies:
-            df_policies = pd.DataFrame(policies)
+        if not filtered_policies_df.empty:
+            df_policies = filtered_policies_df.copy()
             
             total_policies = len(df_policies)
             active_policies = len(df_policies[df_policies['status'] == 'active'])
@@ -1664,7 +1816,7 @@ elif choice == "📊 Dashboard":
                             <b>📜 {policy['policy_name']}</b><br>
                             <span style='font-size:0.8rem;'>Version: {version} | Category: {category} | Scope: {policy_scope}</span><br>
                             <span style='font-size:0.8rem;'>Owner: {owner} | Next Review: {review_date}</span><br>
-                            <span style='font-size:0.8rem; color:#6B7280;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                            <span style='font-size:0.8rem;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
                         </div>
                         <div style='text-align:right;'>
                             {badge}
@@ -1673,7 +1825,7 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("No policies found.")
+            st.info("No policies found for the selected filters.")
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
@@ -1889,7 +2041,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only)
+# ADMIN PANEL (Admin Only) - Keeping as is from previous
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
