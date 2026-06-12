@@ -3319,6 +3319,6 @@ st.markdown("---")
 st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
-
+    <p>Powered by Streamlit | Multi-Year Contract Support | Comprehensive Analytics | Audit Trail</p>
 </div>
 """, unsafe_allow_html=True)
