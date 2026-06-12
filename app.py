@@ -1191,21 +1191,20 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE
+# LOGIN PAGE (FIXED)
 # ============================================
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if LOGO_BASE64:
-            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 200px; height: auto; margin-bottom: 1rem; background: transparent;">'
+            st.image(f"data:image/png;base64,{LOGO_BASE64}", width=200)
         else:
-            logo_html = '<div style="font-size: 3rem;">🏦</div>'
+            st.markdown('<div style="font-size: 3rem; text-align: center;">🏦</div>', unsafe_allow_html=True)
         
-        st.markdown(f"""
-        <div class='login-container'>
-            <div class='login-logo'>{logo_html}</div>
-            <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
-            <p class='login-subtitle'>Strategy Performance Management System</p>
+        st.markdown("""
+        <div style='text-align: center; margin: 1rem 0;'>
+            <h1 style='color: #00843D;'>HIGHER EDUCATION LOANS BOARD</h1>
+            <p style='color: #666;'>Strategy Performance Management System</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1249,18 +1248,15 @@ if not st.session_state.authenticated:
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
 with col_header:
     if LOGO_BASE64:
-        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 40px; height: auto; background: transparent;">'
+        st.image(f"data:image/png;base64,{LOGO_BASE64}", width=40)
     else:
-        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
+        st.markdown('<div style="font-size: 1.5rem;">🏦</div>', unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class='dashboard-header'>
-        <div class='header-left'>
-            {logo_html}
-            <div>
-                <h1>HELB Strategy Performance Management System</h1>
-                <p>Real-time monitoring | Work Plans | Contracts | Policies</p>
-            </div>
+        <div>
+            <h1>HELB Strategy Performance Management System</h1>
+            <p>Real-time monitoring | Work Plans | Contracts | Policies</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1278,7 +1274,7 @@ with col_refresh:
 
 with st.sidebar:
     if LOGO_BASE64:
-        st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
+        st.image(f"data:image/png;base64,{LOGO_BASE64}", width=120)
     else:
         st.markdown("""
         <div style='text-align: center; padding: 0.5rem 0;'>
@@ -1467,7 +1463,7 @@ if choice == "📋 Work Plans":
                     badge = '<span class="badge-pending">🔴 Pending</span>'
                 
                 if days_left < 0:
-                    days_indicator = "🔴 (EXPIRED)"
+                    days_indicator = f"🔴 (EXPIRED)"
                 elif days_left <= 7:
                     days_indicator = f"🔴 ({days_left} days left - URGENT)"
                 elif days_left <= 30:
@@ -1587,7 +1583,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD
+# DASHBOARD (FIXED CONTRACT AND POLICY DISPLAYS)
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1872,10 +1868,11 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
             with col5:
+                rating_display = f"{avg_performance:.1f}" if not pd.isna(avg_performance) else "N/A"
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>⭐ AVG RATING</div>
-                    <div class='kpi-value'>{avg_performance:.1f}/5</div>
+                    <div class='kpi-value'>{rating_display}/5</div>
                     <div class='kpi-sub'>Vendor Performance</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1909,54 +1906,42 @@ elif choice == "📊 Dashboard":
             
             st.markdown(f"**Showing {len(filtered_contracts_list)} contracts**")
             
+            # FIXED: Use st.container and proper columns instead of raw HTML
             for _, contract in filtered_contracts_list.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                 days_left = (end_date - datetime.now().date()).days
                 
                 if days_left > 30:
-                    status_class = "status-active"
+                    status_class = "active"
                     status_text = "Active"
                 elif days_left > 0:
-                    status_class = "status-expiring"
+                    status_class = "expiring"
                     status_text = f"Expiring in {days_left} days"
                 else:
-                    status_class = "status-expired"
+                    status_class = "expired"
                     status_text = "Expired"
                 
-                budget_alert_badge = '⚠️' if contract.get('budget_alert', False) else ''
+                budget_alert_badge = "⚠️ " if contract.get('budget_alert', False) else ""
                 
-                # Get multi-year breakdown if applicable
-                multi_year_info = ""
-                if contract.get('is_multi_year', False):
-                    years = get_contract_years(contract['id'])
-                    if years:
-                        multi_year_info = '<div class="contract-detail" style="margin-top: 0.5rem;"><strong>Yearly Breakdown:</strong><br>'
-                        for year in years:
-                            year_status = "✅" if year.get('status') == 'completed' else "🟢" if year.get('status') == 'active' else "🟡"
-                            multi_year_info += f'&nbsp;&nbsp;{year_status} Year {year["year_number"]}: KES {year["annual_value"]:,.0f} (Spent: KES {year.get("amount_spent_to_date", 0):,.0f} - {year.get("utilization_rate", 0):.0f}%)<br>'
-                        multi_year_info += '</div>'
-                
-                st.markdown(f"""
-                <div class='contract-card'>
-                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                        <div style='flex: 1;'>
-                            <div class='contract-title'>📄 {contract['contract_title']} {budget_alert_badge}</div>
-                            <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
-                            <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Total Value:</strong> KES {contract.get('total_contract_value', contract.get('contract_value', 0)):,.0f}</div>
-                            <div class='contract-detail'><strong>Spent to Date:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f} ({contract.get('utilization_rate', 0):.0f}%)</div>
-                            <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} | <strong>Payment:</strong> {contract.get('payment_terms', 'N/A')}</div>
-                            <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')} | <strong>Performance:</strong> ⭐ {contract.get('vendor_performance', 0)}/5</div>
-                            {multi_year_info}
-                        </div>
-                        <div style='text-align: right;'>
-                            <span class='status-badge {status_class}'>{status_text}</span>
-                            <div style='margin-top: 0.5rem; font-size: 0.7rem;'>
-                                Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}
+                with st.container():
+                    st.markdown(f"""
+                    <div class='contract-card'>
+                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                            <div style='flex: 1;'>
+                                <div class='contract-title'>{budget_alert_badge}📄 {contract['contract_title']}</div>
+                                <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
+                                <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Total Value:</strong> KES {contract.get('total_contract_value', contract.get('contract_value', 0)):,.0f}</div>
+                                <div class='contract-detail'><strong>Spent to Date:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f} ({contract.get('utilization_rate', 0):.0f}%)</div>
+                                <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} | <strong>Payment:</strong> {contract.get('payment_terms', 'N/A')}</div>
+                                <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')} | <strong>Performance:</strong> ⭐ {contract.get('vendor_performance', 0)}/5</div>
+                                <div class='contract-detail'><strong>Auto-renewal:</strong> {'Yes' if contract.get('auto_renewal', False) else 'No'}</div>
+                            </div>
+                            <div style='text-align: right;'>
+                                <span class='status-badge status-{status_class}'>{status_text}</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         else:
             st.info("No contracts found for the selected filters.")
     
@@ -2053,18 +2038,19 @@ elif choice == "📊 Dashboard":
             
             st.markdown(f"**Showing {len(filtered_policies_list)} policies**")
             
+            # FIXED: Use st.container and proper columns instead of raw HTML
             for _, policy in filtered_policies_list.iterrows():
                 expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
-                    status_class = "status-active"
+                    status_class = "active"
                     status_text = "Active"
                 elif days_left > 0:
-                    status_class = "status-expiring"
+                    status_class = "expiring"
                     status_text = f"Expires in {days_left} days"
                 else:
-                    status_class = "status-expired"
+                    status_class = "expired"
                     status_text = "Expired"
                 
                 category = policy.get('category', 'Uncategorized')
@@ -2073,25 +2059,23 @@ elif choice == "📊 Dashboard":
                 owner = policy.get('policy_owner', 'Not assigned')
                 review_date = policy.get('review_date', 'Not scheduled')
                 
-                st.markdown(f"""
-                <div class='policy-card'>
-                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                        <div style='flex: 1;'>
-                            <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
-                            <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
-                            <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
-                            <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
-                            <div class='policy-detail'><strong>Affected:</strong> {policy.get('affected_entities', 'N/A')}</div>
-                        </div>
-                        <div style='text-align: right;'>
-                            <span class='status-badge {status_class}'>{status_text}</span>
-                            <div style='margin-top: 0.5rem; font-size: 0.7rem;'>
-                                {'📄 Document' if policy.get('policy_url') else ''}
+                with st.container():
+                    st.markdown(f"""
+                    <div class='policy-card'>
+                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                            <div style='flex: 1;'>
+                                <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
+                                <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
+                                <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
+                                <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
+                                <div class='policy-detail'><strong>Affected:</strong> {policy.get('affected_entities', 'N/A')}</div>
+                            </div>
+                            <div style='text-align: right;'>
+                                <span class='status-badge status-{status_class}'>{status_text}</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         else:
             st.info("No policies found for the selected filters.")
     
@@ -2502,13 +2486,13 @@ elif choice == "📋 Policies":
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
-                    status_class = "status-active"
+                    status_class = "active"
                     status_text = "Active"
                 elif days_left > 0:
-                    status_class = "status-expiring"
+                    status_class = "expiring"
                     status_text = f"Expires in {days_left} days"
                 else:
-                    status_class = "status-expired"
+                    status_class = "expired"
                     status_text = "Expired"
                 
                 category = policy.get('category', 'Uncategorized')
@@ -2517,23 +2501,24 @@ elif choice == "📋 Policies":
                 owner = policy.get('policy_owner', 'Not assigned')
                 review_date = policy.get('review_date', 'Not scheduled')
                 
-                st.markdown(f"""
-                <div class='policy-card'>
-                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                        <div style='flex: 1;'>
-                            <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
-                            <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
-                            <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
-                            <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
-                            {f'<div class="policy-detail"><strong>Summary:</strong> {policy.get("change_log", "")[:100]}...</div>' if policy.get('change_log') else ''}
-                        </div>
-                        <div style='text-align: right;'>
-                            <span class='status-badge {status_class}'>{status_text}</span>
-                            {f'<div style="margin-top: 0.5rem;"><a href="{policy["policy_url"]}" target="_blank" style="font-size: 0.7rem;">📄 View Document</a></div>' if policy.get('policy_url') else ''}
+                with st.container():
+                    st.markdown(f"""
+                    <div class='policy-card'>
+                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                            <div style='flex: 1;'>
+                                <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
+                                <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
+                                <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
+                                <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
+                                {f'<div class="policy-detail"><strong>Summary:</strong> {policy.get("change_log", "")[:100]}...</div>' if policy.get('change_log') else ''}
+                            </div>
+                            <div style='text-align: right;'>
+                                <span class='status-badge status-{status_class}'>{status_text}</span>
+                                {f'<div style="margin-top: 0.5rem;"><a href="{policy["policy_url"]}" target="_blank" style="font-size: 0.7rem;">📄 View Document</a></div>' if policy.get('policy_url') else ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         else:
             st.info("No policies found. Click 'Add New Policy' to get started.")
     
