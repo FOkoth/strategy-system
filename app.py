@@ -2107,13 +2107,87 @@ elif choice == "📄 Contracts":
                     st.error("Please fill required fields")
 
 # ============================================
-# POLICIES SECTION (User View)
+# POLICIES SECTION (User View) - FIXED WITH ADD POLICY OPTION
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
     
-    tab_view, tab_analytics = st.tabs(["📋 View All Policies", "📊 Analytics Dashboard"])
+    # Create three tabs: Add, View, Analytics
+    tab_add, tab_view, tab_analytics = st.tabs(["➕ Add New Policy", "📋 View All Policies", "📊 Analytics Dashboard"])
     
+    # ========== TAB 1: ADD NEW POLICY ==========
+    with tab_add:
+        st.markdown("### Add New Policy")
+        
+        # Get departments for department-specific scope
+        departments = get_cached_departments()
+        dept_options = [d["name"] for d in departments]
+        
+        with st.form("user_add_policy_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                policy_name = st.text_input("Policy Name*")
+                category = st.selectbox("Policy Category*", POLICY_CATEGORIES)
+                version = st.text_input("Version*", value="v1.0")
+                policy_scope = st.selectbox("Policy Scope*", POLICY_SCOPE)
+                policy_owner = st.text_input("Policy Owner*")
+                
+            with col2:
+                effective_date = st.date_input("Effective Date*", value=datetime.now().date())
+                expiry_date = st.date_input("Expiry Date*")
+                review_date = st.date_input("Next Review Date*")
+                policy_url = st.text_input("Policy Document URL", placeholder="https://...")
+            
+            # Scope specific fields
+            st.markdown("#### Scope Details")
+            if policy_scope == "Institution-Wide":
+                st.info("This policy applies to the entire institution")
+                affected_entities = "All Departments"
+            elif policy_scope == "Committee":
+                committee_name = st.text_input("Committee Name")
+                affected_entities = f"Committee: {committee_name}" if committee_name else "Committee"
+            else:  # Department-Specific
+                affected_depts = st.multiselect("Affected Departments", dept_options)
+                affected_entities = ", ".join(affected_depts) if affected_depts else "Not specified"
+            
+            st.markdown("#### Compliance Tracking")
+            requires_acknowledgment = st.checkbox("Requires Staff Acknowledgment", value=True)
+            requires_sensitization = st.checkbox("Requires Sensitization", value=True)
+            change_log = st.text_area("Change Log / Summary", height=80, placeholder="Brief summary of policy changes or purpose")
+            
+            if st.form_submit_button("Save Policy", use_container_width=True):
+                if policy_name and category and policy_owner and expiry_date:
+                    # Prepare data
+                    policy_data = {
+                        "policy_name": policy_name,
+                        "category": category,
+                        "version": version,
+                        "policy_scope": policy_scope,
+                        "affected_entities": affected_entities,
+                        "policy_owner": policy_owner,
+                        "effective_date": effective_date.isoformat(),
+                        "expiry_date": expiry_date.isoformat(),
+                        "review_date": review_date.isoformat(),
+                        "policy_url": policy_url if policy_url else None,
+                        "requires_acknowledgment": requires_acknowledgment,
+                        "requires_sensitization": requires_sensitization,
+                        "change_log": change_log,
+                        "department_id": st.session_state.user_dept,  # Link to user's department
+                        "created_by": st.session_state.user_id
+                    }
+                    
+                    success, message = add_enhanced_policy(policy_data)
+                    if success:
+                        st.success(f"✅ {message}")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {message}")
+                else:
+                    st.error("Please fill all required fields (*)")
+    
+    # ========== TAB 2: VIEW ALL POLICIES ==========
     with tab_view:
         policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if policies:
@@ -2153,8 +2227,9 @@ elif choice == "📋 Policies":
                         if policy.get('policy_url'):
                             st.markdown(f"[📄 View Document]({policy['policy_url']})")
         else:
-            st.info("No policies found.")
+            st.info("No policies found. Click 'Add New Policy' to get started.")
     
+    # ========== TAB 3: ANALYTICS DASHBOARD ==========
     with tab_analytics:
         policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if policies:
