@@ -203,6 +203,9 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     
     return df
 
+# ============================================
+# NEW: FILTER FUNCTIONS FOR CONTRACTS AND POLICIES (FIX #1)
+# ============================================
 def filter_contracts_by_date(df, financial_year, quarter, month):
     if df.empty:
         return df
@@ -725,131 +728,30 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS - FIXED FOR CONSISTENCY ACROSS DEVICES
+# CUSTOM CSS - FIXED FOR DROPDOWN VISIBILITY (FIX #2)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
     <style>
-        /* Force all text to be black/dark in light mode */
-        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
-        .stTextInput label, .stSelectbox label, .stDateInput label,
-        .stNumberInput label, .stTextArea label, .stCheckbox label,
-        div, span, p, label, .stMetric label, .stMetric div {{
-            color: #000000 !important;
-        }}
-        
-        /* Fix dropdown menus - white background with black text */
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
-            background-color: #f0f0f0 !important;
-            color: #000000 !important;
-        }}
-        
-        /* Fix buttons - visible text */
-        .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            color: white !important;
-            border-radius: 8px !important;
-            padding: 8px 16px !important;
-            font-weight: 600 !important;
-        }}
-        
-        /* Buttons with delete - red gradient */
-        .stButton > button[key*="delete"] {{
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-            color: white !important;
-        }}
-        
-        /* Keep sidebar white text */
-        [data-testid="stSidebar"] * {{
-            color: white !important;
-        }}
-        
-        /* KPI cards specific - FORCED GOLD LABEL, WHITE VALUE, WHITE SUB */
-        .kpi-card {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            text-align: center !important;
-        }}
-        .kpi-card .kpi-label {{
-            font-size: 0.7rem !important;
-            text-transform: uppercase !important;
-            color: {HELB_GOLD} !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
-        }}
-        .kpi-card .kpi-value {{
-            font-size: 1.5rem !important;
-            font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
-            color: #FFFFFF !important;
-        }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 4px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
-        }}
-        
-        /* Metric card text - black */
-        .metric-card, .metric-card * {{
-            color: #000000 !important;
-        }}
-        
-        /* Tab text */
-        .stTabs [data-baseweb="tab"] {{
-            color: #000000 !important;
-        }}
-        
-        .stTabs [aria-selected="true"] {{
-            color: #000000 !important;
-            background-color: {HELB_GOLD} !important;
-        }}
-        
-        /* Expander header */
-        .streamlit-expanderHeader p {{
-            color: #000000 !important;
-        }}
-        
-        /* Input fields */
-        .stTextInput input, .stSelectbox div, .stDateInput input, 
-        .stNumberInput input, .stTextArea textarea {{
-            background-color: white !important;
-            color: #000000 !important;
-            border: 1px solid #D1D5DB !important;
-        }}
-        
-        /* Headers */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {HELB_GREEN} !important;
-        }}
-        
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
         
+        .stTextInput label {{
+            color: {HELB_BLACK} !important;
+        }}
+        
+        /* FIX: Dropdown menus - white background with black text */
+        .stSelectbox div[data-baseweb="select"] > div,
+        div[role="listbox"], div[role="option"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
+        [data-testid="stSidebar"] * {{ color: white !important; }}
         
         .sidebar-user-info {{
             background: rgba(255,255,255,0.15);
@@ -870,6 +772,7 @@ if st.session_state.theme == "light":
             margin: 4px 0 !important;
             font-weight: 600 !important;
             font-size: 0.8rem !important;
+            transition: all 0.3s ease !important;
         }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
@@ -883,6 +786,7 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
+        h1, h2, h3, h4 {{ color: {HELB_GREEN} !important; font-weight: 600 !important; }}
         h1 {{ border-bottom: 3px solid {HELB_GOLD}; padding-bottom: 15px; margin-bottom: 25px; }}
         
         .dashboard-header {{
@@ -906,14 +810,26 @@ if st.session_state.theme == "light":
         .login-title {{ color: white; font-size: 1.5rem; font-weight: 700; }}
         .login-subtitle {{ color: rgba(255,255,255,0.85); font-size: 0.85rem; }}
         
-        .admin-card {{
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        .kpi-card {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 12px;
             padding: 1rem;
-            border: 1px solid {HELB_GREEN};
-            margin-bottom: 1rem;
+            text-align: center;
         }}
-        .admin-card h4 {{ color: {HELB_GREEN} !important; margin-top: 0; }}
+        .kpi-label {{ font-size: 0.7rem; text-transform: uppercase; color: {HELB_GOLD} !important; font-weight: 600; letter-spacing: 0.5px; }}
+        .kpi-value {{ font-size: 1.5rem; font-weight: 700; margin: 0.2rem 0; color: white !important; }}
+        .kpi-sub {{ font-size: 0.55rem; color: white !important; margin-top: 0.2rem; opacity: 0.9; }}
+        .progress-bar {{ height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.5rem; }}
+        .progress-fill {{ height: 100%; background: {HELB_GOLD}; border-radius: 2px; }}
+        
+        .metric-card {{
+            background: {HELB_WHITE};
+            border-radius: 12px;
+            padding: 1rem;
+            border-left: 4px solid {HELB_GOLD};
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }}
+        .metric-card * {{ color: {HELB_BLACK} !important; }}
         
         .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
@@ -921,138 +837,58 @@ if st.session_state.theme == "light":
         .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         
-        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
-        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; }}
-        
-        .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
-        
-        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
-        .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
-        hr {{ margin: 0.5rem 0; }}
-        
-        /* Fix number input buttons */
-        .stNumberInput button {{
-            background-color: #f0f0f0 !important;
-            color: #000000 !important;
-        }}
-    </style>
-    """
-else:
-    THEME_CSS = f"""
-    <style>
-        /* Force all text to be light/white in dark mode */
-        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
-        .stTextInput label, .stSelectbox label, .stDateInput label,
-        .stNumberInput label, .stTextArea label, .stCheckbox label,
-        div, span, p, label, .stMetric label, .stMetric div {{
-            color: #FFFFFF !important;
-        }}
-        
-        /* Fix dropdown menus - dark background with white text */
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
-        
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
-            background-color: #3d3d5c !important;
-            color: #FFFFFF !important;
-        }}
-        
-        /* Fix buttons - visible text */
         .stButton > button {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
             border-radius: 8px !important;
             padding: 8px 16px !important;
             font-weight: 600 !important;
         }}
+        .stButton > button[key*="delete"] {{ background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; }}
         
-        /* Delete buttons */
-        .stButton > button[key*="delete"] {{
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-            color: white !important;
-        }}
+        .streamlit-expanderHeader {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.85rem !important; font-weight: 600 !important; }}
+        .streamlit-expanderContent {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; border-top: none !important; padding: 1rem !important; }}
+        .streamlit-expanderContent * {{ color: {HELB_BLACK} !important; }}
         
-        /* KPI cards specific - FORCED GOLD LABEL, WHITE VALUE, WHITE SUB */
-        .kpi-card {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            text-align: center !important;
-        }}
-        .kpi-card .kpi-label {{
-            font-size: 0.7rem !important;
-            text-transform: uppercase !important;
-            color: {HELB_GOLD} !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
-        }}
-        .kpi-card .kpi-value {{
-            font-size: 1.5rem !important;
-            font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
-            color: #FFFFFF !important;
-        }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 4px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
+        .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
+            background-color: white !important;
+            color: {HELB_BLACK} !important;
+            border: 1px solid #D1D5DB !important;
+            font-size: 0.75rem !important;
         }}
         
-        /* Metric card text */
-        .metric-card, .metric-card * {{
-            color: #FFFFFF !important;
-        }}
+        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
+        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_BLACK}; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_BLACK} !important; font-weight: 600; }}
         
-        /* Tab text */
-        .stTabs [data-baseweb="tab"] {{
-            color: #FFFFFF !important;
-        }}
+        .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
-        .stTabs [aria-selected="true"] {{
-            background-color: {HELB_GOLD} !important;
-            color: #1F2937 !important;
-        }}
-        
-        /* Expander header */
-        .streamlit-expanderHeader p {{
-            color: {HELB_GOLD} !important;
-        }}
-        
-        /* Input fields */
-        .stTextInput input, .stSelectbox div, .stDateInput input, 
-        .stNumberInput input, .stTextArea textarea {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-            border: 1px solid #4a4a6a !important;
-        }}
-        
-        /* Headers */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {HELB_GOLD} !important;
-        }}
-        
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
+        .dataframe td {{ color: {HELB_BLACK} !important; font-size: 0.7rem; }}
+        .stMarkdown, .stMarkdown p, .stMarkdown div {{ color: {HELB_BLACK} !important; }}
+        hr {{ margin: 0.5rem 0; }}
+    </style>
+    """
+else:
+    THEME_CSS = f"""
+    <style>
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: #1a1a2e !important; }}
+        
+        .stTextInput label {{
+            color: white !important;
+        }}
+        
+        /* FIX: Dropdown menus - dark background with white text */
+        .stSelectbox div[data-baseweb="select"] > div,
+        div[role="listbox"], div[role="option"] {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
         
         [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
@@ -1083,6 +919,8 @@ else:
             color: white !important;
         }}
         
+        h1, h2, h3, h4 {{ color: {HELB_GOLD} !important; font-weight: 600 !important; }}
+        
         .dashboard-header {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             padding: 0.8rem 1.5rem;
@@ -1097,21 +935,31 @@ else:
         
         .login-container {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 20px; padding: 2.5rem; text-align: center; }}
         
-        .admin-card {{ background: #1e293b; border-radius: 12px; padding: 1rem; border: 1px solid {HELB_GREEN}; margin-bottom: 1rem; }}
-        .admin-card h4 {{ color: {HELB_GOLD} !important; margin-top: 0; }}
+        .kpi-card {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 10px; padding: 0.8rem; text-align: center; }}
+        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px; }}
+        .kpi-value {{ color: white; font-size: 1.3rem; font-weight: 700; }}
+        .kpi-sub {{ color: rgba(255,255,255,0.7); font-size: 0.55rem; }}
+        
+        .metric-card {{ background: #16213e; border-radius: 10px; padding: 0.8rem; border-left: 4px solid {HELB_GOLD}; }}
+        
+        .stButton > button {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important; color: white !important; }}
+        
+        .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
+            background-color: #2d2d44 !important;
+            color: white !important;
+            border: 1px solid #4a4a6a !important;
+        }}
+        
+        .streamlit-expanderHeader {{ background-color: #2d2d44 !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
         
         .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
         
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
-        
-        /* Fix number input buttons */
-        .stNumberInput button {{
-            background-color: #3d3d5c !important;
-            color: #FFFFFF !important;
-        }}
     </style>
     """
 
@@ -1250,7 +1098,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE (User View)
+# WORK PLANS MODULE
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1285,6 +1133,7 @@ if choice == "📋 Work Plans":
     
     with tab_add:
         st.markdown("### Add New Work Plan Activity")
+        
         user_directorate = get_directorate_for_department(st.session_state.user_dept)
         
         with st.form("add_work_plan_form"):
@@ -1470,50 +1319,24 @@ if choice == "📋 Work Plans":
             df['calculated_progress'] = df.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
             df['exceeded'] = df.apply(lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1)
             
-            # KPI Cards with consistent styling
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
-                    <div class='kpi-value'>{len(df)}</div>
-                    <div class='kpi-sub'>Total Activities</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL ACTIVITIES</div><div class='kpi-value'>{len(df)}</div></div>", unsafe_allow_html=True)
             with col2:
                 completed = len(df[df['calculated_progress'] >= 100])
                 rate = (completed/len(df)*100) if len(df)>0 else 0
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>✅ COMPLETION RATE</div>
-                    <div class='kpi-value'>{rate:.0f}%</div>
-                    <div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div>
-                    <div class='kpi-sub'>Completion Rate</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ COMPLETION RATE</div><div class='kpi-value'>{rate:.0f}%</div><div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div></div>", unsafe_allow_html=True)
             with col3:
                 total_budget = df['budget_allocation'].fillna(0).sum()
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
-                    <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Budget</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 TOTAL BUDGET</div><div class='kpi-value'>KES {total_budget/1e6:.1f}M</div></div>", unsafe_allow_html=True)
             with col4:
                 exceeded_count = len(df[df['exceeded'] == True])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
-                    <div class='kpi-value'>{exceeded_count}</div>
-                    <div class='kpi-sub'>Exceeded Targets</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🏆 TARGETS EXCEEDED</div><div class='kpi-value'>{exceeded_count}</div></div>", unsafe_allow_html=True)
         else:
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH DYNAMIC FILTERS FIXED
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1522,7 +1345,6 @@ elif choice == "📊 Dashboard":
     contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
     policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     
-    # FILTERS - These now apply to ALL tabs
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
@@ -1572,14 +1394,14 @@ elif choice == "📊 Dashboard":
     else:
         filtered_work_df = pd.DataFrame()
     
-    # Apply filters to Contracts
+    # Apply filters to Contracts (NEW)
     if contracts:
         df_contracts_raw = pd.DataFrame(contracts)
         filtered_contracts_df = filter_contracts_by_date(df_contracts_raw, selected_fy, selected_q, selected_m)
     else:
         filtered_contracts_df = pd.DataFrame()
     
-    # Apply filters to Policies
+    # Apply filters to Policies (NEW)
     if policies:
         df_policies_raw = pd.DataFrame(policies)
         filtered_policies_df = filter_policies_by_date(df_policies_raw, selected_fy, selected_q, selected_m)
@@ -1588,56 +1410,24 @@ elif choice == "📊 Dashboard":
     
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
     
-    # ========== WORK PLANS TAB ==========
     with tab_work:
         if not filtered_work_df.empty:
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>📋 TOTAL</div>
-                    <div class='kpi-value'>{len(filtered_work_df)}</div>
-                    <div class='kpi-sub'>Activities</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_work_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
             with col2:
                 completed = len(filtered_work_df[filtered_work_df['calculated_progress'] >= 100])
                 rate = (completed/len(filtered_work_df)*100) if len(filtered_work_df)>0 else 0
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>✅ COMPLETED</div>
-                    <div class='kpi-value'>{rate:.0f}%</div>
-                    <div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div>
-                    <div class='kpi-sub'>Completion Rate</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ COMPLETED</div><div class='kpi-value'>{rate:.0f}%</div><div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div></div>", unsafe_allow_html=True)
             with col3:
                 avg_progress = filtered_work_df['calculated_progress'].mean()
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>📈 AVG PROGRESS</div>
-                    <div class='kpi-value'>{avg_progress:.0f}%</div>
-                    <div class='kpi-sub'>Average Progress</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📈 AVG PROGRESS</div><div class='kpi-value'>{avg_progress:.0f}%</div></div>", unsafe_allow_html=True)
             with col4:
                 total_budget = filtered_work_df['budget_allocation'].fillna(0).sum()
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>💰 BUDGET</div>
-                    <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Budget</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 BUDGET</div><div class='kpi-value'>KES {total_budget/1e6:.1f}M</div></div>", unsafe_allow_html=True)
             with col5:
                 exceeded = len(filtered_work_df[filtered_work_df['exceeded'] == True])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>🏆 EXCEEDED</div>
-                    <div class='kpi-value'>{exceeded}</div>
-                    <div class='kpi-sub'>Targets Exceeded</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🏆 EXCEEDED</div><div class='kpi-value'>{exceeded}</div></div>", unsafe_allow_html=True)
             
             st.markdown("---")
             
@@ -1748,7 +1538,6 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No work plan data available for the selected filters.")
     
-    # ========== CONTRACTS TAB WITH FILTERS ==========
     with tab_contracts:
         if not filtered_contracts_df.empty:
             df_contracts = filtered_contracts_df.copy()
@@ -1841,7 +1630,35 @@ elif choice == "📊 Dashboard":
                 fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
+            col_chart3, col_chart4 = st.columns(2)
+            with col_chart3:
+                st.markdown("#### Vendor Performance Distribution")
+                perf_bins = pd.cut(df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'], 
+                                  bins=[0, 2, 3, 4, 5], labels=['Poor (0-2)', 'Fair (2-3)', 'Good (3-4)', 'Excellent (4-5)'])
+                perf_counts = perf_bins.value_counts()
+                fig = px.bar(x=perf_counts.values, y=perf_counts.index, orientation='h',
+                            color=perf_counts.values, color_continuous_scale='Greens',
+                            text=perf_counts.values)
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=300, xaxis_title="Number of Contracts", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart4:
+                st.markdown("#### Budget Alert Summary")
+                alert_count = len(df_contracts[df_contracts.get('budget_alert', False) == True])
+                no_alert = len(df_contracts) - alert_count
+                alert_data = pd.DataFrame({
+                    'Status': ['⚠️ Budget Alert', '✅ Healthy'],
+                    'Count': [alert_count, no_alert]
+                })
+                fig = px.pie(alert_data, values='Count', names='Status', hole=0.4,
+                            color_discrete_sequence=['#dc2626', HELB_GREEN])
+                fig.update_layout(height=300, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("---")
             st.markdown("### 📋 Contract List")
+            
             for _, contract in df_contracts.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                 days_left = (end_date - datetime.now().date()).days
@@ -1866,7 +1683,7 @@ elif choice == "📊 Dashboard":
                         <div style='flex:1;'>
                             <b>📄 {contract['contract_title']}</b>{budget_alert_badge}<br>
                             <span style='font-size:0.85rem;'>Vendor: {contract['vendor_name']}</span><br>
-                            <span style='font-size:0.8rem;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                            <span style='font-size:0.8rem; color:#6B7280;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
                             <span style='font-size:0.8rem;'>💰 Value: KES {contract.get('contract_value', 0):,.0f} | Spent: KES {contract.get('amount_spent_to_date', 0):,.0f} ({utilization:.0f}% used)</span><br>
                             <span style='font-size:0.8rem;'>⭐ Performance: {performance}/5 | Payment: {contract.get('payment_terms', 'Not specified')}</span>
                         </div>
@@ -1880,7 +1697,6 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No contracts found for the selected filters.")
     
-    # ========== POLICIES TAB WITH FILTERS ==========
     with tab_policies:
         if not filtered_policies_df.empty:
             df_policies = filtered_policies_df.copy()
@@ -1989,7 +1805,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View)
+# CONTRACTS SECTION
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2107,7 +1923,7 @@ elif choice == "📄 Contracts":
                     st.error("Please fill required fields")
 
 # ============================================
-# POLICIES SECTION (User View)
+# POLICIES SECTION
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2162,40 +1978,16 @@ elif choice == "📋 Policies":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>📜 TOTAL POLICIES</div>
-                    <div class='kpi-value'>{len(df)}</div>
-                    <div class='kpi-sub'>All Policies</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📜 TOTAL POLICIES</div><div class='kpi-value'>{len(df)}</div></div>", unsafe_allow_html=True)
             with col2:
                 active = len(df[df['status'] == 'active'])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>✅ ACTIVE</div>
-                    <div class='kpi-value'>{active}</div>
-                    <div class='kpi-sub'>Currently Active</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ ACTIVE</div><div class='kpi-value'>{active}</div></div>", unsafe_allow_html=True)
             with col3:
                 expiring = len(df[df['status'] == 'expiring_soon'])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
-                    <div class='kpi-value'>{expiring}</div>
-                    <div class='kpi-sub'>Within 90 days</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⚠️ EXPIRING SOON</div><div class='kpi-value'>{expiring}</div></div>", unsafe_allow_html=True)
             with col4:
                 expired = len(df[df['status'] == 'expired'])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>🔴 EXPIRED</div>
-                    <div class='kpi-value'>{expired}</div>
-                    <div class='kpi-sub'>Needs Review</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
             
             st.markdown("---")
             
@@ -2224,10 +2016,10 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only)
+# ADMIN PANEL
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
-    st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
+    st.subheader("Administration Panel")
     st.markdown("Manage users, policies, contracts, work plans, departments, and directorates from one central location.")
     
     admin_tabs = st.tabs([
