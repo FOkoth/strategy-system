@@ -289,6 +289,32 @@ def init_supabase():
 supabase = init_supabase()
 
 # ============================================
+# AUDIT LOG FUNCTIONS
+# ============================================
+def add_audit_log(action, entity_type, entity_id, details):
+    try:
+        audit_data = {
+            "user_id": st.session_state.user_id,
+            "username": st.session_state.user_name,
+            "action": action,
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "details": details,
+            "ip_address": "web_app",
+            "created_at": datetime.now().isoformat()
+        }
+        supabase.table("audit_logs").insert(audit_data).execute()
+    except Exception as e:
+        print(f"Audit log error: {e}")
+
+def get_audit_logs(limit=500):
+    try:
+        result = supabase.table("audit_logs").select("*").order("created_at", desc=True).limit(limit).execute()
+        return result.data
+    except:
+        return []
+
+# ============================================
 # DIRECTORATE FUNCTIONS
 # ============================================
 @st.cache_data(ttl=3600)
@@ -323,6 +349,7 @@ def add_directorate(name, director_name):
     try:
         supabase.table("directorates").insert({"name": name, "director_name": director_name}).execute()
         st.cache_data.clear()
+        add_audit_log("CREATE", "directorate", None, f"Added directorate: {name}")
         return True, "Directorate added successfully"
     except Exception as e:
         return False, str(e)
@@ -335,6 +362,7 @@ def update_directorate(directorate_id, name, director_name):
             "updated_at": datetime.now().isoformat()
         }).eq("id", directorate_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "directorate", directorate_id, f"Updated directorate: {name}")
         return True, "Directorate updated successfully"
     except Exception as e:
         return False, str(e)
@@ -346,6 +374,7 @@ def delete_directorate(directorate_id):
             return False, "Cannot delete directorate that has departments. Move departments first."
         supabase.table("directorates").delete().eq("id", directorate_id).execute()
         st.cache_data.clear()
+        add_audit_log("DELETE", "directorate", directorate_id, f"Deleted directorate ID: {directorate_id}")
         return True, "Directorate deleted successfully"
     except Exception as e:
         return False, str(e)
@@ -389,6 +418,7 @@ def add_department(dept_name, directorate_id, deputy_director_name):
             "deputy_director_name": deputy_director_name
         }).execute()
         st.cache_data.clear()
+        add_audit_log("CREATE", "department", None, f"Added department: {dept_name}")
         return True, "Department added successfully"
     except Exception as e:
         return False, str(e)
@@ -402,6 +432,7 @@ def update_department(dept_id, name, directorate_id, deputy_director_name):
             "updated_at": datetime.now().isoformat()
         }).eq("id", dept_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "department", dept_id, f"Updated department: {name}")
         return True, "Department updated successfully"
     except Exception as e:
         return False, str(e)
@@ -413,6 +444,7 @@ def delete_department(dept_id):
             return False, "Cannot delete department that has users. Reassign users first."
         supabase.table("departments").delete().eq("id", dept_id).execute()
         st.cache_data.clear()
+        add_audit_log("DELETE", "department", dept_id, f"Deleted department ID: {dept_id}")
         return True, "Department deleted successfully"
     except Exception as e:
         return False, str(e)
@@ -466,6 +498,7 @@ def add_work_plan(data):
     try:
         supabase.table("work_plan").insert(data).execute()
         st.cache_data.clear()
+        add_audit_log("CREATE", "work_plan", None, f"Added work plan: {data.get('planned_activity', '')[:50]}")
         return True
     except:
         return False
@@ -482,6 +515,7 @@ def update_work_plan_progress(plan_id, actual_achievement, progress_percent, sta
         }
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "work_plan", plan_id, f"Updated progress to {progress_percent}%")
         return True
     except Exception as e:
         st.error(f"Update error: {e}")
@@ -495,6 +529,7 @@ def update_work_plan_due_date(plan_id, new_due_date):
         }
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "work_plan", plan_id, f"Updated due date to {new_due_date}")
         return True
     except:
         return False
@@ -503,6 +538,7 @@ def delete_work_plan(plan_id):
     try:
         supabase.table("work_plan").delete().eq("id", plan_id).execute()
         st.cache_data.clear()
+        add_audit_log("DELETE", "work_plan", plan_id, "Deleted work plan")
         return True
     except:
         return False
@@ -511,6 +547,7 @@ def update_work_plan_admin(plan_id, data):
     try:
         supabase.table("work_plan").update(data).eq("id", plan_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "work_plan", plan_id, "Admin updated work plan")
         return True
     except Exception as e:
         return False
@@ -545,6 +582,7 @@ def add_enhanced_contract(data):
         
         supabase.table("contracts").insert(data).execute()
         st.cache_data.clear()
+        add_audit_log("CREATE", "contract", None, f"Added contract: {data.get('contract_title', '')}")
         return True, "Contract added successfully"
     except Exception as e:
         return False, str(e)
@@ -569,6 +607,7 @@ def update_contract_spending(contract_id, amount_spent):
         }).eq("id", contract_id).execute()
         
         st.cache_data.clear()
+        add_audit_log("UPDATE", "contract", contract_id, f"Updated spending to {amount_spent}")
         return True
     except Exception as e:
         return False
@@ -585,6 +624,16 @@ def update_vendor_performance(contract_id, performance_rating, compliance_status
         
         supabase.table("contracts").update(update_data).eq("id", contract_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "contract", contract_id, f"Updated vendor performance to {performance_rating}")
+        return True
+    except Exception as e:
+        return False
+
+def update_contract_user(contract_id, data):
+    try:
+        supabase.table("contracts").update(data).eq("id", contract_id).execute()
+        st.cache_data.clear()
+        add_audit_log("UPDATE", "contract", contract_id, "User updated contract")
         return True
     except Exception as e:
         return False
@@ -593,6 +642,7 @@ def update_contract_admin(contract_id, data):
     try:
         supabase.table("contracts").update(data).eq("id", contract_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "contract", contract_id, "Admin updated contract")
         return True
     except Exception as e:
         return False
@@ -601,6 +651,7 @@ def delete_contract(contract_id):
     try:
         supabase.table("contracts").delete().eq("id", contract_id).execute()
         st.cache_data.clear()
+        add_audit_log("DELETE", "contract", contract_id, "Deleted contract")
         return True
     except:
         return False
@@ -625,6 +676,7 @@ def add_enhanced_policy(data):
         
         supabase.table("policies").insert(data).execute()
         st.cache_data.clear()
+        add_audit_log("CREATE", "policy", None, f"Added policy: {data.get('policy_name', '')}")
         return True, "Policy added successfully"
     except Exception as e:
         return False, str(e)
@@ -633,6 +685,7 @@ def update_policy_admin(policy_id, data):
     try:
         supabase.table("policies").update(data).eq("id", policy_id).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "policy", policy_id, "Admin updated policy")
         return True
     except Exception as e:
         return False
@@ -642,6 +695,7 @@ def delete_policy(policy_id):
         supabase.table("policy_acknowledgments").delete().eq("policy_id", policy_id).execute()
         supabase.table("policies").delete().eq("id", policy_id).execute()
         st.cache_data.clear()
+        add_audit_log("DELETE", "policy", policy_id, "Deleted policy")
         return True
     except:
         return False
@@ -668,6 +722,7 @@ def delete_user(username):
     try:
         supabase.table("users").delete().eq("username", username).execute()
         st.cache_data.clear()
+        add_audit_log("DELETE", "user", None, f"Deleted user: {username}")
         return True
     except:
         return False
@@ -679,6 +734,7 @@ def update_user_role(username, new_role, department_id):
             "department_id": department_id if department_id != "None" else None
         }).eq("username", username).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "user", None, f"Updated user {username} role to {new_role}")
         return True
     except:
         return False
@@ -689,6 +745,7 @@ def reset_user_password(username, new_password):
             "password_hash": new_password
         }).eq("username", username).execute()
         st.cache_data.clear()
+        add_audit_log("UPDATE", "user", None, f"Reset password for user: {username}")
         return True
     except:
         return False
@@ -707,6 +764,7 @@ def create_new_user(username, full_name, password, role, department_id):
             "department_id": department_id if department_id != "None" else None
         }).execute()
         st.cache_data.clear()
+        add_audit_log("CREATE", "user", None, f"Created user: {username}")
         return True, "User created successfully"
     except Exception as e:
         return False, str(e)
@@ -725,12 +783,11 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS - FIXED FOR CONSISTENCY ACROSS DEVICES
+# CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
     <style>
-        /* Force all text to be black/dark in light mode */
         .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
@@ -738,7 +795,6 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix dropdown menus - white background with black text */
         .stSelectbox div[data-baseweb="select"] div,
         .stSelectbox ul, .stSelectbox li,
         div[role="listbox"], div[role="option"] {{
@@ -752,7 +808,6 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix buttons - visible text */
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
@@ -761,18 +816,15 @@ if st.session_state.theme == "light":
             font-weight: 600 !important;
         }}
         
-        /* Buttons with delete - red gradient */
         .stButton > button[key*="delete"] {{
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
             color: white !important;
         }}
         
-        /* Keep sidebar white text */
         [data-testid="stSidebar"] * {{
             color: white !important;
         }}
         
-        /* KPI cards specific - FORCED GOLD LABEL, WHITE VALUE, WHITE SUB */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             border-radius: 12px !important;
@@ -810,27 +862,44 @@ if st.session_state.theme == "light":
             border-radius: 2px !important;
         }}
         
-        /* Metric card text - black */
-        .metric-card, .metric-card * {{
-            color: #000000 !important;
+        .contract-card, .policy-card {{
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            margin-bottom: 0.75rem !important;
+            transition: all 0.2s ease !important;
         }}
-        
-        /* Tab text */
-        .stTabs [data-baseweb="tab"] {{
-            color: #000000 !important;
+        .contract-card:hover, .policy-card:hover {{
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
         }}
-        
-        .stTabs [aria-selected="true"] {{
-            color: #000000 !important;
-            background-color: {HELB_GOLD} !important;
+        .contract-title, .policy-title {{
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            color: {HELB_GREEN} !important;
+            margin-bottom: 0.5rem !important;
         }}
-        
-        /* Expander header */
-        .streamlit-expanderHeader p {{
-            color: #000000 !important;
+        .contract-detail, .policy-detail {{
+            font-size: 0.75rem !important;
+            color: #4b5563 !important;
+            margin: 0.25rem 0 !important;
         }}
+        .status-badge {{
+            display: inline-block !important;
+            padding: 0.2rem 0.6rem !important;
+            border-radius: 20px !important;
+            font-size: 0.7rem !important;
+            font-weight: 600 !important;
+        }}
+        .status-active {{ background-color: #10b981 !important; color: white !important; }}
+        .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
+        .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
         
-        /* Input fields */
+        .metric-card, .metric-card * {{ color: #000000 !important; }}
+        .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
+        .stTabs [aria-selected="true"] {{ color: #000000 !important; background-color: {HELB_GOLD} !important; }}
+        .streamlit-expanderHeader p {{ color: #000000 !important; }}
+        
         .stTextInput input, .stSelectbox div, .stDateInput input, 
         .stNumberInput input, .stTextArea textarea {{
             background-color: white !important;
@@ -838,17 +907,11 @@ if st.session_state.theme == "light":
             border: 1px solid #D1D5DB !important;
         }}
         
-        /* Headers */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {HELB_GREEN} !important;
-        }}
-        
+        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GREEN} !important; }}
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
-        
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
-        
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
         
         .sidebar-user-info {{
@@ -877,14 +940,6 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
-        [data-testid="stSidebar"] .stButton > button {{
-            background-color: rgba(255,255,255,0.2) !important;
-            color: white !important;
-            font-size: 0.75rem !important;
-        }}
-        
-        h1 {{ border-bottom: 3px solid {HELB_GOLD}; padding-bottom: 15px; margin-bottom: 25px; }}
-        
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -897,50 +952,14 @@ if st.session_state.theme == "light":
         .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
         .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
         
-        .login-container {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
-            border-radius: 20px;
-            padding: 2.5rem;
-            text-align: center;
-        }}
-        .login-title {{ color: white; font-size: 1.5rem; font-weight: 700; }}
-        .login-subtitle {{ color: rgba(255,255,255,0.85); font-size: 0.85rem; }}
-        
-        .admin-card {{
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            border-radius: 12px;
-            padding: 1rem;
-            border: 1px solid {HELB_GREEN};
-            margin-bottom: 1rem;
-        }}
-        .admin-card h4 {{ color: {HELB_GREEN} !important; margin-top: 0; }}
-        
-        .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
-        .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
-        .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
-        .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
-        .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
-        
-        .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
-        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; }}
-        
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
-        
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
-        hr {{ margin: 0.5rem 0; }}
-        
-        /* Fix number input buttons */
-        .stNumberInput button {{
-            background-color: #f0f0f0 !important;
-            color: #000000 !important;
-        }}
     </style>
     """
 else:
     THEME_CSS = f"""
     <style>
-        /* Force all text to be light/white in dark mode */
         .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
@@ -948,7 +967,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix dropdown menus - dark background with white text */
         .stSelectbox div[data-baseweb="select"] div,
         .stSelectbox ul, .stSelectbox li,
         div[role="listbox"], div[role="option"] {{
@@ -962,7 +980,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix buttons - visible text */
         .stButton > button {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             color: white !important;
@@ -971,13 +988,11 @@ else:
             font-weight: 600 !important;
         }}
         
-        /* Delete buttons */
         .stButton > button[key*="delete"] {{
             background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
             color: white !important;
         }}
         
-        /* KPI cards specific - FORCED GOLD LABEL, WHITE VALUE, WHITE SUB */
         .kpi-card {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             border-radius: 12px !important;
@@ -1015,27 +1030,30 @@ else:
             border-radius: 2px !important;
         }}
         
-        /* Metric card text */
-        .metric-card, .metric-card * {{
-            color: #FFFFFF !important;
+        .contract-card, .policy-card {{
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            margin-bottom: 0.75rem !important;
         }}
-        
-        /* Tab text */
-        .stTabs [data-baseweb="tab"] {{
-            color: #FFFFFF !important;
-        }}
-        
-        .stTabs [aria-selected="true"] {{
-            background-color: {HELB_GOLD} !important;
-            color: #1F2937 !important;
-        }}
-        
-        /* Expander header */
-        .streamlit-expanderHeader p {{
+        .contract-title, .policy-title {{
+            font-size: 1rem !important;
+            font-weight: 700 !important;
             color: {HELB_GOLD} !important;
+            margin-bottom: 0.5rem !important;
+        }}
+        .contract-detail, .policy-detail {{
+            font-size: 0.75rem !important;
+            color: #cbd5e1 !important;
+            margin: 0.25rem 0 !important;
         }}
         
-        /* Input fields */
+        .metric-card, .metric-card * {{ color: #FFFFFF !important; }}
+        .stTabs [data-baseweb="tab"] {{ color: #FFFFFF !important; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: #1F2937 !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
+        
         .stTextInput input, .stSelectbox div, .stDateInput input, 
         .stNumberInput input, .stTextArea textarea {{
             background-color: #2d2d44 !important;
@@ -1043,17 +1061,11 @@ else:
             border: 1px solid #4a4a6a !important;
         }}
         
-        /* Headers */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {HELB_GOLD} !important;
-        }}
-        
+        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GOLD} !important; }}
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
-        
         .main, .stApp {{ background-color: #1a1a2e !important; }}
-        
         [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
         
@@ -1095,23 +1107,9 @@ else:
         .dashboard-header h1 {{ color: white !important; font-size: 1.2rem; }}
         .dashboard-header p {{ color: {HELB_GOLD} !important; }}
         
-        .login-container {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 20px; padding: 2.5rem; text-align: center; }}
-        
-        .admin-card {{ background: #1e293b; border-radius: 12px; padding: 1rem; border: 1px solid {HELB_GREEN}; margin-bottom: 1rem; }}
-        .admin-card h4 {{ color: {HELB_GOLD} !important; margin-top: 0; }}
-        
-        .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
-        
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
-        
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
-        
-        /* Fix number input buttons */
-        .stNumberInput button {{
-            background-color: #3d3d5c !important;
-            color: #FFFFFF !important;
-        }}
     </style>
     """
 
@@ -1159,6 +1157,7 @@ if not st.session_state.authenticated:
                             st.session_state.user_fullname = user["full_name"]
                             st.session_state.user_id = user["id"]
                             st.session_state.user_dept_name = dept_name
+                            add_audit_log("LOGIN", "session", None, f"User logged in")
                             st.rerun()
                         else:
                             st.error("❌ Invalid password")
@@ -1245,6 +1244,7 @@ with st.sidebar:
     st.markdown("---")
     
     if st.button("🚪 Logout", use_container_width=True):
+        add_audit_log("LOGOUT", "session", None, f"User logged out")
         st.session_state.clear()
         st.cache_data.clear()
         st.rerun()
@@ -1470,7 +1470,6 @@ if choice == "📋 Work Plans":
             df['calculated_progress'] = df.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
             df['exceeded'] = df.apply(lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1)
             
-            # KPI Cards with consistent styling
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.markdown(f"""
@@ -1513,7 +1512,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH DYNAMIC FILTERS FIXED
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1522,7 +1521,6 @@ elif choice == "📊 Dashboard":
     contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
     policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     
-    # FILTERS - These now apply to ALL tabs
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
@@ -1543,7 +1541,6 @@ elif choice == "📊 Dashboard":
                                    key="m_filter_dash")
         st.session_state.filter_month = selected_m
     
-    # Apply filters to Work Plans
     if work_plans:
         df_plans = pd.DataFrame(work_plans)
         df_plans['due_date_dt'] = pd.to_datetime(df_plans['due_date'])
@@ -1572,14 +1569,12 @@ elif choice == "📊 Dashboard":
     else:
         filtered_work_df = pd.DataFrame()
     
-    # Apply filters to Contracts
     if contracts:
         df_contracts_raw = pd.DataFrame(contracts)
         filtered_contracts_df = filter_contracts_by_date(df_contracts_raw, selected_fy, selected_q, selected_m)
     else:
         filtered_contracts_df = pd.DataFrame()
     
-    # Apply filters to Policies
     if policies:
         df_policies_raw = pd.DataFrame(policies)
         filtered_policies_df = filter_policies_by_date(df_policies_raw, selected_fy, selected_q, selected_m)
@@ -1588,7 +1583,6 @@ elif choice == "📊 Dashboard":
     
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
     
-    # ========== WORK PLANS TAB ==========
     with tab_work:
         if not filtered_work_df.empty:
             col1, col2, col3, col4, col5 = st.columns(5)
@@ -1748,7 +1742,6 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No work plan data available for the selected filters.")
     
-    # ========== CONTRACTS TAB WITH FILTERS ==========
     with tab_contracts:
         if not filtered_contracts_df.empty:
             df_contracts = filtered_contracts_df.copy()
@@ -1814,65 +1807,64 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            col_chart1, col_chart2 = st.columns(2)
-            with col_chart1:
-                st.markdown("#### Contract Value by Department")
-                dept_value = df_contracts.groupby('department_name')['contract_value'].sum().reset_index()
-                dept_value = dept_value.sort_values('contract_value', ascending=True)
-                fig = px.bar(dept_value, y='department_name', x='contract_value', orientation='h',
-                            color='contract_value', color_continuous_scale='Greens',
-                            text=dept_value['contract_value'].apply(lambda x: f'KES {x/1e6:.1f}M'))
-                fig.update_traces(textposition='outside')
-                fig.update_layout(height=400, xaxis_title="Contract Value (KES)", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
-                st.plotly_chart(fig, use_container_width=True)
+            # Filters for contracts list
+            st.markdown("#### 🔍 Filter Contracts")
+            col_filter1, col_filter2, col_filter3, col_filter4 = st.columns(4)
+            with col_filter1:
+                status_filter_contract = st.multiselect("Status", ["active", "expiring_soon", "expired"], default=[])
+            with col_filter2:
+                compliance_filter = st.multiselect("Compliance", ["Fully Compliant", "Partially Compliant", "Non-Compliant"], default=[])
+            with col_filter3:
+                if 'payment_terms' in df_contracts.columns:
+                    payment_filter = st.multiselect("Payment Terms", df_contracts['payment_terms'].dropna().unique().tolist(), default=[])
+                else:
+                    payment_filter = []
+            with col_filter4:
+                dept_filter_contract = st.multiselect("Department", df_contracts['department_name'].unique().tolist(), default=[])
             
-            with col_chart2:
-                st.markdown("#### Spend Utilization Status")
-                high_util = len(df_contracts[df_contracts['utilization_rate'] >= 80])
-                medium_util = len(df_contracts[(df_contracts['utilization_rate'] >= 50) & (df_contracts['utilization_rate'] < 80)])
-                low_util = len(df_contracts[df_contracts['utilization_rate'] < 50])
-                
-                util_data = pd.DataFrame({
-                    'Utilization': ['High (80%+)', 'Medium (50-80%)', 'Low (<50%)'],
-                    'Count': [high_util, medium_util, low_util]
-                })
-                fig = px.pie(util_data, values='Count', names='Utilization', hole=0.4,
-                            color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
-                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
-                st.plotly_chart(fig, use_container_width=True)
+            filtered_contracts_list = df_contracts.copy()
+            if status_filter_contract:
+                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['status'].isin(status_filter_contract)]
+            if compliance_filter:
+                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['compliance_status'].isin(compliance_filter)]
+            if payment_filter:
+                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['payment_terms'].isin(payment_filter)]
+            if dept_filter_contract:
+                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['department_name'].isin(dept_filter_contract)]
             
-            st.markdown("### 📋 Contract List")
-            for _, contract in df_contracts.iterrows():
+            st.markdown(f"**Showing {len(filtered_contracts_list)} contracts**")
+            
+            for _, contract in filtered_contracts_list.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                 days_left = (end_date - datetime.now().date()).days
                 
                 if days_left > 30:
-                    badge = '<span class="badge-active">🟢 Active</span>'
+                    status_class = "status-active"
+                    status_text = "Active"
                 elif days_left > 0:
-                    badge = '<span class="badge-inprogress">🟡 Expiring Soon</span>'
+                    status_class = "status-expiring"
+                    status_text = f"Expiring in {days_left} days"
                 else:
-                    badge = '<span class="badge-expired">🔴 Expired</span>'
+                    status_class = "status-expired"
+                    status_text = "Expired"
                 
-                budget_alert_badge = ''
-                if contract.get('budget_alert', False):
-                    budget_alert_badge = '<span style="background-color: #dc2626; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 10px;">⚠️ Budget Alert</span>'
-                
-                utilization = contract.get('utilization_rate', 0)
-                performance = contract.get('vendor_performance', 0)
+                budget_alert_badge = '⚠️' if contract.get('budget_alert', False) else ''
                 
                 st.markdown(f"""
-                <div class='metric-card'>
-                    <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
-                        <div style='flex:1;'>
-                            <b>📄 {contract['contract_title']}</b>{budget_alert_badge}<br>
-                            <span style='font-size:0.85rem;'>Vendor: {contract['vendor_name']}</span><br>
-                            <span style='font-size:0.8rem;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
-                            <span style='font-size:0.8rem;'>💰 Value: KES {contract.get('contract_value', 0):,.0f} | Spent: KES {contract.get('amount_spent_to_date', 0):,.0f} ({utilization:.0f}% used)</span><br>
-                            <span style='font-size:0.8rem;'>⭐ Performance: {performance}/5 | Payment: {contract.get('payment_terms', 'Not specified')}</span>
+                <div class='contract-card'>
+                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                        <div style='flex: 1;'>
+                            <div class='contract-title'>📄 {contract['contract_title']} {budget_alert_badge}</div>
+                            <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
+                            <div class='contract-detail'><strong>Value:</strong> KES {contract.get('contract_value', 0):,.0f} | <strong>Spent:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f} ({contract.get('utilization_rate', 0):.0f}%)</div>
+                            <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} | <strong>Payment:</strong> {contract.get('payment_terms', 'N/A')}</div>
+                            <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')} | <strong>Performance:</strong> ⭐ {contract.get('vendor_performance', 0)}/5</div>
                         </div>
-                        <div style='text-align:right;'>
-                            {badge}<br>
-                            <span style='font-size:0.7rem;'>Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}</span>
+                        <div style='text-align: right;'>
+                            <span class='status-badge {status_class}'>{status_text}</span>
+                            <div style='margin-top: 0.5rem; font-size: 0.7rem;'>
+                                Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1880,7 +1872,6 @@ elif choice == "📊 Dashboard":
         else:
             st.info("No contracts found for the selected filters.")
     
-    # ========== POLICIES TAB WITH FILTERS ==========
     with tab_policies:
         if not filtered_policies_df.empty:
             df_policies = filtered_policies_df.copy()
@@ -1949,18 +1940,44 @@ elif choice == "📊 Dashboard":
                     st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("---")
-            st.markdown("### 📋 Policy List")
+            st.markdown("#### 🔍 Filter Policies")
+            col_filter1, col_filter2, col_filter3 = st.columns(3)
+            with col_filter1:
+                status_filter_policy = st.multiselect("Status", ["active", "expiring_soon", "expired"], default=[], key="policy_status_filter")
+            with col_filter2:
+                if 'category' in df_policies.columns:
+                    category_filter_policy = st.multiselect("Category", df_policies['category'].unique().tolist(), default=[], key="policy_category_filter")
+                else:
+                    category_filter_policy = []
+            with col_filter3:
+                if 'policy_scope' in df_policies.columns:
+                    scope_filter_policy = st.multiselect("Scope", df_policies['policy_scope'].unique().tolist(), default=[], key="policy_scope_filter")
+                else:
+                    scope_filter_policy = []
             
-            for _, policy in df_policies.iterrows():
+            filtered_policies_list = df_policies.copy()
+            if status_filter_policy:
+                filtered_policies_list = filtered_policies_list[filtered_policies_list['status'].isin(status_filter_policy)]
+            if category_filter_policy:
+                filtered_policies_list = filtered_policies_list[filtered_policies_list['category'].isin(category_filter_policy)]
+            if scope_filter_policy:
+                filtered_policies_list = filtered_policies_list[filtered_policies_list['policy_scope'].isin(scope_filter_policy)]
+            
+            st.markdown(f"**Showing {len(filtered_policies_list)} policies**")
+            
+            for _, policy in filtered_policies_list.iterrows():
                 expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
-                    badge = '<span class="badge-active">🟢 Active</span>'
+                    status_class = "status-active"
+                    status_text = "Active"
                 elif days_left > 0:
-                    badge = '<span class="badge-inprogress">🟡 Expiring Soon</span>'
+                    status_class = "status-expiring"
+                    status_text = f"Expires in {days_left} days"
                 else:
-                    badge = '<span class="badge-expired">🔴 Expired</span>'
+                    status_class = "status-expired"
+                    status_text = "Expired"
                 
                 category = policy.get('category', 'Uncategorized')
                 policy_scope = policy.get('policy_scope', 'Not specified')
@@ -1969,16 +1986,20 @@ elif choice == "📊 Dashboard":
                 review_date = policy.get('review_date', 'Not scheduled')
                 
                 st.markdown(f"""
-                <div class='metric-card'>
-                    <div style='display:flex; justify-content:space-between; align-items:start;'>
-                        <div style='flex:2;'>
-                            <b>📜 {policy['policy_name']}</b><br>
-                            <span style='font-size:0.8rem;'>Version: {version} | Category: {category} | Scope: {policy_scope}</span><br>
-                            <span style='font-size:0.8rem;'>Owner: {owner} | Next Review: {review_date}</span><br>
-                            <span style='font-size:0.8rem;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                <div class='policy-card'>
+                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                        <div style='flex: 1;'>
+                            <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
+                            <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
+                            <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
+                            <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
+                            <div class='policy-detail'><strong>Affected:</strong> {policy.get('affected_entities', 'N/A')}</div>
                         </div>
-                        <div style='text-align:right;'>
-                            {badge}
+                        <div style='text-align: right;'>
+                            <span class='status-badge {status_class}'>{status_text}</span>
+                            <div style='margin-top: 0.5rem; font-size: 0.7rem;'>
+                                {'📄 Document' if policy.get('policy_url') else ''}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1989,12 +2010,12 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View) - ENHANCED WITH ALL FIELDS
+# CONTRACTS SECTION (User View) - WITH UPDATE CAPABILITY
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
     
-    tab_overview, tab_active, tab_expiring, tab_add = st.tabs(["📊 Overview & Analytics", "✅ Active Contracts", "⚠️ Expiring & Expired", "➕ New Contract"])
+    tab_overview, tab_active, tab_expiring, tab_add, tab_update = st.tabs(["📊 Overview & Analytics", "✅ Active Contracts", "⚠️ Expiring & Expired", "➕ New Contract", "✏️ Update Contract"])
     
     with tab_overview:
         contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
@@ -2031,16 +2052,18 @@ elif choice == "📄 Contracts":
                     days_left = (end_date - datetime.now().date()).days
                     
                     st.markdown(f"""
-                    <div class='metric-card'>
-                        <div style='display:flex; justify-content:space-between; align-items:center;'>
-                            <div>
-                                <b>📄 {contract['contract_title']}</b><br>
-                                Vendor: {contract['vendor_name']}<br>
-                                End Date: {contract['end_date']} | {days_left} days remaining<br>
-                                Payment Terms: {contract.get('payment_terms', 'Not specified')}<br>
-                                Compliance: {contract.get('compliance_status', 'Not specified')}
+                    <div class='contract-card'>
+                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                            <div style='flex: 1;'>
+                                <div class='contract-title'>📄 {contract['contract_title']}</div>
+                                <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
+                                <div class='contract-detail'><strong>Value:</strong> KES {contract.get('contract_value', 0):,.0f} | <strong>Spent:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f}</div>
+                                <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} ({days_left} days left)</div>
+                                <div class='contract-detail'><strong>Payment Terms:</strong> {contract.get('payment_terms', 'N/A')} | <strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')}</div>
                             </div>
-                            <div><span class='badge-active'>Active</span></div>
+                            <div style='text-align: right;'>
+                                <span class='status-badge status-active'>Active</span>
+                            </div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -2057,18 +2080,22 @@ elif choice == "📄 Contracts":
                 for contract in expiring_contracts:
                     end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                     days_left = (end_date - datetime.now().date()).days
-                    status_badge = '<span class="badge-inprogress">Expiring Soon</span>' if days_left > 0 else '<span class="badge-expired">Expired</span>'
+                    status_class = "status-expiring" if days_left > 0 else "status-expired"
+                    status_text = f"Expires in {days_left} days" if days_left > 0 else "Expired"
                     
                     st.markdown(f"""
-                    <div class='metric-card'>
-                        <div style='display:flex; justify-content:space-between; align-items:center;'>
-                            <div>
-                                <b>📄 {contract['contract_title']}</b><br>
-                                Vendor: {contract['vendor_name']}<br>
-                                End Date: {contract['end_date']} | {abs(days_left)} days {'overdue' if days_left < 0 else 'left'}<br>
-                                Compliance: {contract.get('compliance_status', 'Not specified')}
+                    <div class='contract-card'>
+                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                            <div style='flex: 1;'>
+                                <div class='contract-title'>📄 {contract['contract_title']}</div>
+                                <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
+                                <div class='contract-detail'><strong>Value:</strong> KES {contract.get('contract_value', 0):,.0f} | <strong>Spent:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f}</div>
+                                <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} ({abs(days_left)} days {'overdue' if days_left < 0 else 'left'})</div>
+                                <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')}</div>
                             </div>
-                            <div>{status_badge}</div>
+                            <div style='text-align: right;'>
+                                <span class='status-badge {status_class}'>{status_text}</span>
+                            </div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -2077,20 +2104,18 @@ elif choice == "📄 Contracts":
         else:
             st.info("No contracts found.")
     
-    # ========== ENHANCED ADD CONTRACT FORM WITH ALL FIELDS ==========
     with tab_add:
         st.markdown("### Add New Contract")
-        st.markdown("Please fill in all contract details below:")
         
         with st.form("new_contract_enhanced"):
             col1, col2 = st.columns(2)
             
             with col1:
                 st.markdown("#### Basic Information")
-                contract_title = st.text_input("Contract Title*", placeholder="e.g., ICT Infrastructure Supply Contract")
-                vendor_name = st.text_input("Vendor Name*", placeholder="e.g., ABC Technologies Ltd")
+                contract_title = st.text_input("Contract Title*")
+                vendor_name = st.text_input("Vendor Name*")
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
-                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0, help="Initial amount already spent on this contract")
+                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
                 
             with col2:
                 st.markdown("#### Dates & Terms")
@@ -2098,26 +2123,23 @@ elif choice == "📄 Contracts":
                 end_date = st.date_input("End Date*")
                 signed_date = st.date_input("Signed Date", value=datetime.now().date())
                 payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
-                auto_renewal = st.checkbox("Auto-renewal", help="Check if contract automatically renews upon expiry")
+                auto_renewal = st.checkbox("Auto-renewal")
             
             col3, col4 = st.columns(2)
             
             with col3:
                 st.markdown("#### Compliance & Performance")
                 compliance_status = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
-                vendor_performance = st.slider("Vendor Performance Rating", 0.0, 5.0, 3.0, 0.5, help="Rate vendor performance from 0 (Poor) to 5 (Excellent)")
-                contract_url = st.text_input("Contract Document URL", placeholder="https://drive.google.com/... or https://...")
+                vendor_performance = st.slider("Vendor Performance Rating", 0.0, 5.0, 3.0, 0.5)
+                contract_url = st.text_input("Contract Document URL", placeholder="https://...")
                 
             with col4:
                 st.markdown("#### Additional Details")
-                department_id = st.selectbox("Department", ["None"] + list(get_cached_departments()))
-                breach_notes = st.text_area("Breach/Compliance Notes (if any)", height=80, placeholder="Enter any breach details or compliance concerns...")
-                
-            st.markdown("---")
+                department_id = st.selectbox("Department", ["None"] + [d["name"] for d in get_cached_departments()])
+                breach_notes = st.text_area("Breach/Compliance Notes", height=80)
             
             if st.form_submit_button("Save Contract", use_container_width=True):
                 if contract_title and vendor_name and contract_value > 0 and end_date:
-                    # Prepare contract data with all fields
                     contract_data = {
                         "contract_title": contract_title,
                         "vendor_name": vendor_name,
@@ -2132,7 +2154,7 @@ elif choice == "📄 Contracts":
                         "vendor_performance": vendor_performance,
                         "contract_url": contract_url if contract_url else None,
                         "breach_notes": breach_notes if breach_notes else None,
-                        "department_id": st.session_state.user_dept  # Link to user's department
+                        "department_id": st.session_state.user_dept
                     }
                     
                     success, message = add_enhanced_contract(contract_data)
@@ -2144,8 +2166,76 @@ elif choice == "📄 Contracts":
                         st.error(f"❌ {message}")
                 else:
                     st.error("Please fill all required fields (*)")
+    
+    # ========== NEW TAB: UPDATE CONTRACT ==========
+    with tab_update:
+        st.markdown("### Update Existing Contract")
+        st.info("You can update active contracts and contracts that are expiring soon. Expired contracts cannot be modified.")
+        
+        contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
+        if contracts:
+            # Filter to only active and expiring soon contracts
+            updatable_contracts = [c for c in contracts if c.get('status') in ['active', 'expiring_soon']]
             
-            st.caption("* Required fields")
+            if updatable_contracts:
+                contract_options = {c["id"]: f"{c['contract_title']} - {c['vendor_name']} ({c.get('status', 'unknown')})" for c in updatable_contracts}
+                selected_contract_id = st.selectbox("Select Contract to Update", list(contract_options.keys()), format_func=lambda x: contract_options[x])
+                
+                if selected_contract_id:
+                    selected_contract = next((c for c in updatable_contracts if c["id"] == selected_contract_id), None)
+                    
+                    if selected_contract:
+                        with st.form("update_contract_form"):
+                            st.markdown(f"#### Updating: {selected_contract['contract_title']}")
+                            
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                new_amount_spent = st.number_input("Amount Spent to Date (KES)", 
+                                                                  min_value=0.0, 
+                                                                  value=float(selected_contract.get('amount_spent_to_date', 0)),
+                                                                  step=10000.0, 
+                                                                  format="%.2f")
+                                new_compliance = st.selectbox("Compliance Status", 
+                                                             ["Fully Compliant", "Partially Compliant", "Non-Compliant"],
+                                                             index=["Fully Compliant", "Partially Compliant", "Non-Compliant"].index(selected_contract.get('compliance_status', 'Fully Compliant')))
+                                new_performance = st.slider("Vendor Performance Rating", 0.0, 5.0, 
+                                                           value=float(selected_contract.get('vendor_performance', 3.0)), 
+                                                           step=0.5)
+                            
+                            with col2:
+                                new_breach_notes = st.text_area("Breach/Compliance Notes", 
+                                                                value=selected_contract.get('breach_notes', ''),
+                                                                height=100)
+                                st.caption(f"Current Status: {selected_contract.get('status', 'unknown')}")
+                                st.caption(f"Current Utilization: {selected_contract.get('utilization_rate', 0):.1f}%")
+                            
+                            if st.form_submit_button("Update Contract", use_container_width=True):
+                                # Calculate new utilization rate
+                                contract_value = selected_contract.get('contract_value', 0)
+                                new_utilization = (new_amount_spent / contract_value * 100) if contract_value > 0 else 0
+                                new_budget_alert = new_utilization >= 80
+                                
+                                update_data = {
+                                    "amount_spent_to_date": new_amount_spent,
+                                    "utilization_rate": new_utilization,
+                                    "budget_alert": new_budget_alert,
+                                    "compliance_status": new_compliance,
+                                    "vendor_performance": new_performance,
+                                    "breach_notes": new_breach_notes if new_breach_notes else None,
+                                    "updated_at": datetime.now().isoformat()
+                                }
+                                
+                                if update_contract_user(selected_contract_id, update_data):
+                                    st.success("✅ Contract updated successfully!")
+                                    add_audit_log("UPDATE", "contract", selected_contract_id, f"User updated contract: spent={new_amount_spent}, compliance={new_compliance}")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update contract")
+            else:
+                st.info("No updatable contracts found. Only active and expiring soon contracts can be updated.")
+        else:
+            st.info("No contracts found.")
 
 # ============================================
 # POLICIES SECTION (User View)
@@ -2191,7 +2281,7 @@ elif choice == "📋 Policies":
             st.markdown("#### Compliance Tracking")
             requires_acknowledgment = st.checkbox("Requires Staff Acknowledgment", value=True)
             requires_sensitization = st.checkbox("Requires Sensitization", value=True)
-            change_log = st.text_area("Change Log / Summary", height=80, placeholder="Brief summary of policy changes or purpose")
+            change_log = st.text_area("Change Log / Summary", height=80)
             
             if st.form_submit_button("Save Policy", use_container_width=True):
                 if policy_name and category and policy_owner and expiry_date:
@@ -2231,11 +2321,14 @@ elif choice == "📋 Policies":
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
-                    badge = '<span class="badge-active">🟢 Active</span>'
+                    status_class = "status-active"
+                    status_text = "Active"
                 elif days_left > 0:
-                    badge = '<span class="badge-inprogress">🟡 Expiring Soon</span>'
+                    status_class = "status-expiring"
+                    status_text = f"Expires in {days_left} days"
                 else:
-                    badge = '<span class="badge-expired">🔴 Expired</span>'
+                    status_class = "status-expired"
+                    status_text = "Expired"
                 
                 category = policy.get('category', 'Uncategorized')
                 policy_scope = policy.get('policy_scope', 'Not specified')
@@ -2243,24 +2336,23 @@ elif choice == "📋 Policies":
                 owner = policy.get('policy_owner', 'Not assigned')
                 review_date = policy.get('review_date', 'Not scheduled')
                 
-                with st.expander(f"📜 {policy['policy_name']} - {version} ({category})", expanded=False):
-                    col1, col2 = st.columns([2, 1])
-                    with col1:
-                        st.markdown(f"**Category:** {category}")
-                        st.markdown(f"**Scope:** {policy_scope}")
-                        st.markdown(f"**Affected:** {policy.get('affected_entities', 'Not specified')}")
-                        st.markdown(f"**Owner:** {owner}")
-                        st.markdown(f"**Effective Date:** {policy.get('effective_date', 'Not set')}")
-                        st.markdown(f"**Next Review:** {review_date}")
-                        if policy.get('change_log'):
-                            st.markdown(f"**Summary:** {policy.get('change_log')}")
-                    with col2:
-                        st.markdown(f"**Status:** {badge}", unsafe_allow_html=True)
-                        st.markdown(f"**Expires:** {policy['expiry_date']} ({days_left} days left)")
-                        st.markdown(f"**Acknowledgment Required:** {'Yes' if policy.get('requires_acknowledgment', False) else 'No'}")
-                        st.markdown(f"**Sensitization Required:** {'Yes' if policy.get('requires_sensitization', False) else 'No'}")
-                        if policy.get('policy_url'):
-                            st.markdown(f"[📄 View Document]({policy['policy_url']})")
+                st.markdown(f"""
+                <div class='policy-card'>
+                    <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
+                        <div style='flex: 1;'>
+                            <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
+                            <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
+                            <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
+                            <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
+                            {f'<div class="policy-detail"><strong>Summary:</strong> {policy.get("change_log", "")[:100]}...</div>' if policy.get('change_log') else ''}
+                        </div>
+                        <div style='text-align: right;'>
+                            <span class='status-badge {status_class}'>{status_text}</span>
+                            {f'<div style="margin-top: 0.5rem;"><a href="{policy["policy_url"]}" target="_blank" style="font-size: 0.7rem;">📄 View Document</a></div>' if policy.get('policy_url') else ''}
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.info("No policies found. Click 'Add New Policy' to get started.")
     
@@ -2345,7 +2437,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         "📄 Contract Management", 
         "📋 Work Plan Management",
         "🏢 Department Management",
-        "🏛️ Directorate Management"
+        "🏛️ Directorate Management",
+        "📋 Audit Log"
     ])
     
     # ========== TAB 1: USER MANAGEMENT ==========
@@ -2957,6 +3050,49 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 st.error(f"❌ {message}")
         else:
             st.info("No directorates found")
+    
+    # ========== TAB 7: AUDIT LOG ==========
+    with admin_tabs[6]:
+        st.markdown("### 📋 Audit Log")
+        st.markdown("Track all user activities and system changes")
+        
+        audit_logs = get_audit_logs(500)
+        
+        if audit_logs:
+            df_audit = pd.DataFrame(audit_logs)
+            
+            col_date, col_user, col_action, col_entity = st.columns(4)
+            with col_date:
+                date_filter = st.date_input("Filter by Date", value=None)
+            with col_user:
+                users_list = ["All"] + df_audit['username'].unique().tolist()
+                user_filter = st.selectbox("Filter by User", users_list)
+            with col_action:
+                actions_list = ["All"] + df_audit['action'].unique().tolist()
+                action_filter = st.selectbox("Filter by Action", actions_list)
+            with col_entity:
+                entities_list = ["All"] + df_audit['entity_type'].unique().tolist()
+                entity_filter = st.selectbox("Filter by Entity Type", entities_list)
+            
+            filtered_audit = df_audit.copy()
+            if date_filter:
+                filtered_audit = filtered_audit[pd.to_datetime(filtered_audit['created_at']).dt.date == date_filter]
+            if user_filter != "All":
+                filtered_audit = filtered_audit[filtered_audit['username'] == user_filter]
+            if action_filter != "All":
+                filtered_audit = filtered_audit[filtered_audit['action'] == action_filter]
+            if entity_filter != "All":
+                filtered_audit = filtered_audit[filtered_audit['entity_type'] == entity_filter]
+            
+            st.markdown(f"**Showing {len(filtered_audit)} audit records**")
+            
+            display_cols = ['created_at', 'username', 'action', 'entity_type', 'details']
+            st.dataframe(filtered_audit[display_cols], use_container_width=True, hide_index=True)
+            
+            csv_audit = filtered_audit.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download Audit Log", csv_audit, f"audit_log_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
+        else:
+            st.info("No audit logs found. Create a table 'audit_logs' in your Supabase database with columns: id, user_id, username, action, entity_type, entity_id, details, ip_address, created_at")
 
 # ============================================
 # ENTERPRISE VIEW
@@ -3029,5 +3165,6 @@ st.markdown("---")
 st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
+    <p>Powered by Streamlit | Target-Based Progress Tracking | Comprehensive Analytics</p>
 </div>
 """, unsafe_allow_html=True)
