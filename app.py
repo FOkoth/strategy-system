@@ -624,7 +624,6 @@ if st.session_state.theme == "light":
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
         
-        /* Login page text - BLACK for visibility */
         .stTextInput label {{
             color: {HELB_BLACK} !important;
         }}
@@ -757,7 +756,6 @@ else:
         
         .main, .stApp {{ background-color: #1a1a2e !important; }}
         
-        /* Login page text - WHITE for visibility in dark mode */
         .stTextInput label {{
             color: white !important;
         }}
@@ -1296,7 +1294,6 @@ elif choice == "📊 Dashboard":
                 st.markdown("#### Status Distribution")
                 status_counts = filtered_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                # FIXED COLORS: Done = Green, In Progress = Amber/Gold, Not Started = Red
                 color_map = {'Completed': '#00843D', 'In Progress': '#FFB81C', 'Not Started': '#dc2626'}
                 fig = go.Figure(data=[go.Pie(
                     labels=status_counts['Status'],
@@ -1401,24 +1398,27 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if contracts:
-            # Enhanced Contracts Analytics Dashboard with professional KPI cards
             df_contracts = pd.DataFrame(contracts)
             
-            # Calculate enhanced metrics
             df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
             df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
             df_contracts['vendor_performance'] = pd.to_numeric(df_contracts.get('vendor_performance', 0), errors='coerce').fillna(0)
             df_contracts['utilization_rate'] = pd.to_numeric(df_contracts.get('utilization_rate', 0), errors='coerce').fillna(0)
             
-            # Add department names
             departments = get_cached_departments()
             dept_map = {d['id']: d['name'] for d in departments}
             df_contracts['department_name'] = df_contracts['department_id'].map(dept_map).fillna("Unknown")
             
-            # Professional KPI Row with consistent styling
+            total_value = df_contracts['contract_value'].sum()
+            total_spent = df_contracts['amount_spent_to_date'].sum()
+            utilization = (total_spent/total_value*100) if total_value > 0 else 0
+            active = len(df_contracts[df_contracts['status'] == 'active'])
+            expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
+            avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
+            
+            # STYLED KPI CARDS - THIS IS THE FIX
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                total_value = df_contracts['contract_value'].sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>💰 TOTAL CONTRACT VALUE</div>
@@ -1427,8 +1427,6 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
             with col2:
-                total_spent = df_contracts['amount_spent_to_date'].sum()
-                utilization = (total_spent/total_value*100) if total_value > 0 else 0
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>💸 TOTAL SPENT</div>
@@ -1438,7 +1436,6 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
-                active = len(df_contracts[df_contracts['status'] == 'active'])
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>✅ ACTIVE CONTRACTS</div>
@@ -1447,7 +1444,6 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
             with col4:
-                expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>⚠️ EXPIRING SOON</div>
@@ -1456,7 +1452,6 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
             with col5:
-                avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>⭐ AVG VENDOR RATING</div>
@@ -1467,7 +1462,6 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             
-            # Analytics Charts
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Contract Value by Department")
@@ -1535,7 +1529,6 @@ elif choice == "📊 Dashboard":
                 else:
                     badge = '<span class="badge-expired">🔴 Expired</span>'
                 
-                # Show budget alert if applicable
                 budget_alert_badge = ''
                 if contract.get('budget_alert', False):
                     budget_alert_badge = '<span style="background-color: #dc2626; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 10px;">⚠️ Budget Alert</span>'
@@ -1626,7 +1619,6 @@ elif choice == "📊 Dashboard":
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
     
-    # Create tabs for better organization
     tab_overview, tab_active, tab_expiring, tab_add = st.tabs(["📊 Overview & Analytics", "✅ Active Contracts", "⚠️ Expiring & Expired", "➕ New Contract"])
     
     with tab_overview:
@@ -1634,7 +1626,6 @@ elif choice == "📄 Contracts":
         if contracts:
             df_contracts = pd.DataFrame(contracts)
             
-            # Enhanced metrics
             df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
             df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
             df_contracts['vendor_performance'] = pd.to_numeric(df_contracts.get('vendor_performance', 0), errors='coerce').fillna(0)
@@ -1657,7 +1648,6 @@ elif choice == "📄 Contracts":
             
             st.markdown("---")
             
-            # Show budget alerts
             budget_alerts = df_contracts[df_contracts.get('budget_alert', False) == True]
             if not budget_alerts.empty:
                 st.warning(f"⚠️ **Budget Alerts:** {len(budget_alerts)} contract(s) have exceeded 80% utilization")
@@ -1698,7 +1688,6 @@ elif choice == "📄 Contracts":
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Add update controls in expander
                     with st.expander("✏️ Update Contract Performance", expanded=False):
                         col1, col2 = st.columns(2)
                         with col1:
@@ -1789,7 +1778,7 @@ elif choice == "📄 Contracts":
                         "auto_renewal": auto_renew,
                         "contract_url": contract_url if contract_url else None,
                         "compliance_status": compliance_status,
-                        "vendor_performance": 0,  # Initial rating
+                        "vendor_performance": 0,
                         "department_id": st.session_state.user_dept
                     }
                     
