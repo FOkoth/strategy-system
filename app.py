@@ -203,11 +203,7 @@ def filter_work_plans_by_date(df, financial_year, quarter, month):
     
     return df
 
-# ============================================
-# NEW FILTER FUNCTIONS FOR CONTRACTS AND POLICIES
-# ============================================
 def filter_contracts_by_date(df, financial_year, quarter, month):
-    """Filter contracts based on financial year, quarter, and month"""
     if df.empty:
         return df
     
@@ -245,7 +241,6 @@ def filter_contracts_by_date(df, financial_year, quarter, month):
     return df
 
 def filter_policies_by_date(df, financial_year, quarter, month):
-    """Filter policies based on financial year, quarter, and month"""
     if df.empty:
         return df
     
@@ -730,30 +725,131 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS - UPDATED FOR CONSISTENCY
+# CUSTOM CSS - FIXED FOR CONSISTENCY ACROSS DEVICES
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
     <style>
+        /* Force all text to be black/dark in light mode */
+        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
+        .stTextInput label, .stSelectbox label, .stDateInput label,
+        .stNumberInput label, .stTextArea label, .stCheckbox label,
+        div, span, p, label, .stMetric label, .stMetric div {{
+            color: #000000 !important;
+        }}
+        
+        /* Fix dropdown menus - white background with black text */
+        .stSelectbox div[data-baseweb="select"] div,
+        .stSelectbox ul, .stSelectbox li,
+        div[role="listbox"], div[role="option"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div:hover,
+        div[role="option"]:hover {{
+            background-color: #f0f0f0 !important;
+            color: #000000 !important;
+        }}
+        
+        /* Fix buttons - visible text */
+        .stButton > button {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: 600 !important;
+        }}
+        
+        /* Buttons with delete - red gradient */
+        .stButton > button[key*="delete"] {{
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            color: white !important;
+        }}
+        
+        /* Keep sidebar white text */
+        [data-testid="stSidebar"] * {{
+            color: white !important;
+        }}
+        
+        /* KPI cards specific - FORCED GOLD LABEL, WHITE VALUE, WHITE SUB */
+        .kpi-card {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            text-align: center !important;
+        }}
+        .kpi-card .kpi-label {{
+            font-size: 0.7rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+        }}
+        .kpi-card .kpi-value {{
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            margin: 0.2rem 0 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card .kpi-sub {{
+            font-size: 0.55rem !important;
+            color: #FFFFFF !important;
+            margin-top: 0.2rem !important;
+            opacity: 0.9 !important;
+        }}
+        .kpi-card .progress-bar {{
+            height: 4px !important;
+            background: rgba(255,255,255,0.3) !important;
+            border-radius: 2px !important;
+            margin-top: 0.5rem !important;
+        }}
+        .kpi-card .progress-fill {{
+            height: 100% !important;
+            background: {HELB_GOLD} !important;
+            border-radius: 2px !important;
+        }}
+        
+        /* Metric card text - black */
+        .metric-card, .metric-card * {{
+            color: #000000 !important;
+        }}
+        
+        /* Tab text */
+        .stTabs [data-baseweb="tab"] {{
+            color: #000000 !important;
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            color: #000000 !important;
+            background-color: {HELB_GOLD} !important;
+        }}
+        
+        /* Expander header */
+        .streamlit-expanderHeader p {{
+            color: #000000 !important;
+        }}
+        
+        /* Input fields */
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: white !important;
+            color: #000000 !important;
+            border: 1px solid #D1D5DB !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {HELB_GREEN} !important;
+        }}
+        
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
         
-        .stTextInput label {{
-            color: {HELB_BLACK} !important;
-        }}
-        
-        /* Fix dropdown menus */
-        .stSelectbox div[data-baseweb="select"] > div,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        
         [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
-        [data-testid="stSidebar"] * {{ color: white !important; }}
         
         .sidebar-user-info {{
             background: rgba(255,255,255,0.15);
@@ -774,7 +870,6 @@ if st.session_state.theme == "light":
             margin: 4px 0 !important;
             font-weight: 600 !important;
             font-size: 0.8rem !important;
-            transition: all 0.3s ease !important;
         }}
         
         [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
@@ -788,7 +883,6 @@ if st.session_state.theme == "light":
             font-size: 0.75rem !important;
         }}
         
-        h1, h2, h3, h4 {{ color: {HELB_GREEN} !important; font-weight: 600 !important; }}
         h1 {{ border-bottom: 3px solid {HELB_GOLD}; padding-bottom: 15px; margin-bottom: 25px; }}
         
         .dashboard-header {{
@@ -812,27 +906,14 @@ if st.session_state.theme == "light":
         .login-title {{ color: white; font-size: 1.5rem; font-weight: 700; }}
         .login-subtitle {{ color: rgba(255,255,255,0.85); font-size: 0.85rem; }}
         
-        .kpi-card {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+        .admin-card {{
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             border-radius: 12px;
             padding: 1rem;
-            text-align: center;
+            border: 1px solid {HELB_GREEN};
+            margin-bottom: 1rem;
         }}
-        .kpi-label {{ font-size: 0.7rem; text-transform: uppercase; color: {HELB_GOLD} !important; font-weight: 600; letter-spacing: 0.5px; }}
-        .kpi-value {{ font-size: 1.5rem; font-weight: 700; margin: 0.2rem 0; color: white !important; }}
-        .kpi-sub {{ font-size: 0.55rem; color: white !important; margin-top: 0.2rem; opacity: 0.9; }}
-        .progress-bar {{ height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.5rem; }}
-        .progress-fill {{ height: 100%; background: {HELB_GOLD}; border-radius: 2px; }}
-        
-        .metric-card {{
-            background: {HELB_WHITE};
-            border-radius: 12px;
-            padding: 1rem;
-            border-left: 4px solid {HELB_GOLD};
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 0.5rem;
-        }}
-        .metric-card * {{ color: {HELB_BLACK} !important; }}
+        .admin-card h4 {{ color: {HELB_GREEN} !important; margin-top: 0; }}
         
         .badge-active {{ background-color: {HELB_GREEN}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
@@ -840,58 +921,138 @@ if st.session_state.theme == "light":
         .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         
-        .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            color: white !important;
-            border-radius: 8px !important;
-            padding: 8px 16px !important;
-            font-weight: 600 !important;
-        }}
-        .stButton > button[key*="delete"] {{ background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; }}
-        
-        .streamlit-expanderHeader {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_BLACK} !important; font-size: 0.85rem !important; font-weight: 600 !important; }}
-        .streamlit-expanderContent {{ background-color: {HELB_WHITE} !important; border: 1px solid #D1D5DB !important; border-top: none !important; padding: 1rem !important; }}
-        .streamlit-expanderContent * {{ color: {HELB_BLACK} !important; }}
-        
-        .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
-            background-color: white !important;
-            color: {HELB_BLACK} !important;
-            border: 1px solid #D1D5DB !important;
-            font-size: 0.75rem !important;
-        }}
-        
         .stTabs [data-baseweb="tab-list"] {{ background: {HELB_GRAY}; padding: 0.3rem; border-radius: 10px; gap: 0.3rem; }}
-        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; color: {HELB_BLACK}; }}
-        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_BLACK} !important; font-weight: 600; }}
+        .stTabs [data-baseweb="tab"] {{ font-size: 0.75rem; padding: 0.3rem 1rem; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
-        .dataframe td {{ color: {HELB_BLACK} !important; font-size: 0.7rem; }}
-        .stMarkdown, .stMarkdown p, .stMarkdown div {{ color: {HELB_BLACK} !important; }}
+        .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         hr {{ margin: 0.5rem 0; }}
+        
+        /* Fix number input buttons */
+        .stNumberInput button {{
+            background-color: #f0f0f0 !important;
+            color: #000000 !important;
+        }}
     </style>
     """
 else:
     THEME_CSS = f"""
     <style>
+        /* Force all text to be light/white in dark mode */
+        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
+        .stTextInput label, .stSelectbox label, .stDateInput label,
+        .stNumberInput label, .stTextArea label, .stCheckbox label,
+        div, span, p, label, .stMetric label, .stMetric div {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix dropdown menus - dark background with white text */
+        .stSelectbox div[data-baseweb="select"] div,
+        .stSelectbox ul, .stSelectbox li,
+        div[role="listbox"], div[role="option"] {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div:hover,
+        div[role="option"]:hover {{
+            background-color: #3d3d5c !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix buttons - visible text */
+        .stButton > button {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: 600 !important;
+        }}
+        
+        /* Delete buttons */
+        .stButton > button[key*="delete"] {{
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+            color: white !important;
+        }}
+        
+        /* KPI cards specific - FORCED GOLD LABEL, WHITE VALUE, WHITE SUB */
+        .kpi-card {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            text-align: center !important;
+        }}
+        .kpi-card .kpi-label {{
+            font-size: 0.7rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+        }}
+        .kpi-card .kpi-value {{
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            margin: 0.2rem 0 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card .kpi-sub {{
+            font-size: 0.55rem !important;
+            color: #FFFFFF !important;
+            margin-top: 0.2rem !important;
+            opacity: 0.9 !important;
+        }}
+        .kpi-card .progress-bar {{
+            height: 4px !important;
+            background: rgba(255,255,255,0.3) !important;
+            border-radius: 2px !important;
+            margin-top: 0.5rem !important;
+        }}
+        .kpi-card .progress-fill {{
+            height: 100% !important;
+            background: {HELB_GOLD} !important;
+            border-radius: 2px !important;
+        }}
+        
+        /* Metric card text */
+        .metric-card, .metric-card * {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* Tab text */
+        .stTabs [data-baseweb="tab"] {{
+            color: #FFFFFF !important;
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            background-color: {HELB_GOLD} !important;
+            color: #1F2937 !important;
+        }}
+        
+        /* Expander header */
+        .streamlit-expanderHeader p {{
+            color: {HELB_GOLD} !important;
+        }}
+        
+        /* Input fields */
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #4a4a6a !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {HELB_GOLD} !important;
+        }}
+        
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         
         .main, .stApp {{ background-color: #1a1a2e !important; }}
-        
-        .stTextInput label {{
-            color: white !important;
-        }}
-        
-        /* Fix dropdown menus - dark mode */
-        .stSelectbox div[data-baseweb="select"] > div,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
         
         [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
@@ -922,8 +1083,6 @@ else:
             color: white !important;
         }}
         
-        h1, h2, h3, h4 {{ color: {HELB_GOLD} !important; font-weight: 600 !important; }}
-        
         .dashboard-header {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             padding: 0.8rem 1.5rem;
@@ -938,28 +1097,21 @@ else:
         
         .login-container {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 20px; padding: 2.5rem; text-align: center; }}
         
-        .kpi-card {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 10px; padding: 0.8rem; text-align: center; }}
-        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px; }}
-        .kpi-value {{ color: white; font-size: 1.3rem; font-weight: 700; }}
-        .kpi-sub {{ color: rgba(255,255,255,0.7); font-size: 0.55rem; }}
-        
-        .metric-card {{ background: #16213e; border-radius: 10px; padding: 0.8rem; border-left: 4px solid {HELB_GOLD}; margin-bottom: 0.5rem; }}
-        
-        .stButton > button {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important; color: white !important; }}
-        
-        .stTextInput input, .stSelectbox div, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
-            background-color: #2d2d44 !important;
-            color: white !important;
-            border: 1px solid #4a4a6a !important;
-        }}
-        
-        .streamlit-expanderHeader {{ background-color: #2d2d44 !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
+        .admin-card {{ background: #1e293b; border-radius: 12px; padding: 1rem; border: 1px solid {HELB_GREEN}; margin-bottom: 1rem; }}
+        .admin-card h4 {{ color: {HELB_GOLD} !important; margin-top: 0; }}
         
         .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
-        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: {HELB_DARK} !important; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
+        
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
+        .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
+        
+        /* Fix number input buttons */
+        .stNumberInput button {{
+            background-color: #3d3d5c !important;
+            color: #FFFFFF !important;
+        }}
     </style>
     """
 
@@ -1098,7 +1250,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE
+# WORK PLANS MODULE (User View)
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1133,7 +1285,6 @@ if choice == "📋 Work Plans":
     
     with tab_add:
         st.markdown("### Add New Work Plan Activity")
-        
         user_directorate = get_directorate_for_department(st.session_state.user_dept)
         
         with st.form("add_work_plan_form"):
@@ -1319,24 +1470,50 @@ if choice == "📋 Work Plans":
             df['calculated_progress'] = df.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
             df['exceeded'] = df.apply(lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1)
             
+            # KPI Cards with consistent styling
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL ACTIVITIES</div><div class='kpi-value'>{len(df)}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
+                    <div class='kpi-value'>{len(df)}</div>
+                    <div class='kpi-sub'>Total Activities</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
                 completed = len(df[df['calculated_progress'] >= 100])
                 rate = (completed/len(df)*100) if len(df)>0 else 0
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ COMPLETION RATE</div><div class='kpi-value'>{rate:.0f}%</div><div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ COMPLETION RATE</div>
+                    <div class='kpi-value'>{rate:.0f}%</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div>
+                    <div class='kpi-sub'>Completion Rate</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
                 total_budget = df['budget_allocation'].fillna(0).sum()
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 TOTAL BUDGET</div><div class='kpi-value'>KES {total_budget/1e6:.1f}M</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
+                    <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
+                    <div class='kpi-sub'>Total Budget</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col4:
                 exceeded_count = len(df[df['exceeded'] == True])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🏆 TARGETS EXCEEDED</div><div class='kpi-value'>{exceeded_count}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
+                    <div class='kpi-value'>{exceeded_count}</div>
+                    <div class='kpi-sub'>Exceeded Targets</div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH WORKING FILTERS
+# DASHBOARD - WITH DYNAMIC FILTERS FIXED
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1345,28 +1522,53 @@ elif choice == "📊 Dashboard":
     contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
     policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
     
-    # FILTER SELECTION
+    # FILTERS - These now apply to ALL tabs
     col_fy_dash, col_q_dash, col_m_dash = st.columns(3)
     with col_fy_dash:
         financial_years = ["All"] + get_financial_years()
-        selected_fy = st.selectbox("Financial Year", financial_years, key="fy_filter_dash")
+        selected_fy = st.selectbox("Financial Year", financial_years, 
+                                   index=financial_years.index(st.session_state.filter_financial_year) if st.session_state.filter_financial_year in financial_years else 0,
+                                   key="fy_filter_dash")
+        st.session_state.filter_financial_year = selected_fy
     with col_q_dash:
         quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
-        selected_q = st.selectbox("Quarter", quarters, key="q_filter_dash")
+        selected_q = st.selectbox("Quarter", quarters,
+                                   index=quarters.index(st.session_state.filter_quarter) if st.session_state.filter_quarter in quarters else 0,
+                                   key="q_filter_dash")
+        st.session_state.filter_quarter = selected_q
     with col_m_dash:
-        available_months = get_months_for_quarter(selected_q)
-        selected_m = st.selectbox("Month", ["All"] + available_months, key="m_filter_dash")
+        available_months = get_months_for_quarter(st.session_state.filter_quarter)
+        selected_m = st.selectbox("Month", ["All"] + available_months,
+                                   index=0 if st.session_state.filter_month == "All" or st.session_state.filter_month not in available_months else available_months.index(st.session_state.filter_month) + 1,
+                                   key="m_filter_dash")
+        st.session_state.filter_month = selected_m
     
     # Apply filters to Work Plans
     if work_plans:
         df_plans = pd.DataFrame(work_plans)
-        filtered_work_df = filter_work_plans_by_date(df_plans, selected_fy, selected_q, selected_m)
-        filtered_work_df['calculated_progress'] = filtered_work_df.apply(
+        df_plans['due_date_dt'] = pd.to_datetime(df_plans['due_date'])
+        df_plans['due_month'] = df_plans['due_date_dt'].dt.month
+        df_plans['due_year'] = df_plans['due_date_dt'].dt.year
+        df_plans['quarter'] = df_plans['due_month'].apply(get_quarter_from_month)
+        df_plans['calculated_progress'] = df_plans.apply(
             lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1
         )
-        filtered_work_df['exceeded'] = filtered_work_df.apply(
+        df_plans['exceeded'] = df_plans.apply(
             lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1
         )
+        df_plans['days_left'] = (df_plans['due_date_dt'] - pd.Timestamp.now()).dt.days
+        df_plans['status_group'] = df_plans['calculated_progress'].apply(
+            lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
+        )
+        
+        filtered_work_df = filter_work_plans_by_date(df_plans, selected_fy, selected_q, selected_m)
+        
+        if st.session_state.user_role in ["admin", "management"]:
+            departments_list = filtered_work_df['department_name'].unique().tolist() if not filtered_work_df.empty else []
+            if departments_list:
+                selected_dept_filter = st.multiselect("Filter by Department", departments_list, default=[])
+                if selected_dept_filter:
+                    filtered_work_df = filtered_work_df[filtered_work_df['department_name'].isin(selected_dept_filter)]
     else:
         filtered_work_df = pd.DataFrame()
     
@@ -1386,35 +1588,74 @@ elif choice == "📊 Dashboard":
     
     tab_work, tab_contracts, tab_policies = st.tabs(["📋 Work Plans Analytics", "📄 Contracts Analytics", "📜 Policies Analytics"])
     
+    # ========== WORK PLANS TAB ==========
     with tab_work:
         if not filtered_work_df.empty:
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📋 TOTAL</div><div class='kpi-value'>{len(filtered_work_df)}</div><div class='kpi-sub'>Activities</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📋 TOTAL</div>
+                    <div class='kpi-value'>{len(filtered_work_df)}</div>
+                    <div class='kpi-sub'>Activities</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
                 completed = len(filtered_work_df[filtered_work_df['calculated_progress'] >= 100])
                 rate = (completed/len(filtered_work_df)*100) if len(filtered_work_df)>0 else 0
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ COMPLETED</div><div class='kpi-value'>{rate:.0f}%</div><div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ COMPLETED</div>
+                    <div class='kpi-value'>{rate:.0f}%</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div>
+                    <div class='kpi-sub'>Completion Rate</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
                 avg_progress = filtered_work_df['calculated_progress'].mean()
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📈 AVG PROGRESS</div><div class='kpi-value'>{avg_progress:.0f}%</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📈 AVG PROGRESS</div>
+                    <div class='kpi-value'>{avg_progress:.0f}%</div>
+                    <div class='kpi-sub'>Average Progress</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col4:
                 total_budget = filtered_work_df['budget_allocation'].fillna(0).sum()
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 BUDGET</div><div class='kpi-value'>KES {total_budget/1e6:.1f}M</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>💰 BUDGET</div>
+                    <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
+                    <div class='kpi-sub'>Total Budget</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col5:
                 exceeded = len(filtered_work_df[filtered_work_df['exceeded'] == True])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🏆 EXCEEDED</div><div class='kpi-value'>{exceeded}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🏆 EXCEEDED</div>
+                    <div class='kpi-value'>{exceeded}</div>
+                    <div class='kpi-sub'>Targets Exceeded</div>
+                </div>
+                """, unsafe_allow_html=True)
             
             st.markdown("---")
             
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
-                status_counts = filtered_work_df['status'].value_counts().reset_index()
+                status_counts = filtered_work_df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                fig = px.pie(status_counts, values='Count', names='Status', hole=0.4,
-                            color_discrete_sequence=[HELB_GREEN, HELB_GOLD, "#dc2626", "#8B5CF6"])
-                fig.update_layout(height=350)
+                color_map = {'Completed': '#00843D', 'In Progress': '#FFB81C', 'Not Started': '#dc2626'}
+                fig = go.Figure(data=[go.Pie(
+                    labels=status_counts['Status'],
+                    values=status_counts['Count'],
+                    hole=0.4,
+                    marker=dict(colors=[color_map.get(s, '#808080') for s in status_counts['Status']]),
+                    textinfo='label+percent',
+                    textposition='auto'
+                )])
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
             with col_chart2:
@@ -1426,11 +1667,88 @@ elif choice == "📊 Dashboard":
                             color='Progress %', color_continuous_scale='Greens',
                             text='Progress %')
                 fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-                fig.update_layout(height=350)
+                fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("#### Department Performance")
+            dept_progress = filtered_work_df.groupby('department_name')['calculated_progress'].mean().reset_index()
+            dept_progress.columns = ['Department', 'Progress %']
+            dept_progress = dept_progress.sort_values('Progress %', ascending=True)
+            fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
+                        color='Progress %', color_continuous_scale='Greens',
+                        text='Progress %')
+            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+            fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+            
+            col_chart3, col_chart4 = st.columns(2)
+            with col_chart3:
+                st.markdown("#### Activity Category Breakdown")
+                category_stats = filtered_work_df['activity_category'].value_counts().reset_index()
+                category_stats.columns = ['Category', 'Count']
+                fig = px.bar(category_stats, x='Category', y='Count',
+                            color='Count', color_discrete_sequence=[HELB_GREEN],
+                            text='Count')
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart4:
+                st.markdown("#### Quarterly Performance Trend")
+                quarterly_data = filtered_work_df.groupby('quarter').agg({
+                    'id': 'count',
+                    'calculated_progress': 'mean'
+                }).reset_index()
+                quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
+                quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
+                quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
+                quarterly_data = quarterly_data.sort_values('Quarter')
+                
+                fig = go.Figure()
+                fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
+                                     name='Activities', marker_color=HELB_GREEN,
+                                     text=quarterly_data['Activities'], textposition='outside'))
+                fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
+                                         name='Avg Progress %', marker_color=HELB_GOLD,
+                                         line=dict(width=3), yaxis='y2'))
+                fig.update_layout(
+                    height=350,
+                    yaxis_title="Number of Activities",
+                    yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                    margin=dict(l=20, r=60, t=30, b=20)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("### ⚠️ Priority Alerts")
+            col_alert1, col_alert2 = st.columns(2)
+            
+            overdue_df = filtered_work_df[(filtered_work_df['days_left'] < 0) & (filtered_work_df['calculated_progress'] < 100)]
+            urgent_df = filtered_work_df[(filtered_work_df['days_left'] >= 0) & (filtered_work_df['days_left'] <= 14) & (filtered_work_df['calculated_progress'] < 80)]
+            
+            with col_alert1:
+                if not overdue_df.empty:
+                    st.error(f"🔴 **{len(overdue_df)} Overdue Activities**")
+                    for _, row in overdue_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... (Due: {row['due_date']})")
+                else:
+                    st.success("✅ No overdue activities")
+            
+            with col_alert2:
+                if not urgent_df.empty:
+                    st.warning(f"🟡 **{len(urgent_df)} Urgent Activities**")
+                    for _, row in urgent_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... ({row['days_left']} days left)")
+                else:
+                    st.success("✅ No urgent at-risk activities")
+            
+            with st.expander("📥 Export Data", expanded=False):
+                csv = filtered_work_df.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
             st.info("No work plan data available for the selected filters.")
     
+    # ========== CONTRACTS TAB WITH FILTERS ==========
     with tab_contracts:
         if not filtered_contracts_df.empty:
             df_contracts = filtered_contracts_df.copy()
@@ -1505,7 +1823,7 @@ elif choice == "📊 Dashboard":
                             color='contract_value', color_continuous_scale='Greens',
                             text=dept_value['contract_value'].apply(lambda x: f'KES {x/1e6:.1f}M'))
                 fig.update_traces(textposition='outside')
-                fig.update_layout(height=400)
+                fig.update_layout(height=400, xaxis_title="Contract Value (KES)", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
             with col_chart2:
@@ -1520,7 +1838,7 @@ elif choice == "📊 Dashboard":
                 })
                 fig = px.pie(util_data, values='Count', names='Utilization', hole=0.4,
                             color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
-                fig.update_layout(height=350)
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("### 📋 Contract List")
@@ -1535,17 +1853,34 @@ elif choice == "📊 Dashboard":
                 else:
                     badge = '<span class="badge-expired">🔴 Expired</span>'
                 
+                budget_alert_badge = ''
+                if contract.get('budget_alert', False):
+                    budget_alert_badge = '<span style="background-color: #dc2626; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 10px;">⚠️ Budget Alert</span>'
+                
+                utilization = contract.get('utilization_rate', 0)
+                performance = contract.get('vendor_performance', 0)
+                
                 st.markdown(f"""
                 <div class='metric-card'>
-                    <div style='display:flex; justify-content:space-between; align-items:center;'>
-                        <div><b>📄 {contract['contract_title']}</b><br>Vendor: {contract['vendor_name']}<br>End Date: {contract['end_date']} | {days_left} days remaining</div>
-                        <div>{badge}</div>
+                    <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
+                        <div style='flex:1;'>
+                            <b>📄 {contract['contract_title']}</b>{budget_alert_badge}<br>
+                            <span style='font-size:0.85rem;'>Vendor: {contract['vendor_name']}</span><br>
+                            <span style='font-size:0.8rem;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                            <span style='font-size:0.8rem;'>💰 Value: KES {contract.get('contract_value', 0):,.0f} | Spent: KES {contract.get('amount_spent_to_date', 0):,.0f} ({utilization:.0f}% used)</span><br>
+                            <span style='font-size:0.8rem;'>⭐ Performance: {performance}/5 | Payment: {contract.get('payment_terms', 'Not specified')}</span>
+                        </div>
+                        <div style='text-align:right;'>
+                            {badge}<br>
+                            <span style='font-size:0.7rem;'>Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}</span>
+                        </div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
         else:
             st.info("No contracts found for the selected filters.")
     
+    # ========== POLICIES TAB WITH FILTERS ==========
     with tab_policies:
         if not filtered_policies_df.empty:
             df_policies = filtered_policies_df.copy()
@@ -1615,6 +1950,7 @@ elif choice == "📊 Dashboard":
             
             st.markdown("---")
             st.markdown("### 📋 Policy List")
+            
             for _, policy in df_policies.iterrows():
                 expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
                 days_left = (expiry - datetime.now().date()).days
@@ -1626,11 +1962,24 @@ elif choice == "📊 Dashboard":
                 else:
                     badge = '<span class="badge-expired">🔴 Expired</span>'
                 
+                category = policy.get('category', 'Uncategorized')
+                policy_scope = policy.get('policy_scope', 'Not specified')
+                version = policy.get('version', 'v1.0')
+                owner = policy.get('policy_owner', 'Not assigned')
+                review_date = policy.get('review_date', 'Not scheduled')
+                
                 st.markdown(f"""
                 <div class='metric-card'>
-                    <div style='display:flex; justify-content:space-between; align-items:center;'>
-                        <div><b>📜 {policy['policy_name']}</b><br>Expires: {policy['expiry_date']} ({days_left} days left)</div>
-                        <div>{badge}</div>
+                    <div style='display:flex; justify-content:space-between; align-items:start;'>
+                        <div style='flex:2;'>
+                            <b>📜 {policy['policy_name']}</b><br>
+                            <span style='font-size:0.8rem;'>Version: {version} | Category: {category} | Scope: {policy_scope}</span><br>
+                            <span style='font-size:0.8rem;'>Owner: {owner} | Next Review: {review_date}</span><br>
+                            <span style='font-size:0.8rem;'>Expires: {policy['expiry_date']} ({days_left} days left)</span>
+                        </div>
+                        <div style='text-align:right;'>
+                            {badge}
+                        </div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1640,7 +1989,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION
+# CONTRACTS SECTION (User View)
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -1684,7 +2033,11 @@ elif choice == "📄 Contracts":
                     st.markdown(f"""
                     <div class='metric-card'>
                         <div style='display:flex; justify-content:space-between; align-items:center;'>
-                            <div><b>📄 {contract['contract_title']}</b><br>Vendor: {contract['vendor_name']}<br>End Date: {contract['end_date']} | {days_left} days remaining</div>
+                            <div>
+                                <b>📄 {contract['contract_title']}</b><br>
+                                Vendor: {contract['vendor_name']}<br>
+                                End Date: {contract['end_date']} | {days_left} days remaining
+                            </div>
                             <div><span class='badge-active'>Active</span></div>
                         </div>
                     </div>
@@ -1707,7 +2060,11 @@ elif choice == "📄 Contracts":
                     st.markdown(f"""
                     <div class='metric-card'>
                         <div style='display:flex; justify-content:space-between; align-items:center;'>
-                            <div><b>📄 {contract['contract_title']}</b><br>Vendor: {contract['vendor_name']}<br>End Date: {contract['end_date']} | {abs(days_left)} days {'overdue' if days_left < 0 else 'left'}</div>
+                            <div>
+                                <b>📄 {contract['contract_title']}</b><br>
+                                Vendor: {contract['vendor_name']}<br>
+                                End Date: {contract['end_date']} | {abs(days_left)} days {'overdue' if days_left < 0 else 'left'}
+                            </div>
                             <div>{status_badge}</div>
                         </div>
                     </div>
@@ -1750,7 +2107,7 @@ elif choice == "📄 Contracts":
                     st.error("Please fill required fields")
 
 # ============================================
-# POLICIES SECTION
+# POLICIES SECTION (User View)
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -1771,16 +2128,30 @@ elif choice == "📋 Policies":
                 else:
                     badge = '<span class="badge-expired">🔴 Expired</span>'
                 
-                with st.expander(f"📜 {policy['policy_name']}", expanded=False):
+                category = policy.get('category', 'Uncategorized')
+                policy_scope = policy.get('policy_scope', 'Not specified')
+                version = policy.get('version', 'v1.0')
+                owner = policy.get('policy_owner', 'Not assigned')
+                review_date = policy.get('review_date', 'Not scheduled')
+                
+                with st.expander(f"📜 {policy['policy_name']} - {version} ({category})", expanded=False):
                     col1, col2 = st.columns([2, 1])
                     with col1:
-                        st.markdown(f"**Category:** {policy.get('category', 'Uncategorized')}")
-                        st.markdown(f"**Scope:** {policy.get('policy_scope', 'Not specified')}")
-                        st.markdown(f"**Owner:** {policy.get('policy_owner', 'Not assigned')}")
+                        st.markdown(f"**Category:** {category}")
+                        st.markdown(f"**Scope:** {policy_scope}")
+                        st.markdown(f"**Affected:** {policy.get('affected_entities', 'Not specified')}")
+                        st.markdown(f"**Owner:** {owner}")
                         st.markdown(f"**Effective Date:** {policy.get('effective_date', 'Not set')}")
+                        st.markdown(f"**Next Review:** {review_date}")
+                        if policy.get('change_log'):
+                            st.markdown(f"**Summary:** {policy.get('change_log')}")
                     with col2:
                         st.markdown(f"**Status:** {badge}", unsafe_allow_html=True)
                         st.markdown(f"**Expires:** {policy['expiry_date']} ({days_left} days left)")
+                        st.markdown(f"**Acknowledgment Required:** {'Yes' if policy.get('requires_acknowledgment', False) else 'No'}")
+                        st.markdown(f"**Sensitization Required:** {'Yes' if policy.get('requires_sensitization', False) else 'No'}")
+                        if policy.get('policy_url'):
+                            st.markdown(f"[📄 View Document]({policy['policy_url']})")
         else:
             st.info("No policies found.")
     
@@ -1791,16 +2162,64 @@ elif choice == "📋 Policies":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📜 TOTAL POLICIES</div><div class='kpi-value'>{len(df)}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📜 TOTAL POLICIES</div>
+                    <div class='kpi-value'>{len(df)}</div>
+                    <div class='kpi-sub'>All Policies</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
                 active = len(df[df['status'] == 'active'])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ ACTIVE</div><div class='kpi-value'>{active}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ ACTIVE</div>
+                    <div class='kpi-value'>{active}</div>
+                    <div class='kpi-sub'>Currently Active</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
                 expiring = len(df[df['status'] == 'expiring_soon'])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⚠️ EXPIRING SOON</div><div class='kpi-value'>{expiring}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
+                    <div class='kpi-value'>{expiring}</div>
+                    <div class='kpi-sub'>Within 90 days</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col4:
                 expired = len(df[df['status'] == 'expired'])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🔴 EXPIRED</div>
+                    <div class='kpi-value'>{expired}</div>
+                    <div class='kpi-sub'>Needs Review</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            col_chart1, col_chart2 = st.columns(2)
+            with col_chart1:
+                if 'category' in df.columns:
+                    st.markdown("#### Policies by Category")
+                    category_counts = df['category'].value_counts().reset_index()
+                    category_counts.columns = ['Category', 'Count']
+                    fig = px.pie(category_counts, values='Count', names='Category', hole=0.4,
+                                color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE, "#8B5CF6", "#10B981"])
+                    fig.update_layout(height=350)
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart2:
+                if 'policy_scope' in df.columns:
+                    st.markdown("#### Policy Scope Distribution")
+                    scope_counts = df['policy_scope'].value_counts().reset_index()
+                    scope_counts.columns = ['Scope', 'Count']
+                    fig = px.bar(scope_counts, x='Scope', y='Count', color='Count',
+                               color_discrete_sequence=[HELB_GREEN], text='Count')
+                    fig.update_traces(textposition='outside')
+                    fig.update_layout(height=350)
+                    st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No policy data available for analytics.")
 
@@ -1808,7 +2227,7 @@ elif choice == "📋 Policies":
 # ADMIN PANEL (Admin Only)
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
-    st.subheader("Administration Panel")
+    st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
     st.markdown("Manage users, policies, contracts, work plans, departments, and directorates from one central location.")
     
     admin_tabs = st.tabs([
@@ -1835,6 +2254,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         with col1:
             with st.expander("➕ Create New User", expanded=False):
                 with st.form("admin_create_user"):
+                    st.markdown("#### Create User Account")
                     new_username = st.text_input("Username*")
                     new_full_name = st.text_input("Full Name*")
                     new_role = st.selectbox("Role*", ["department_champion", "management", "admin"])
@@ -1842,7 +2262,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     new_password = st.text_input("Password*", type="password")
                     confirm_password = st.text_input("Confirm Password*", type="password")
                     
-                    if st.form_submit_button("Create User"):
+                    if st.form_submit_button("Create User", use_container_width=True):
                         if new_password != confirm_password:
                             st.error("Passwords don't match")
                         elif not all([new_username, new_full_name, new_password]):
@@ -1852,16 +2272,18 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                             success, message = create_new_user(new_username, new_full_name, new_password, new_role, dept_id)
                             if success:
                                 st.success(f"✅ {message}")
+                                st.info(f"Username: {new_username} | Password: {new_password}")
                                 st.rerun()
                             else:
                                 st.error(f"❌ {message}")
         
         with col2:
             with st.expander("✏️ Edit User", expanded=False):
+                st.markdown("#### Edit User Role and Department")
                 if users:
                     user_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
                     if user_options:
-                        selected_user_str = st.selectbox("Select User to Edit", user_options)
+                        selected_user_str = st.selectbox("Select User to Edit", user_options, key="admin_edit_user")
                         selected_username = selected_user_str.split(" - ")[0]
                         
                         current_user = next((u for u in users if u['username'] == selected_username), None)
@@ -1879,38 +2301,42 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 new_password = st.text_input("New Password", type="password")
                                 confirm_new = st.text_input("Confirm New Password", type="password")
                             
-                            if st.button("Save Changes"):
+                            if st.button("Save Changes", use_container_width=True):
                                 dept_id = dept_options.get(new_department) if new_department != "None" else None
                                 if update_user_role(selected_username, new_role, dept_id):
-                                    st.success(f"✅ Role and department updated")
+                                    st.success(f"✅ Role and department updated for {selected_username}")
                                 else:
-                                    st.error("Failed to update")
+                                    st.error("Failed to update role/department")
                                 
                                 if reset_password and new_password:
                                     if new_password == confirm_new and len(new_password) >= 4:
                                         if reset_user_password(selected_username, new_password):
-                                            st.success(f"✅ Password reset")
+                                            st.success(f"✅ Password reset for {selected_username}")
+                                            st.info(f"New password: {new_password}")
                                         else:
                                             st.error("Failed to reset password")
                                     else:
-                                        st.error("Passwords don't match")
+                                        st.error("Passwords don't match or are too short")
                                 st.rerun()
         
         with st.expander("🗑️ Delete User", expanded=False):
+            st.warning("⚠️ Deleting a user is permanent and cannot be undone!")
             if users:
                 delete_options = [f"{u['username']} - {u['full_name']}" for u in users if u['username'] != "admin"]
                 if delete_options:
-                    user_to_delete = st.selectbox("Select User to Delete", delete_options)
+                    user_to_delete = st.selectbox("Select User to Delete", delete_options, key="admin_delete_user")
                     delete_username = user_to_delete.split(" - ")[0]
-                    confirm = st.checkbox(f"Confirm delete '{delete_username}'")
+                    confirm = st.checkbox(f"I understand that this will permanently delete user '{delete_username}'")
                     
-                    if st.button("Delete User"):
+                    if st.button("🗑️ Delete User", use_container_width=True):
                         if confirm:
                             if delete_user(delete_username):
-                                st.success(f"✅ User deleted")
+                                st.success(f"✅ User '{delete_username}' has been deleted!")
                                 st.rerun()
                             else:
-                                st.error("Failed to delete")
+                                st.error(f"❌ Failed to delete user '{delete_username}'")
+                        else:
+                            st.error("Please confirm deletion")
         
         st.markdown("---")
         st.markdown("### Current Users")
@@ -1936,30 +2362,54 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         with col1:
             with st.expander("➕ Add New Policy", expanded=False):
                 with st.form("admin_add_policy"):
+                    st.markdown("#### Policy Details")
                     policy_name = st.text_input("Policy Name*")
-                    category = st.selectbox("Category*", POLICY_CATEGORIES)
+                    category = st.selectbox("Policy Category*", POLICY_CATEGORIES)
                     version = st.text_input("Version*", value="v1.0")
-                    policy_scope = st.selectbox("Scope*", POLICY_SCOPE)
+                    policy_scope = st.selectbox("Policy Scope*", POLICY_SCOPE)
                     policy_owner = st.text_input("Policy Owner*")
-                    expiry_date = st.date_input("Expiry Date*")
-                    requires_acknowledgment = st.checkbox("Requires Acknowledgment", value=True)
-                    requires_sensitization = st.checkbox("Requires Sensitization", value=True)
                     
-                    if st.form_submit_button("Save Policy"):
+                    effective_date = st.date_input("Effective Date*", value=datetime.now().date())
+                    expiry_date = st.date_input("Expiry Date*")
+                    review_date = st.date_input("Next Review Date*")
+                    policy_url = st.text_input("Policy Document URL", placeholder="https://...")
+                    
+                    st.markdown("#### Scope Details")
+                    if policy_scope == "Institution-Wide":
+                        st.info("This policy applies to the entire institution")
+                        affected_entities = "All Departments"
+                    elif policy_scope == "Committee":
+                        committee_name = st.text_input("Committee Name")
+                        affected_entities = f"Committee: {committee_name}" if committee_name else "Committee"
+                    else:
+                        departments_list = get_cached_departments()
+                        dept_options_list = [d["name"] for d in departments_list]
+                        affected_depts = st.multiselect("Affected Departments", dept_options_list)
+                        affected_entities = ", ".join(affected_depts) if affected_depts else "Not specified"
+                    
+                    st.markdown("#### Compliance Tracking")
+                    requires_acknowledgment = st.checkbox("Requires Staff Acknowledgment", value=True)
+                    requires_sensitization = st.checkbox("Requires Sensitization", value=True)
+                    change_log = st.text_area("Change Log / Summary", height=80)
+                    
+                    if st.form_submit_button("Save Policy", use_container_width=True):
                         if policy_name and category and policy_owner:
                             policy_data = {
                                 "policy_name": policy_name,
                                 "category": category,
                                 "version": version,
                                 "policy_scope": policy_scope,
+                                "affected_entities": affected_entities,
                                 "policy_owner": policy_owner,
+                                "effective_date": effective_date.isoformat(),
                                 "expiry_date": expiry_date.isoformat(),
-                                "effective_date": datetime.now().date().isoformat(),
-                                "review_date": expiry_date.isoformat(),
+                                "review_date": review_date.isoformat(),
+                                "policy_url": policy_url if policy_url else None,
                                 "requires_acknowledgment": requires_acknowledgment,
                                 "requires_sensitization": requires_sensitization,
-                                "affected_entities": "All Departments" if policy_scope == "Institution-Wide" else "Not specified",
-                                "department_id": None
+                                "change_log": change_log,
+                                "department_id": None if policy_scope != "Department-Specific" else None,
+                                "created_by": st.session_state.user_id
                             }
                             success, message = add_enhanced_policy(policy_data)
                             if success:
@@ -1967,38 +2417,65 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 st.rerun()
                             else:
                                 st.error(f"❌ {message}")
+                        else:
+                            st.error("Please fill all required fields (*)")
         
         with col2:
             with st.expander("✏️ Edit / Delete Policy", expanded=False):
+                st.markdown("#### Select Policy to Manage")
                 policies = get_cached_policies("admin", None)
                 if policies:
-                    policy_options = {p["id"]: p["policy_name"] for p in policies}
-                    selected_policy_id = st.selectbox("Select Policy", list(policy_options.keys()), format_func=lambda x: policy_options[x])
+                    policy_options = {p["id"]: f"{p['policy_name']} (v{p.get('version', '1.0')})" for p in policies}
+                    selected_policy_id = st.selectbox("Select Policy", list(policy_options.keys()), format_func=lambda x: policy_options[x], key="admin_edit_policy")
                     
                     if selected_policy_id:
-                        action = st.radio("Action", ["Edit", "Delete"], horizontal=True)
-                        
-                        if action == "Edit":
-                            selected_policy = next((p for p in policies if p["id"] == selected_policy_id), None)
-                            if selected_policy:
-                                with st.form("edit_policy_form"):
-                                    edit_name = st.text_input("Name", value=selected_policy.get("policy_name", ""))
+                        selected_policy = next((p for p in policies if p["id"] == selected_policy_id), None)
+                        if selected_policy:
+                            action = st.radio("Action", ["Edit Policy", "Delete Policy"], horizontal=True)
+                            
+                            if action == "Edit Policy":
+                                with st.form("admin_edit_policy_form"):
+                                    edit_name = st.text_input("Policy Name", value=selected_policy.get("policy_name", ""))
+                                    edit_category = st.selectbox("Category", POLICY_CATEGORIES, index=POLICY_CATEGORIES.index(selected_policy.get("category", "HR")) if selected_policy.get("category") in POLICY_CATEGORIES else 0)
+                                    edit_version = st.text_input("Version", value=selected_policy.get("version", "v1.0"))
+                                    edit_owner = st.text_input("Policy Owner", value=selected_policy.get("policy_owner", ""))
                                     edit_expiry = st.date_input("Expiry Date", value=datetime.strptime(selected_policy["expiry_date"], "%Y-%m-%d").date())
+                                    edit_review = st.date_input("Review Date", value=datetime.strptime(selected_policy.get("review_date", selected_policy["expiry_date"]), "%Y-%m-%d").date())
                                     
-                                    if st.form_submit_button("Update"):
+                                    if st.form_submit_button("Update Policy", use_container_width=True):
                                         update_data = {
                                             "policy_name": edit_name,
-                                            "expiry_date": edit_expiry.isoformat()
+                                            "category": edit_category,
+                                            "version": edit_version,
+                                            "policy_owner": edit_owner,
+                                            "expiry_date": edit_expiry.isoformat(),
+                                            "review_date": edit_review.isoformat(),
+                                            "updated_at": datetime.now().isoformat()
                                         }
                                         if update_policy_admin(selected_policy_id, update_data):
-                                            st.success("Policy updated")
+                                            st.success("✅ Policy updated successfully!")
                                             st.rerun()
-                        else:
-                            st.warning("Confirm deletion")
-                            if st.button("Confirm Delete"):
-                                if delete_policy(selected_policy_id):
-                                    st.success("Policy deleted")
-                                    st.rerun()
+                                        else:
+                                            st.error("Failed to update policy")
+                            
+                            elif action == "Delete Policy":
+                                st.warning(f"⚠️ Are you sure you want to delete '{selected_policy['policy_name']}'?")
+                                if st.button("Confirm Delete", use_container_width=True):
+                                    if delete_policy(selected_policy_id):
+                                        st.success("✅ Policy deleted successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete policy")
+                else:
+                    st.info("No policies found")
+        
+        st.markdown("---")
+        st.markdown("### All Policies")
+        all_policies = get_cached_policies("admin", None)
+        if all_policies:
+            df_policies_admin = pd.DataFrame(all_policies)
+            display_cols = ['policy_name', 'category', 'version', 'policy_scope', 'policy_owner', 'status', 'expiry_date']
+            st.dataframe(df_policies_admin[display_cols], use_container_width=True, hide_index=True)
     
     # ========== TAB 3: CONTRACT MANAGEMENT ==========
     with admin_tabs[2]:
@@ -2009,58 +2486,102 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         with col1:
             with st.expander("➕ Add New Contract", expanded=False):
                 with st.form("admin_add_contract"):
+                    st.markdown("#### Contract Details")
                     title = st.text_input("Contract Title*")
                     vendor = st.text_input("Vendor Name*")
-                    contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0)
-                    end_date = st.date_input("End Date*")
-                    department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
+                    contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
+                    amount_spent = st.number_input("Initial Amount Spent (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
+                    payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                    end_date = st.date_input("Contract End Date*")
+                    signed_date = st.date_input("Signed Date", value=datetime.now().date())
+                    auto_renew = st.checkbox("Auto-renewal")
+                    contract_url = st.text_input("Contract Document URL", placeholder="https://...")
+                    compliance_status = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
+                    department_id = st.selectbox("Department", ["None"] + list(dept_options.keys()))
                     
-                    if st.form_submit_button("Save Contract"):
-                        if title and vendor and contract_value > 0:
-                            dept_id = dept_options.get(department) if department != "None" else None
+                    if st.form_submit_button("Save Contract", use_container_width=True):
+                        if title and vendor and contract_value > 0 and end_date:
+                            dept_id = dept_options.get(department_id) if department_id != "None" else None
                             contract_data = {
                                 "contract_title": title,
                                 "vendor_name": vendor,
                                 "contract_value": contract_value,
+                                "amount_spent_to_date": amount_spent,
+                                "payment_terms": payment_terms,
                                 "start_date": datetime.now().date().isoformat(),
                                 "end_date": end_date.isoformat(),
+                                "signed_date": signed_date.isoformat(),
+                                "auto_renewal": auto_renew,
+                                "contract_url": contract_url if contract_url else None,
+                                "compliance_status": compliance_status,
+                                "vendor_performance": 0,
                                 "department_id": dept_id
                             }
                             success, message = add_enhanced_contract(contract_data)
                             if success:
-                                st.success(message)
+                                st.success(f"✅ {message}")
                                 st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        else:
+                            st.error("Please fill all required fields (*)")
         
         with col2:
             with st.expander("✏️ Edit / Delete Contract", expanded=False):
+                st.markdown("#### Select Contract to Manage")
                 contracts = get_cached_contracts("admin", None)
                 if contracts:
-                    contract_options = {c["id"]: c["contract_title"] for c in contracts}
-                    selected_contract_id = st.selectbox("Select Contract", list(contract_options.keys()), format_func=lambda x: contract_options[x])
+                    contract_options = {c["id"]: f"{c['contract_title']} - {c['vendor_name']}" for c in contracts}
+                    selected_contract_id = st.selectbox("Select Contract", list(contract_options.keys()), format_func=lambda x: contract_options[x], key="admin_edit_contract")
                     
                     if selected_contract_id:
-                        action = st.radio("Action", ["Edit", "Delete"], horizontal=True)
-                        
-                        if action == "Edit":
-                            selected_contract = next((c for c in contracts if c["id"] == selected_contract_id), None)
-                            if selected_contract:
-                                with st.form("edit_contract_form"):
-                                    edit_title = st.text_input("Title", value=selected_contract.get("contract_title", ""))
+                        selected_contract = next((c for c in contracts if c["id"] == selected_contract_id), None)
+                        if selected_contract:
+                            action = st.radio("Action", ["Edit Contract", "Delete Contract"], horizontal=True)
+                            
+                            if action == "Edit Contract":
+                                with st.form("admin_edit_contract_form"):
+                                    edit_title = st.text_input("Contract Title", value=selected_contract.get("contract_title", ""))
+                                    edit_vendor = st.text_input("Vendor", value=selected_contract.get("vendor_name", ""))
+                                    edit_value = st.number_input("Contract Value", value=float(selected_contract.get("contract_value", 0)))
+                                    edit_spent = st.number_input("Amount Spent", value=float(selected_contract.get("amount_spent_to_date", 0)))
                                     edit_end_date = st.date_input("End Date", value=datetime.strptime(selected_contract["end_date"], "%Y-%m-%d").date())
+                                    edit_status = st.selectbox("Status", ["active", "expiring_soon", "expired"], index=["active", "expiring_soon", "expired"].index(selected_contract.get("status", "active")))
                                     
-                                    if st.form_submit_button("Update"):
+                                    if st.form_submit_button("Update Contract", use_container_width=True):
                                         update_data = {
                                             "contract_title": edit_title,
-                                            "end_date": edit_end_date.isoformat()
+                                            "vendor_name": edit_vendor,
+                                            "contract_value": edit_value,
+                                            "amount_spent_to_date": edit_spent,
+                                            "end_date": edit_end_date.isoformat(),
+                                            "status": edit_status,
+                                            "updated_at": datetime.now().isoformat()
                                         }
                                         if update_contract_admin(selected_contract_id, update_data):
-                                            st.success("Contract updated")
+                                            st.success("✅ Contract updated successfully!")
                                             st.rerun()
-                        else:
-                            if st.button("Confirm Delete"):
-                                if delete_contract(selected_contract_id):
-                                    st.success("Contract deleted")
-                                    st.rerun()
+                                        else:
+                                            st.error("Failed to update contract")
+                            
+                            elif action == "Delete Contract":
+                                st.warning(f"⚠️ Are you sure you want to delete '{selected_contract['contract_title']}'?")
+                                if st.button("Confirm Delete", use_container_width=True):
+                                    if delete_contract(selected_contract_id):
+                                        st.success("✅ Contract deleted successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete contract")
+                else:
+                    st.info("No contracts found")
+        
+        st.markdown("---")
+        st.markdown("### All Contracts")
+        all_contracts = get_cached_contracts("admin", None)
+        if all_contracts:
+            df_contracts_admin = pd.DataFrame(all_contracts)
+            display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
+            st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
     
     # ========== TAB 4: WORK PLAN MANAGEMENT ==========
     with admin_tabs[3]:
@@ -2071,8 +2592,9 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         col1, col2 = st.columns(2)
         
         with col1:
-            with st.expander("➕ Add New Work Plan", expanded=False):
+            with st.expander("➕ Add New Work Plan Activity", expanded=False):
                 with st.form("admin_add_workplan"):
+                    st.markdown("#### Work Plan Details")
                     strategic_pillar = st.selectbox("Strategic Pillar*", STRATEGIC_PILLARS)
                     key_result_area = st.text_input("Key Result Area*")
                     planned_activity = st.text_area("Planned Activity*")
@@ -2080,10 +2602,10 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     annual_target = st.text_input("Annual Target*")
                     due_date = st.date_input("Due Date*")
                     activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
-                    budget_allocation = st.number_input("Budget Allocation (KES)", min_value=0.0, step=10000.0)
+                    budget_allocation = st.number_input("Budget Allocation (KES)", min_value=0.0, step=10000.0, format="%.2f")
                     department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
                     
-                    if st.form_submit_button("Save Work Plan"):
+                    if st.form_submit_button("Save Work Plan", use_container_width=True):
                         if key_result_area and planned_activity and performance_indicator and annual_target:
                             dept_id = dept_options.get(department) if department != "None" else None
                             dept_name = department if department != "None" else "Unknown"
@@ -2105,42 +2627,67 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 "created_at": datetime.now().isoformat()
                             }
                             if add_work_plan(work_plan_data):
-                                st.success("✅ Work plan added!")
+                                st.success("✅ Work plan activity added successfully!")
                                 st.rerun()
+                            else:
+                                st.error("Failed to add work plan")
+                        else:
+                            st.error("Please fill all required fields (*)")
         
         with col2:
             with st.expander("✏️ Edit / Delete Work Plan", expanded=False):
+                st.markdown("#### Select Work Plan to Manage")
                 if work_plans:
-                    wp_options = {w["id"]: w["planned_activity"][:50] for w in work_plans}
-                    selected_wp_id = st.selectbox("Select Work Plan", list(wp_options.keys()), format_func=lambda x: wp_options[x])
+                    wp_options = {w["id"]: f"{w['planned_activity'][:50]}... - {w.get('department_name', 'Unknown')}" for w in work_plans}
+                    selected_wp_id = st.selectbox("Select Work Plan", list(wp_options.keys()), format_func=lambda x: wp_options[x], key="admin_edit_workplan")
                     
                     if selected_wp_id:
-                        action = st.radio("Action", ["Edit", "Delete"], horizontal=True)
-                        
-                        if action == "Edit":
-                            selected_wp = next((w for w in work_plans if w["id"] == selected_wp_id), None)
-                            if selected_wp:
-                                with st.form("edit_workplan_form"):
-                                    edit_activity = st.text_area("Activity", value=selected_wp.get("planned_activity", ""))
+                        selected_wp = next((w for w in work_plans if w["id"] == selected_wp_id), None)
+                        if selected_wp:
+                            action = st.radio("Action", ["Edit Work Plan", "Delete Work Plan"], horizontal=True)
+                            
+                            if action == "Edit Work Plan":
+                                with st.form("admin_edit_workplan_form"):
+                                    edit_activity = st.text_area("Planned Activity", value=selected_wp.get("planned_activity", ""))
+                                    edit_target = st.text_input("Annual Target", value=selected_wp.get("annual_target", ""))
                                     edit_due_date = st.date_input("Due Date", value=datetime.strptime(selected_wp["due_date"], "%Y-%m-%d").date())
-                                    edit_progress = st.number_input("Progress %", value=int(selected_wp.get("progress_percent", 0)))
+                                    edit_progress = st.number_input("Progress %", min_value=0, max_value=100, value=int(selected_wp.get("progress_percent", 0)))
                                     edit_status = st.selectbox("Status", ["Pending", "In Progress", "Done"], index=["Pending", "In Progress", "Done"].index(selected_wp.get("status", "Pending")))
+                                    edit_actual = st.number_input("Actual Achievement", value=float(selected_wp.get("actual_achievement", 0)))
                                     
-                                    if st.form_submit_button("Update"):
+                                    if st.form_submit_button("Update Work Plan", use_container_width=True):
                                         update_data = {
                                             "planned_activity": edit_activity,
+                                            "annual_target": edit_target,
                                             "due_date": edit_due_date.isoformat(),
                                             "progress_percent": edit_progress,
-                                            "status": edit_status
+                                            "status": edit_status,
+                                            "actual_achievement": edit_actual,
+                                            "updated_at": datetime.now().isoformat()
                                         }
                                         if update_work_plan_admin(selected_wp_id, update_data):
-                                            st.success("Work plan updated")
+                                            st.success("✅ Work plan updated successfully!")
                                             st.rerun()
-                        else:
-                            if st.button("Confirm Delete"):
-                                if delete_work_plan(selected_wp_id):
-                                    st.success("Work plan deleted")
-                                    st.rerun()
+                                        else:
+                                            st.error("Failed to update work plan")
+                            
+                            elif action == "Delete Work Plan":
+                                st.warning(f"⚠️ Are you sure you want to delete this activity?")
+                                if st.button("Confirm Delete", use_container_width=True):
+                                    if delete_work_plan(selected_wp_id):
+                                        st.success("✅ Work plan deleted successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete work plan")
+                else:
+                    st.info("No work plans found")
+        
+        st.markdown("---")
+        st.markdown("### All Work Plans")
+        if work_plans:
+            df_wp_admin = pd.DataFrame(work_plans)
+            display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'due_date']
+            st.dataframe(df_wp_admin[display_cols], use_container_width=True, hide_index=True)
     
     # ========== TAB 5: DEPARTMENT MANAGEMENT ==========
     with admin_tabs[4]:
@@ -2159,19 +2706,23 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     new_dept_directorate = st.selectbox("Directorate*", ["None"] + list(directorate_options.keys()))
                     new_dept_deputy = st.text_input("Deputy Director Name")
                     
-                    if st.form_submit_button("Add Department"):
+                    if st.form_submit_button("Add Department", use_container_width=True):
                         if new_dept_name:
                             directorate_id = directorate_options.get(new_dept_directorate) if new_dept_directorate != "None" else None
                             success, message = add_department(new_dept_name, directorate_id, new_dept_deputy)
                             if success:
                                 st.success(f"✅ {message}")
                                 st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        else:
+                            st.error("Please enter a department name")
         
         with col2:
             with st.expander("✏️ Edit Department", expanded=False):
                 if departments:
                     dept_names = [d["name"] for d in departments]
-                    selected_dept_name = st.selectbox("Select Department to Edit", dept_names)
+                    selected_dept_name = st.selectbox("Select Department to Edit", dept_names, key="admin_edit_dept")
                     
                     if selected_dept_name:
                         selected_dept = next((d for d in departments if d["name"] == selected_dept_name), None)
@@ -2187,12 +2738,14 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                                                      index=0 if not current_dir_name else list(directorate_options.keys()).index(current_dir_name) + 1)
                                 edit_dept_deputy = st.text_input("Deputy Director Name", value=selected_dept.get("deputy_director_name", ""))
                                 
-                                if st.form_submit_button("Update Department"):
+                                if st.form_submit_button("Update Department", use_container_width=True):
                                     directorate_id = directorate_options.get(edit_dept_directorate) if edit_dept_directorate != "None" else None
                                     success, message = update_department(selected_dept["id"], edit_dept_name, directorate_id, edit_dept_deputy)
                                     if success:
                                         st.success(f"✅ {message}")
                                         st.rerun()
+                                    else:
+                                        st.error(f"❌ {message}")
         
         st.markdown("---")
         st.markdown("### Existing Departments")
@@ -2205,7 +2758,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                         dir_info = get_directorate_by_id(dept["directorate_id"])
                         if dir_info:
                             directorate_info = f" ({dir_info['name']})"
-                    st.write(f"• {dept['name']}{directorate_info}")
+                    deputy_info = f"\nDeputy: {dept.get('deputy_director_name', 'Not assigned')}" if dept.get('deputy_director_name') else ""
+                    st.write(f"• {dept['name']}{directorate_info}{deputy_info}")
                 with col3:
                     if dept['name'] not in ["Lending", "Strategy", "Finance", "ICT", "Human Resource"]:
                         if st.button(f"🗑️ Delete", key=f"admin_del_dept_{dept['id']}"):
@@ -2213,6 +2767,10 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                             if success:
                                 st.success(f"✅ {message}")
                                 st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+        else:
+            st.info("No departments found")
     
     # ========== TAB 6: DIRECTORATE MANAGEMENT ==========
     with admin_tabs[5]:
@@ -2228,18 +2786,22 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     new_dir_name = st.text_input("Directorate Name*")
                     new_dir_director = st.text_input("Director Name*")
                     
-                    if st.form_submit_button("Add Directorate"):
+                    if st.form_submit_button("Add Directorate", use_container_width=True):
                         if new_dir_name and new_dir_director:
                             success, message = add_directorate(new_dir_name, new_dir_director)
                             if success:
                                 st.success(f"✅ {message}")
                                 st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        else:
+                            st.error("Please fill all required fields")
         
         with col2:
             with st.expander("✏️ Edit Directorate", expanded=False):
                 if directorates:
                     dir_names = [d["name"] for d in directorates]
-                    selected_dir_name = st.selectbox("Select Directorate to Edit", dir_names)
+                    selected_dir_name = st.selectbox("Select Directorate to Edit", dir_names, key="admin_edit_dir")
                     
                     if selected_dir_name:
                         selected_dir = next((d for d in directorates if d["name"] == selected_dir_name), None)
@@ -2248,19 +2810,25 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 edit_dir_name = st.text_input("Directorate Name", value=selected_dir["name"])
                                 edit_dir_director = st.text_input("Director Name", value=selected_dir.get("director_name", ""))
                                 
-                                if st.form_submit_button("Update Directorate"):
+                                if st.form_submit_button("Update Directorate", use_container_width=True):
                                     success, message = update_directorate(selected_dir["id"], edit_dir_name, edit_dir_director)
                                     if success:
                                         st.success(f"✅ {message}")
                                         st.rerun()
+                                    else:
+                                        st.error(f"❌ {message}")
         
         st.markdown("---")
         st.markdown("### Existing Directorates")
         if directorates:
+            departments = get_cached_departments()
             for dir_item in directorates:
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     st.write(f"• **{dir_item['name']}** - Director: {dir_item.get('director_name', 'Not assigned')}")
+                with col2:
+                    dept_count = len([d for d in departments if d.get('directorate_id') == dir_item['id']])
+                    st.caption(f"{dept_count} departments")
                 with col3:
                     if dir_item['name'] not in ["Operations", "Human Resource & Administration", "Fund Management", "ICT", "CEO's Office"]:
                         if st.button(f"🗑️ Delete", key=f"admin_del_dir_{dir_item['id']}"):
@@ -2268,6 +2836,10 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                             if success:
                                 st.success(f"✅ {message}")
                                 st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+        else:
+            st.info("No directorates found")
 
 # ============================================
 # ENTERPRISE VIEW
@@ -2310,21 +2882,28 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
         work_plans = get_work_plans()
         if work_plans:
             df = pd.DataFrame(work_plans)
-            display_cols = ['strategic_pillar', 'planned_activity', 'department_name', 'status', 'due_date']
+            display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
+                           'department_name', 'status', 'progress_percent', 'due_date']
             st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+        else:
+            st.info("No work plans found")
     
     with tabs[1]:
         all_contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
         if all_contracts:
             df = pd.DataFrame(all_contracts)
-            display_cols = ["contract_title", "vendor_name", "contract_value", "end_date", "status"]
+            display_cols = ["contract_title", "vendor_name", "contract_value", "amount_spent_to_date", "end_date", "status"]
             st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+        else:
+            st.info("No contracts found")
     
     with tabs[2]:
         all_policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if all_policies:
             df = pd.DataFrame(all_policies)
             st.dataframe(df[["policy_name", "expiry_date", "status"]], use_container_width=True, hide_index=True)
+        else:
+            st.info("No policies found")
 
 # ============================================
 # FOOTER
