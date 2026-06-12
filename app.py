@@ -1415,15 +1415,15 @@ elif choice == "📊 Dashboard":
             dept_map = {d['id']: d['name'] for d in departments}
             df_contracts['department_name'] = df_contracts['department_id'].map(dept_map).fillna("Unknown")
             
-            # Professional KPI Row
+            # Professional KPI Row with consistent styling
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 total_value = df_contracts['contract_value'].sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL VALUE</div>
+                    <div class='kpi-label'>💰 TOTAL CONTRACT VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Contract Value</div>
+                    <div class='kpi-sub'>Total Value</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col2:
@@ -1441,7 +1441,7 @@ elif choice == "📊 Dashboard":
                 active = len(df_contracts[df_contracts['status'] == 'active'])
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>✅ ACTIVE</div>
+                    <div class='kpi-label'>✅ ACTIVE CONTRACTS</div>
                     <div class='kpi-value'>{active}</div>
                     <div class='kpi-sub'>Active Contracts</div>
                 </div>
@@ -1459,7 +1459,7 @@ elif choice == "📊 Dashboard":
                 avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>⭐ AVG PERFORMANCE</div>
+                    <div class='kpi-label'>⭐ AVG VENDOR RATING</div>
                     <div class='kpi-value'>{avg_performance:.1f}/5</div>
                     <div class='kpi-sub'>Vendor Rating</div>
                 </div>
