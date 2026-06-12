@@ -1030,6 +1030,36 @@ if st.session_state.theme == "light":
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
+        
+        /* Login Page Styles */
+        .login-container {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }}
+        .login-logo {{
+            margin-bottom: 1rem;
+        }}
+        .login-title {{
+            color: white !important;
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            margin-bottom: 0.5rem !important;
+            text-align: center !important;
+        }}
+        .login-subtitle {{
+            color: {HELB_GOLD} !important;
+            font-size: 0.9rem !important;
+            text-align: center !important;
+            margin-bottom: 1rem !important;
+        }}
+        .login-button {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            font-weight: 700 !important;
+        }}
     </style>
     """
 else:
@@ -1185,34 +1215,60 @@ else:
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
+        
+        /* Login Page Styles for Dark Mode */
+        .login-container {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }}
+        .login-title {{
+            color: white !important;
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            margin-bottom: 0.5rem !important;
+            text-align: center !important;
+        }}
+        .login-subtitle {{
+            color: {HELB_GOLD} !important;
+            font-size: 0.9rem !important;
+            text-align: center !important;
+            margin-bottom: 1rem !important;
+        }}
     </style>
     """
 
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE (FIXED)
+# LOGIN PAGE (FIXED WITH GREEN BACKGROUND)
 # ============================================
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        
         if LOGO_BASE64:
-            st.image(f"data:image/png;base64,{LOGO_BASE64}", width=200)
+            st.markdown(f'<div class="login-logo"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div style="font-size: 3rem; text-align: center;">🏦</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-logo" style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
         
         st.markdown("""
-        <div style='text-align: center; margin: 1rem 0;'>
-            <h1 style='color: #00843D;'>HIGHER EDUCATION LOANS BOARD</h1>
-            <p style='color: #666;'>Strategy Performance Management System</p>
+        <div>
+            <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
+            <p class="login-subtitle">Strategy Performance Management System</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username", placeholder="Enter your username")
-            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            username = st.text_input("Username", placeholder="Enter your username", key="login_username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+            
+            # Custom styled login button
             submitted = st.form_submit_button("Login", use_container_width=True)
             
             if submitted:
@@ -1239,6 +1295,8 @@ if not st.session_state.authenticated:
                         st.error("❌ User not found")
                 else:
                     st.warning("Please enter both username and password")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ============================================
@@ -1583,7 +1641,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD (FIXED CONTRACT AND POLICY DISPLAYS)
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1906,7 +1964,6 @@ elif choice == "📊 Dashboard":
             
             st.markdown(f"**Showing {len(filtered_contracts_list)} contracts**")
             
-            # FIXED: Use st.container and proper columns instead of raw HTML
             for _, contract in filtered_contracts_list.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                 days_left = (end_date - datetime.now().date()).days
@@ -2038,7 +2095,6 @@ elif choice == "📊 Dashboard":
             
             st.markdown(f"**Showing {len(filtered_policies_list)} policies**")
             
-            # FIXED: Use st.container and proper columns instead of raw HTML
             for _, policy in filtered_policies_list.iterrows():
                 expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
                 days_left = (expiry - datetime.now().date()).days
