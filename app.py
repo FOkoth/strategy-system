@@ -91,6 +91,16 @@ POLICY_CATEGORIES = [
 
 POLICY_SCOPE = ["Institution-Wide", "Department-Specific", "Committee"]
 
+# Payment terms with descriptions
+PAYMENT_TERMS = [
+    "Monthly Retainer",
+    "Quarterly Retainer", 
+    "Bi-annually",
+    "Annually",
+    "Milestone-based",
+    "One-time Payment"
+]
+
 QUARTER_MONTHS = {
     "Q1 (Jul-Sep)": ["July", "August", "September"],
     "Q2 (Oct-Dec)": ["October", "November", "December"],
@@ -611,21 +621,6 @@ def update_contract_year_spending(year_id, amount_spent):
     except Exception as e:
         return False
 
-def update_contract_year_status(year_id, status, notes=None):
-    try:
-        update_data = {
-            "status": status,
-            "updated_at": datetime.now().isoformat()
-        }
-        if notes:
-            update_data["notes"] = notes
-        
-        supabase.table("contract_years").update(update_data).eq("id", year_id).execute()
-        st.cache_data.clear()
-        return True
-    except Exception as e:
-        return False
-
 # ============================================
 # ENHANCED CONTRACT FUNCTIONS
 # ============================================
@@ -858,48 +853,53 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS - FIXED
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
     <style>
-        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
-        .stTextInput label, .stSelectbox label, .stDateInput label,
-        .stNumberInput label, .stTextArea label, .stCheckbox label,
-        div, span, p, label, .stMetric label, .stMetric div {{
-            color: #000000 !important;
+        /* Main app styling */
+        .stApp {{
+            background-color: {HELB_WHITE};
         }}
         
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {HELB_GREEN} !important;
         }}
         
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
-            background-color: #f0f0f0 !important;
-            color: #000000 !important;
+        /* Login page styling */
+        .login-wrapper {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
         }}
-        
-        .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+        .login-box {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 450px;
+            margin: 0 auto;
+        }}
+        .login-logo {{
+            margin-bottom: 1.5rem;
+        }}
+        .login-title {{
             color: white !important;
-            border-radius: 8px !important;
-            padding: 8px 16px !important;
-            font-weight: 600 !important;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }}
+        .login-subtitle {{
+            color: {HELB_GOLD} !important;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
         }}
         
-        .stButton > button[key*="delete"] {{
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-            color: white !important;
-        }}
-        
-        [data-testid="stSidebar"] * {{
-            color: white !important;
-        }}
-        
+        /* KPI Cards */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             border-radius: 12px !important;
@@ -925,18 +925,8 @@ if st.session_state.theme == "light":
             margin-top: 0.2rem !important;
             opacity: 0.9 !important;
         }}
-        .kpi-card .progress-bar {{
-            height: 4px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
-        }}
         
+        /* Contract and Policy Cards */
         .contract-card, .policy-card {{
             background: #ffffff !important;
             border: 1px solid #e5e7eb !important;
@@ -970,24 +960,12 @@ if st.session_state.theme == "light":
         .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
         .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
         
-        .metric-card, .metric-card * {{ color: #000000 !important; }}
-        .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
-        .stTabs [aria-selected="true"] {{ color: #000000 !important; background-color: {HELB_GOLD} !important; }}
-        .streamlit-expanderHeader p {{ color: #000000 !important; }}
-        
-        .stTextInput input, .stSelectbox div, .stDateInput input, 
-        .stNumberInput input, .stTextArea textarea {{
-            background-color: white !important;
-            color: #000000 !important;
-            border: 1px solid #D1D5DB !important;
+        /* Sidebar */
+        [data-testid="stSidebar"] {{ 
+            background: linear-gradient(180deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            padding-top: 1rem; 
         }}
-        
-        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GREEN} !important; }}
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        .stAppDeployButton {{display: none;}}
-        .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
-        [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
+        [data-testid="stSidebar"] * {{ color: white !important; }}
         
         .sidebar-user-info {{
             background: rgba(255,255,255,0.15);
@@ -996,25 +974,49 @@ if st.session_state.theme == "light":
             margin: 0.5rem 0;
             text-align: center;
         }}
-        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
-        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
-        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
         
-        [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
-            border-radius: 8px !important;
-            padding: 8px 12px !important;
-            margin: 4px 0 !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem !important;
-        }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_BLUE} !important;
+        /* Buttons */
+        .stButton > button {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: 600 !important;
+            border: none !important;
         }}
         
+        .stButton > button:hover {{
+            opacity: 0.9 !important;
+        }}
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {{
+            background: {HELB_GRAY};
+            padding: 0.3rem;
+            border-radius: 10px;
+            gap: 0.3rem;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            font-size: 0.75rem;
+            padding: 0.3rem 1rem;
+            color: #000000 !important;
+        }}
+        .stTabs [aria-selected="true"] {{
+            background-color: {HELB_GOLD} !important;
+            color: #1F2937 !important;
+        }}
+        
+        /* Footer */
+        .footer {{
+            text-align: center;
+            padding: 1rem;
+            color: #6B7280;
+            font-size: 0.6rem;
+            border-top: 1px solid #E5E7EB;
+            margin-top: 1.5rem;
+        }}
+        
+        /* Dashboard Header */
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -1027,7 +1029,19 @@ if st.session_state.theme == "light":
         .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
         .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
         
-        .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
+        /* Input fields */
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: white !important;
+            color: #000000 !important;
+            border: 1px solid #D1D5DB !important;
+            border-radius: 8px !important;
+        }}
+        
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        .stAppDeployButton {{display: none;}}
+        
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
     </style>
@@ -1035,25 +1049,44 @@ if st.session_state.theme == "light":
 else:
     THEME_CSS = f"""
     <style>
-        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
-        .stTextInput label, .stSelectbox label, .stDateInput label,
-        .stNumberInput label, .stTextArea label, .stCheckbox label,
-        div, span, p, label, .stMetric label, .stMetric div {{
-            color: #FFFFFF !important;
-        }}
+        .stApp {{ background-color: #1a1a2e !important; }}
         
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
+        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GOLD} !important; }}
         
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
-            background-color: #3d3d5c !important;
-            color: #FFFFFF !important;
+        .login-box {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 450px;
+            margin: 0 auto;
         }}
+        .login-title {{ color: white !important; }}
+        .login-subtitle {{ color: {HELB_GOLD} !important; }}
+        
+        .kpi-card {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            text-align: center !important;
+        }}
+        .kpi-card .kpi-label {{ color: {HELB_GOLD} !important; }}
+        .kpi-card .kpi-value {{ color: #FFFFFF !important; }}
+        .kpi-card .kpi-sub {{ color: #FFFFFF !important; }}
+        
+        .contract-card, .policy-card {{
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            margin-bottom: 0.75rem !important;
+        }}
+        .contract-title, .policy-title {{ color: {HELB_GOLD} !important; }}
+        .contract-detail, .policy-detail {{ color: #cbd5e1 !important; }}
+        
+        [data-testid="stSidebar"] {{ background: linear-gradient(180deg, #0f3460 0%, #16213e 100%) !important; }}
+        [data-testid="stSidebar"] * {{ color: white !important; }}
         
         .stButton > button {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
@@ -1063,71 +1096,20 @@ else:
             font-weight: 600 !important;
         }}
         
-        .stButton > button[key*="delete"] {{
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-            color: white !important;
-        }}
-        
-        .kpi-card {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            text-align: center !important;
-        }}
-        .kpi-card .kpi-label {{
-            font-size: 0.7rem !important;
-            text-transform: uppercase !important;
-            color: {HELB_GOLD} !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
-        }}
-        .kpi-card .kpi-value {{
-            font-size: 1.5rem !important;
-            font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
-            color: #FFFFFF !important;
-        }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 4px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
-        }}
-        
-        .contract-card, .policy-card {{
-            background: #1e293b !important;
-            border: 1px solid #334155 !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            margin-bottom: 0.75rem !important;
-        }}
-        .contract-title, .policy-title {{
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            color: {HELB_GOLD} !important;
-            margin-bottom: 0.5rem !important;
-        }}
-        .contract-detail, .policy-detail {{
-            font-size: 0.75rem !important;
-            color: #cbd5e1 !important;
-            margin: 0.25rem 0 !important;
-        }}
-        
-        .metric-card, .metric-card * {{ color: #FFFFFF !important; }}
+        .stTabs [data-baseweb="tab-list"] {{ background: #2d2d44; }}
         .stTabs [data-baseweb="tab"] {{ color: #FFFFFF !important; }}
         .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: #1F2937 !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
+        
+        .dashboard-header {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }}
+        .dashboard-header h1 {{ color: white !important; }}
+        .dashboard-header p {{ color: {HELB_GOLD} !important; }}
+        
+        .footer {{ color: #6B7280; border-top: 1px solid #2d2d44; }}
         
         .stTextInput input, .stSelectbox div, .stDateInput input, 
         .stNumberInput input, .stTextArea textarea {{
@@ -1136,85 +1118,44 @@ else:
             border: 1px solid #4a4a6a !important;
         }}
         
-        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GOLD} !important; }}
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        .stAppDeployButton {{display: none;}}
-        .main, .stApp {{ background-color: #1a1a2e !important; }}
-        [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
-        [data-testid="stSidebar"] * {{ color: white !important; }}
-        
-        .sidebar-user-info {{
-            background: rgba(255,255,255,0.15);
-            padding: 0.8rem;
-            border-radius: 10px;
-            margin: 0.5rem 0;
-            text-align: center;
-        }}
-        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
-        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
-        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
-            border-radius: 8px !important;
-            padding: 8px 12px !important;
-            margin: 4px 0 !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem !important;
-        }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
-        }}
-        
-        .dashboard-header {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-            padding: 0.8rem 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        .dashboard-header h1 {{ color: white !important; font-size: 1.2rem; }}
-        .dashboard-header p {{ color: {HELB_GOLD} !important; }}
-        
-        .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
-        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
-        .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; }}
+        .dataframe td {{ color: #FFFFFF !important; }}
     </style>
     """
 
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE
+# ENHANCED LOGIN PAGE
 # ============================================
 if not st.session_state.authenticated:
+    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Logo display
         if LOGO_BASE64:
-            logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 200px; height: auto; margin-bottom: 1rem; background: transparent;">'
+            logo_html = f'<div class="login-logo"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 180px; height: auto;"></div>'
         else:
-            logo_html = '<div style="font-size: 3rem;">🏦</div>'
+            logo_html = '<div class="login-logo" style="font-size: 4rem;">🏦</div>'
         
         st.markdown(f"""
-        <div class='login-container'>
-            <div class='login-logo'>{logo_html}</div>
-            <h1 class='login-title'>HIGHER EDUCATION LOANS BOARD</h1>
-            <p class='login-subtitle'>Strategy Performance Management System</p>
+        <div class="login-box">
+            {logo_html}
+            <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
+            <p class="login-subtitle">Strategy Performance Management System</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username", placeholder="Enter your username")
-            password = st.text_input("Password", type="password", placeholder="Enter your password")
-            submitted = st.form_submit_button("Login", use_container_width=True)
+            username = st.text_input("Username", placeholder="Enter your username", key="login_username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+            
+            col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+            with col_btn2:
+                submitted = st.form_submit_button("🔐 Login", use_container_width=True)
             
             if submitted:
                 if username and password:
@@ -1239,23 +1180,24 @@ if not st.session_state.authenticated:
                     else:
                         st.error("❌ User not found")
                 else:
-                    st.warning("Please enter both username and password")
+                    st.warning("⚠️ Please enter both username and password")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ============================================
-# MAIN APPLICATION
+# MAIN APPLICATION HEADER
 # ============================================
-
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
 with col_header:
     if LOGO_BASE64:
-        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 40px; height: auto; background: transparent;">'
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" style="width: 40px; height: auto; background: transparent; margin-right: 10px;">'
     else:
-        logo_html = '<div style="font-size: 1.5rem;">🏦</div>'
+        logo_html = '<span style="font-size: 1.5rem; margin-right: 10px;">🏦</span>'
     
     st.markdown(f"""
-    <div class='dashboard-header'>
-        <div class='header-left'>
+    <div class="dashboard-header">
+        <div style="display: flex; align-items: center; gap: 15px;">
             {logo_html}
             <div>
                 <h1>HELB Strategy Performance Management System</h1>
@@ -1276,6 +1218,9 @@ with col_refresh:
         st.cache_data.clear()
         st.rerun()
 
+# ============================================
+# SIDEBAR
+# ============================================
 with st.sidebar:
     if LOGO_BASE64:
         st.markdown(f'<div style="text-align: center; padding: 0.5rem 0;"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
@@ -1301,8 +1246,8 @@ with st.sidebar:
     st.markdown(f"""
     <div class='sidebar-user-info'>
         <strong>{st.session_state.user_fullname or "User"}</strong>
-        <span class='dept'>{dept_display}</span>
-        <span class='role'>{role_display}</span>
+        <div class='dept' style='font-size: 0.7rem; margin-top: 5px;'>{dept_display}</div>
+        <div class='role' style='font-size: 0.65rem; margin-top: 3px; opacity: 0.8;'>{role_display}</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1930,11 +1875,26 @@ elif choice == "📊 Dashboard":
                 if contract.get('is_multi_year', False):
                     years = get_contract_years(contract['id'])
                     if years:
-                        multi_year_info = '<div class="contract-detail" style="margin-top: 0.5rem;"><strong>Yearly Breakdown:</strong><br>'
+                        multi_year_info = f'<div class="contract-detail" style="margin-top: 0.5rem;"><strong>Yearly Breakdown:</strong><br>'
                         for year in years:
                             year_status = "✅" if year.get('status') == 'completed' else "🟢" if year.get('status') == 'active' else "🟡"
                             multi_year_info += f'&nbsp;&nbsp;{year_status} Year {year["year_number"]}: KES {year["annual_value"]:,.0f} (Spent: KES {year.get("amount_spent_to_date", 0):,.0f} - {year.get("utilization_rate", 0):.0f}%)<br>'
                         multi_year_info += '</div>'
+                
+                # Format payment term nicely
+                payment_term_display = contract.get('payment_terms', 'N/A')
+                if payment_term_display == "Monthly Retainer":
+                    payment_term_display = "💰 Monthly Retainer"
+                elif payment_term_display == "Quarterly Retainer":
+                    payment_term_display = "📅 Quarterly Retainer"
+                elif payment_term_display == "Bi-annually":
+                    payment_term_display = "📆 Bi-annual Payment"
+                elif payment_term_display == "Annually":
+                    payment_term_display = "📅 Annual Payment"
+                elif payment_term_display == "Milestone-based":
+                    payment_term_display = "🎯 Milestone-based Payment"
+                elif payment_term_display == "One-time Payment":
+                    payment_term_display = "💵 One-time Payment"
                 
                 st.markdown(f"""
                 <div class='contract-card'>
@@ -1944,15 +1904,13 @@ elif choice == "📊 Dashboard":
                             <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
                             <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Total Value:</strong> KES {contract.get('total_contract_value', contract.get('contract_value', 0)):,.0f}</div>
                             <div class='contract-detail'><strong>Spent to Date:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f} ({contract.get('utilization_rate', 0):.0f}%)</div>
-                            <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} | <strong>Payment:</strong> {contract.get('payment_terms', 'N/A')}</div>
+                            <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} | <strong>Payment:</strong> {payment_term_display}</div>
                             <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')} | <strong>Performance:</strong> ⭐ {contract.get('vendor_performance', 0)}/5</div>
                             {multi_year_info}
+                            <div class='contract-detail'><strong>Auto-renewal:</strong> {'Yes' if contract.get('auto_renewal', False) else 'No'}</div>
                         </div>
                         <div style='text-align: right;'>
                             <span class='status-badge {status_class}'>{status_text}</span>
-                            <div style='margin-top: 0.5rem; font-size: 0.7rem;'>
-                                Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -2085,9 +2043,6 @@ elif choice == "📊 Dashboard":
                         </div>
                         <div style='text-align: right;'>
                             <span class='status-badge {status_class}'>{status_text}</span>
-                            <div style='margin-top: 0.5rem; font-size: 0.7rem;'>
-                                {'📄 Document' if policy.get('policy_url') else ''}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -2098,7 +2053,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View) - WITH UPDATE CAPABILITY
+# CONTRACTS SECTION (User View)
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2139,6 +2094,20 @@ elif choice == "📄 Contracts":
                     end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                     days_left = (end_date - datetime.now().date()).days
                     
+                    payment_term_display = contract.get('payment_terms', 'N/A')
+                    if payment_term_display == "Monthly Retainer":
+                        payment_term_display = "💰 Monthly Retainer"
+                    elif payment_term_display == "Quarterly Retainer":
+                        payment_term_display = "📅 Quarterly Retainer"
+                    elif payment_term_display == "Bi-annually":
+                        payment_term_display = "📆 Bi-annual Payment"
+                    elif payment_term_display == "Annually":
+                        payment_term_display = "📅 Annual Payment"
+                    elif payment_term_display == "Milestone-based":
+                        payment_term_display = "🎯 Milestone-based Payment"
+                    elif payment_term_display == "One-time Payment":
+                        payment_term_display = "💵 One-time Payment"
+                    
                     st.markdown(f"""
                     <div class='contract-card'>
                         <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
@@ -2147,7 +2116,7 @@ elif choice == "📄 Contracts":
                                 <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
                                 <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Value:</strong> KES {contract.get('contract_value', 0):,.0f}</div>
                                 <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} ({days_left} days left)</div>
-                                <div class='contract-detail'><strong>Payment Terms:</strong> {contract.get('payment_terms', 'N/A')} | <strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')}</div>
+                                <div class='contract-detail'><strong>Payment:</strong> {payment_term_display} | <strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')}</div>
                             </div>
                             <div style='text-align: right;'>
                                 <span class='status-badge status-active'>Active</span>
@@ -2211,7 +2180,7 @@ elif choice == "📄 Contracts":
                 start_date = st.date_input("Start Date*", value=datetime.now().date())
                 end_date = st.date_input("End Date*")
                 signed_date = st.date_input("Signed Date", value=datetime.now().date())
-                payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                payment_terms = st.selectbox("Payment Terms*", PAYMENT_TERMS)
                 auto_renewal = st.checkbox("Auto-renewal")
             
             if contract_type == "Multi-Year Contract":
@@ -2875,7 +2844,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     contract_duration = st.selectbox("Contract Duration", ["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"])
                     contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
                     amount_spent = st.number_input("Initial Amount Spent (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
-                    payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                    payment_terms = st.selectbox("Payment Terms", PAYMENT_TERMS)
                     end_date = st.date_input("Contract End Date*")
                     signed_date = st.date_input("Signed Date", value=datetime.now().date())
                     auto_renew = st.checkbox("Auto-renewal")
@@ -3350,6 +3319,6 @@ st.markdown("---")
 st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
-    <p>Powered by Streamlit | Multi-Year Contract Support | Comprehensive Analytics | Audit Trail</p>
+
 </div>
 """, unsafe_allow_html=True)
