@@ -35,15 +35,8 @@ def toggle_theme():
         st.session_state.theme = "light"
     st.rerun()
 
-st.set_page_config(
-    page_title="HELB Strategy Performance System",
-    page_icon="🏦",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 # ============================================
-# LOAD HELB LOGO
+# LOAD HELB LOGO FOR FAVICON AND DISPLAY
 # ============================================
 @st.cache_data(ttl=3600)
 def get_logo_base64():
@@ -69,6 +62,25 @@ def get_logo_base64():
         return None
 
 LOGO_BASE64 = get_logo_base64()
+
+# ============================================
+# PAGE CONFIG WITH HELB LOGO AS FAVICON
+# ============================================
+# Create favicon HTML if logo exists
+if LOGO_BASE64:
+    favicon_html = f'<link rel="icon" href="data:image/png;base64,{LOGO_BASE64}" type="image/png">'
+else:
+    favicon_html = ''
+
+st.set_page_config(
+    page_title="HELB Strategy Performance System",
+    page_icon="🏦",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Inject favicon
+st.markdown(f'<head>{favicon_html}</head>', unsafe_allow_html=True)
 
 # ============================================
 # CONSTANTS
@@ -858,7 +870,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS (UPDATED WITH BETTER LOGIN STYLES)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1031,13 +1043,14 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* Login Page Styles */
+        /* Login Page Styles - FIXED */
         .login-container {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             border-radius: 20px;
             padding: 2rem;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-top: 2rem;
         }}
         .login-logo {{
             margin-bottom: 1rem;
@@ -1053,12 +1066,30 @@ if st.session_state.theme == "light":
             color: {HELB_GOLD} !important;
             font-size: 0.9rem !important;
             text-align: center !important;
-            margin-bottom: 1rem !important;
+            margin-bottom: 1.5rem !important;
         }}
-        .login-button {{
+        /* Style login form inputs */
+        .login-container .stTextInput input {{
+            background-color: white !important;
+            color: #1F2937 !important;
+            border: 1px solid #D1D5DB !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+        }}
+        .login-container .stTextInput label {{
+            color: white !important;
+        }}
+        /* Style login button */
+        .login-container .stButton > button {{
             background-color: {HELB_GOLD} !important;
             color: {HELB_DARK} !important;
             font-weight: 700 !important;
+            border: none !important;
+            margin-top: 0.5rem !important;
+        }}
+        .login-container .stButton > button:hover {{
+            background-color: #e6a800 !important;
+            color: {HELB_DARK} !important;
         }}
     </style>
     """
@@ -1216,13 +1247,14 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* Login Page Styles for Dark Mode */
+        /* Login Page Styles for Dark Mode - FIXED */
         .login-container {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             border-radius: 20px;
             padding: 2rem;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-top: 2rem;
         }}
         .login-title {{
             color: white !important;
@@ -1235,7 +1267,30 @@ else:
             color: {HELB_GOLD} !important;
             font-size: 0.9rem !important;
             text-align: center !important;
-            margin-bottom: 1rem !important;
+            margin-bottom: 1.5rem !important;
+        }}
+        /* Style login form inputs in dark mode */
+        .login-container .stTextInput input {{
+            background-color: #2d2d44 !important;
+            color: white !important;
+            border: 1px solid #4a4a6a !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+        }}
+        .login-container .stTextInput label {{
+            color: white !important;
+        }}
+        /* Style login button in dark mode */
+        .login-container .stButton > button {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            font-weight: 700 !important;
+            border: none !important;
+            margin-top: 0.5rem !important;
+        }}
+        .login-container .stButton > button:hover {{
+            background-color: #e6a800 !important;
+            color: {HELB_DARK} !important;
         }}
     </style>
     """
@@ -1243,18 +1298,27 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE (FIXED WITH GREEN BACKGROUND)
+# LOGIN PAGE (FIXED WITH PROPER STYLING)
 # ============================================
 if not st.session_state.authenticated:
+    # Center the login form on the page
     col1, col2, col3 = st.columns([1, 2, 1])
+    
     with col2:
+        # Login container with gradient background
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         
+        # Display HELB Logo
         if LOGO_BASE64:
-            st.markdown(f'<div class="login-logo"><img src="data:image/png;base64,{LOGO_BASE64}" style="width: 120px; height: auto; background: transparent;"></div>', unsafe_allow_html=True)
+            st.markdown(f'''
+            <div class="login-logo">
+                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 100px; height: auto; background: transparent;">
+            </div>
+            ''', unsafe_allow_html=True)
         else:
             st.markdown('<div class="login-logo" style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
         
+        # Title and Subtitle
         st.markdown("""
         <div>
             <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
@@ -1262,13 +1326,11 @@ if not st.session_state.authenticated:
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        
+        # Login Form
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username", key="login_username")
             password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
             
-            # Custom styled login button
             submitted = st.form_submit_button("Login", use_container_width=True)
             
             if submitted:
@@ -1276,6 +1338,7 @@ if not st.session_state.authenticated:
                     result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                     if result.data:
                         user = result.data[0]
+                        # Simple password check (in production, use proper hashing)
                         if password == user["password_hash"]:
                             dept_name = get_department_name(user["department_id"])
                             
@@ -1297,10 +1360,12 @@ if not st.session_state.authenticated:
                     st.warning("Please enter both username and password")
         
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Stop execution here if not authenticated
     st.stop()
 
 # ============================================
-# MAIN APPLICATION
+# MAIN APPLICATION (REST OF THE CODE - UNCHANGED)
 # ============================================
 
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
@@ -1623,7 +1688,7 @@ if choice == "📋 Work Plans":
                 total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> TOTAL BUDGET</div>
+                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Budget</div>
                 </div>
@@ -1747,7 +1812,7 @@ elif choice == "📊 Dashboard":
                 total_budget = filtered_work_df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> BUDGET</div>
+                    <div class='kpi-label'>💰 BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Budget</div>
                 </div>
@@ -1895,7 +1960,7 @@ elif choice == "📊 Dashboard":
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> TOTAL VALUE</div>
+                    <div class='kpi-label'>💰 TOTAL VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Contract Value</div>
                 </div>
@@ -2159,7 +2224,7 @@ elif choice == "📄 Contracts":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric(" Total Contract Value", f"KES {total_value:,.0f}")
+                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
             with col2:
                 st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
             with col3:
@@ -2299,7 +2364,7 @@ elif choice == "📄 Contracts":
                             "status": "active"
                         })
                 
-                st.info(f" **Total Contract Value: KES {total_value:,.2f}**")
+                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
             else:
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
@@ -3391,6 +3456,5 @@ st.markdown("---")
 st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
-    <p>Powered by Streamlit | Multi-Year Contract Support | Comprehensive Analytics | Audit Trail</p>
 </div>
 """, unsafe_allow_html=True)
