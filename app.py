@@ -522,18 +522,6 @@ def update_vendor_performance(contract_id, performance_rating, compliance_status
     except Exception as e:
         return False
 
-def update_contract_deliverable(contract_id, deliverables_json):
-    """Update contract deliverables"""
-    try:
-        supabase.table("contracts").update({
-            "deliverables": deliverables_json,
-            "updated_at": datetime.now().isoformat()
-        }).eq("id", contract_id).execute()
-        st.cache_data.clear()
-        return True
-    except Exception as e:
-        return False
-
 def get_contracts_analytics(contracts):
     """Generate analytics data for contracts"""
     if not contracts:
@@ -1413,7 +1401,7 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if contracts:
-            # Enhanced Contracts Analytics Dashboard
+            # Enhanced Contracts Analytics Dashboard with professional KPI cards
             df_contracts = pd.DataFrame(contracts)
             
             # Calculate enhanced metrics
@@ -1427,24 +1415,55 @@ elif choice == "📊 Dashboard":
             dept_map = {d['id']: d['name'] for d in departments}
             df_contracts['department_name'] = df_contracts['department_id'].map(dept_map).fillna("Unknown")
             
-            # KPI Row
+            # Professional KPI Row
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 total_value = df_contracts['contract_value'].sum()
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 TOTAL VALUE</div><div class='kpi-value'>KES {total_value/1e6:.1f}M</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>💰 TOTAL VALUE</div>
+                    <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
+                    <div class='kpi-sub'>Total Contract Value</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
                 total_spent = df_contracts['amount_spent_to_date'].sum()
                 utilization = (total_spent/total_value*100) if total_value > 0 else 0
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💸 TOTAL SPENT</div><div class='kpi-value'>KES {total_spent/1e6:.1f}M</div><div class='kpi-sub'>{utilization:.0f}% utilized</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>💸 TOTAL SPENT</div>
+                    <div class='kpi-value'>KES {total_spent/1e6:.1f}M</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{utilization}%;'></div></div>
+                    <div class='kpi-sub'>{utilization:.0f}% utilized</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
                 active = len(df_contracts[df_contracts['status'] == 'active'])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ ACTIVE</div><div class='kpi-value'>{active}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ ACTIVE</div>
+                    <div class='kpi-value'>{active}</div>
+                    <div class='kpi-sub'>Active Contracts</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col4:
                 expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⚠️ EXPIRING SOON</div><div class='kpi-value'>{expiring}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
+                    <div class='kpi-value'>{expiring}</div>
+                    <div class='kpi-sub'>Within 30 days</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col5:
                 avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⭐ AVG PERFORMANCE</div><div class='kpi-value'>{avg_performance:.1f}/5</div></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>⭐ AVG PERFORMANCE</div>
+                    <div class='kpi-value'>{avg_performance:.1f}/5</div>
+                    <div class='kpi-sub'>Vendor Rating</div>
+                </div>
+                """, unsafe_allow_html=True)
             
             st.markdown("---")
             
@@ -1503,7 +1522,7 @@ elif choice == "📊 Dashboard":
                 st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("---")
-            st.markdown("### 📋 Contract List with Enhanced Details")
+            st.markdown("### 📋 Contract List")
             
             for _, contract in df_contracts.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
@@ -1644,24 +1663,6 @@ elif choice == "📄 Contracts":
                 st.warning(f"⚠️ **Budget Alerts:** {len(budget_alerts)} contract(s) have exceeded 80% utilization")
                 for _, contract in budget_alerts.iterrows():
                     st.caption(f"• {contract['contract_title']}: {contract.get('utilization_rate', 0):.0f}% utilized")
-            
-            # Show contracts with deliverables due soon
-            st.markdown("### 📋 Upcoming Deliverables")
-            for _, contract in df_contracts.iterrows():
-                deliverables = contract.get('deliverables')
-                if deliverables:
-                    try:
-                        if isinstance(deliverables, str):
-                            deliverables = json.loads(deliverables)
-                        if isinstance(deliverables, list):
-                            for deliverable in deliverables:
-                                if deliverable.get('due_date'):
-                                    due = datetime.strptime(deliverable['due_date'], "%Y-%m-%d").date()
-                                    days = (due - datetime.now().date()).days
-                                    if 0 <= days <= 30:
-                                        st.info(f"📌 **{contract['contract_title']}** - {deliverable.get('description', 'Deliverable')} due in {days} days")
-                    except:
-                        pass
         else:
             st.info("No contracts found. Add your first contract in the 'New Contract' tab.")
     
@@ -1774,22 +1775,8 @@ elif choice == "📄 Contracts":
                 contract_url = st.text_input("Contract Document URL", placeholder="https://...")
                 compliance_status = st.selectbox("Initial Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
             
-            st.markdown("#### 📋 Key Deliverables (Optional)")
-            st.info("Add deliverables as JSON array. Example: [{\"description\": \"Phase 1 Delivery\", \"due_date\": \"2025-03-31\"}]")
-            deliverables_json = st.text_area("Deliverables (JSON format)", 
-                                            placeholder='[{"description": "Initial deployment", "due_date": "2025-03-31"}, {"description": "Final delivery", "due_date": "2025-06-30"}]',
-                                            height=100)
-            
             if st.form_submit_button("Save Contract", use_container_width=True):
                 if title and vendor and contract_value > 0 and end_date:
-                    # Process deliverables
-                    deliverables = None
-                    if deliverables_json:
-                        try:
-                            deliverables = json.loads(deliverables_json)
-                        except:
-                            st.warning("Invalid JSON format for deliverables. Skipping...")
-                    
                     contract_data = {
                         "contract_title": title,
                         "vendor_name": vendor,
@@ -1802,7 +1789,6 @@ elif choice == "📄 Contracts":
                         "auto_renewal": auto_renew,
                         "contract_url": contract_url if contract_url else None,
                         "compliance_status": compliance_status,
-                        "deliverables": json.dumps(deliverables) if deliverables else None,
                         "vendor_performance": 0,  # Initial rating
                         "department_id": st.session_state.user_dept
                     }
