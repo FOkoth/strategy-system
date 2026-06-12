@@ -9,6 +9,7 @@ import base64
 from io import BytesIO
 import requests
 import re
+import json
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -436,6 +437,124 @@ def get_filtered_data(table_name):
         return []
 
 # ============================================
+# ENHANCED CONTRACT FUNCTIONS
+# ============================================
+def add_enhanced_contract(data):
+    """Add new contract with enhanced fields"""
+    try:
+        # Calculate days remaining
+        end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+        days_left = (end_date - datetime.now().date()).days
+        
+        # Determine status based on days remaining and utilization
+        if days_left < 0:
+            status = "expired"
+        elif days_left <= 30:
+            status = "expiring_soon"
+        else:
+            status = "active"
+        
+        # Calculate utilization rate
+        contract_value = data.get("contract_value", 0)
+        amount_spent = data.get("amount_spent_to_date", 0)
+        utilization_rate = (amount_spent / contract_value * 100) if contract_value > 0 else 0
+        
+        # Add budget alert if needed
+        if utilization_rate >= 80:
+            data["budget_alert"] = True
+        else:
+            data["budget_alert"] = False
+        
+        data["days_remaining"] = days_left
+        data["status"] = status
+        data["utilization_rate"] = utilization_rate
+        
+        supabase.table("contracts").insert(data).execute()
+        st.cache_data.clear()
+        return True, "Contract added successfully"
+    except Exception as e:
+        return False, str(e)
+
+def update_contract_spending(contract_id, amount_spent):
+    """Update contract spending and recalculate utilization"""
+    try:
+        # Get current contract
+        result = supabase.table("contracts").select("*").eq("id", contract_id).execute()
+        if not result.data:
+            return False
+        
+        contract = result.data[0]
+        contract_value = contract.get("contract_value", 0)
+        
+        # Calculate new utilization
+        utilization_rate = (amount_spent / contract_value * 100) if contract_value > 0 else 0
+        
+        # Set budget alert
+        budget_alert = utilization_rate >= 80
+        
+        # Update
+        supabase.table("contracts").update({
+            "amount_spent_to_date": amount_spent,
+            "utilization_rate": utilization_rate,
+            "budget_alert": budget_alert,
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", contract_id).execute()
+        
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        return False
+
+def update_vendor_performance(contract_id, performance_rating, compliance_status, breach_notes=None):
+    """Update vendor performance metrics"""
+    try:
+        update_data = {
+            "vendor_performance": performance_rating,
+            "compliance_status": compliance_status,
+            "updated_at": datetime.now().isoformat()
+        }
+        if breach_notes:
+            update_data["breach_notes"] = breach_notes
+        
+        supabase.table("contracts").update(update_data).eq("id", contract_id).execute()
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        return False
+
+def update_contract_deliverable(contract_id, deliverables_json):
+    """Update contract deliverables"""
+    try:
+        supabase.table("contracts").update({
+            "deliverables": deliverables_json,
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", contract_id).execute()
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        return False
+
+def get_contracts_analytics(contracts):
+    """Generate analytics data for contracts"""
+    if not contracts:
+        return None
+    
+    df = pd.DataFrame(contracts)
+    
+    # Convert numeric columns
+    df['contract_value'] = pd.to_numeric(df.get('contract_value', 0), errors='coerce').fillna(0)
+    df['amount_spent_to_date'] = pd.to_numeric(df.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
+    df['vendor_performance'] = pd.to_numeric(df.get('vendor_performance', 0), errors='coerce').fillna(0)
+    df['utilization_rate'] = pd.to_numeric(df.get('utilization_rate', 0), errors='coerce').fillna(0)
+    
+    # Add department info
+    departments = get_cached_departments()
+    dept_map = {d['id']: d['name'] for d in departments}
+    df['department_name'] = df['department_id'].map(dept_map).fillna("Unknown")
+    
+    return df
+
+# ============================================
 # USER MANAGEMENT FUNCTIONS
 # ============================================
 def get_all_users():
@@ -606,6 +725,7 @@ if st.session_state.theme == "light":
         .badge-pending {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-inprogress {{ background-color: #FFB81C; color: #1F2937; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         .badge-exceeded {{ background-color: #8B5CF6; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
+        .badge-expired {{ background-color: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }}
         
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
@@ -1293,23 +1413,98 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if contracts:
+            # Enhanced Contracts Analytics Dashboard
             df_contracts = pd.DataFrame(contracts)
             
-            col1, col2, col3, col4 = st.columns(4)
+            # Calculate enhanced metrics
+            df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
+            df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
+            df_contracts['vendor_performance'] = pd.to_numeric(df_contracts.get('vendor_performance', 0), errors='coerce').fillna(0)
+            df_contracts['utilization_rate'] = pd.to_numeric(df_contracts.get('utilization_rate', 0), errors='coerce').fillna(0)
+            
+            # Add department names
+            departments = get_cached_departments()
+            dept_map = {d['id']: d['name'] for d in departments}
+            df_contracts['department_name'] = df_contracts['department_id'].map(dept_map).fillna("Unknown")
+            
+            # KPI Row
+            col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>📄 TOTAL CONTRACTS</div><div class='kpi-value'>{len(df_contracts)}</div></div>", unsafe_allow_html=True)
+                total_value = df_contracts['contract_value'].sum()
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💰 TOTAL VALUE</div><div class='kpi-value'>KES {total_value/1e6:.1f}M</div></div>", unsafe_allow_html=True)
             with col2:
+                total_spent = df_contracts['amount_spent_to_date'].sum()
+                utilization = (total_spent/total_value*100) if total_value > 0 else 0
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>💸 TOTAL SPENT</div><div class='kpi-value'>KES {total_spent/1e6:.1f}M</div><div class='kpi-sub'>{utilization:.0f}% utilized</div></div>", unsafe_allow_html=True)
+            with col3:
                 active = len(df_contracts[df_contracts['status'] == 'active'])
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>✅ ACTIVE</div><div class='kpi-value'>{active}</div></div>", unsafe_allow_html=True)
-            with col3:
+            with col4:
                 expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
                 st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⚠️ EXPIRING SOON</div><div class='kpi-value'>{expiring}</div></div>", unsafe_allow_html=True)
-            with col4:
-                expired = len(df_contracts[df_contracts['status'] == 'expired'])
-                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>🔴 EXPIRED</div><div class='kpi-value'>{expired}</div></div>", unsafe_allow_html=True)
+            with col5:
+                avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
+                st.markdown(f"<div class='kpi-card'><div class='kpi-label'>⭐ AVG PERFORMANCE</div><div class='kpi-value'>{avg_performance:.1f}/5</div></div>", unsafe_allow_html=True)
             
             st.markdown("---")
-            st.markdown("#### Contract Status Overview")
+            
+            # Analytics Charts
+            col_chart1, col_chart2 = st.columns(2)
+            with col_chart1:
+                st.markdown("#### Contract Value by Department")
+                dept_value = df_contracts.groupby('department_name')['contract_value'].sum().reset_index()
+                dept_value = dept_value.sort_values('contract_value', ascending=True)
+                fig = px.bar(dept_value, y='department_name', x='contract_value', orientation='h',
+                            color='contract_value', color_continuous_scale='Greens',
+                            text=dept_value['contract_value'].apply(lambda x: f'KES {x/1e6:.1f}M'))
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=400, xaxis_title="Contract Value (KES)", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart2:
+                st.markdown("#### Spend Utilization Status")
+                high_util = len(df_contracts[df_contracts['utilization_rate'] >= 80])
+                medium_util = len(df_contracts[(df_contracts['utilization_rate'] >= 50) & (df_contracts['utilization_rate'] < 80)])
+                low_util = len(df_contracts[df_contracts['utilization_rate'] < 50])
+                
+                util_data = pd.DataFrame({
+                    'Utilization': ['High (80%+)', 'Medium (50-80%)', 'Low (<50%)'],
+                    'Count': [high_util, medium_util, low_util]
+                })
+                fig = px.pie(util_data, values='Count', names='Utilization', hole=0.4,
+                            color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE])
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            col_chart3, col_chart4 = st.columns(2)
+            with col_chart3:
+                st.markdown("#### Vendor Performance Distribution")
+                perf_bins = pd.cut(df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'], 
+                                  bins=[0, 2, 3, 4, 5], labels=['Poor (0-2)', 'Fair (2-3)', 'Good (3-4)', 'Excellent (4-5)'])
+                perf_counts = perf_bins.value_counts()
+                fig = px.bar(x=perf_counts.values, y=perf_counts.index, orientation='h',
+                            color=perf_counts.values, color_continuous_scale='Greens',
+                            text=perf_counts.values)
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=300, xaxis_title="Number of Contracts", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart4:
+                st.markdown("#### Budget Alert Summary")
+                alert_count = len(df_contracts[df_contracts.get('budget_alert', False) == True])
+                no_alert = len(df_contracts) - alert_count
+                alert_data = pd.DataFrame({
+                    'Status': ['⚠️ Budget Alert', '✅ Healthy'],
+                    'Count': [alert_count, no_alert]
+                })
+                fig = px.pie(alert_data, values='Count', names='Status', hole=0.4,
+                            color_discrete_sequence=['#dc2626', HELB_GREEN])
+                fig.update_layout(height=300, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("---")
+            st.markdown("### 📋 Contract List with Enhanced Details")
+            
             for _, contract in df_contracts.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                 days_left = (end_date - datetime.now().date()).days
@@ -1321,15 +1516,28 @@ elif choice == "📊 Dashboard":
                 else:
                     badge = '<span class="badge-expired">🔴 Expired</span>'
                 
+                # Show budget alert if applicable
+                budget_alert_badge = ''
+                if contract.get('budget_alert', False):
+                    budget_alert_badge = '<span style="background-color: #dc2626; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 10px;">⚠️ Budget Alert</span>'
+                
+                utilization = contract.get('utilization_rate', 0)
+                performance = contract.get('vendor_performance', 0)
+                
                 st.markdown(f"""
                 <div class='metric-card'>
-                    <div style='display:flex; justify-content:space-between; align-items:center;'>
-                        <div>
-                            <b>{contract['contract_title']}</b><br>
-                            Vendor: {contract['vendor_name']}<br>
-                            End Date: {contract['end_date']} | {days_left} days remaining
+                    <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;'>
+                        <div style='flex:1;'>
+                            <b>📄 {contract['contract_title']}</b>{budget_alert_badge}<br>
+                            <span style='font-size:0.85rem;'>Vendor: {contract['vendor_name']}</span><br>
+                            <span style='font-size:0.8rem; color:#6B7280;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                            <span style='font-size:0.8rem;'>💰 Value: KES {contract.get('contract_value', 0):,.0f} | Spent: KES {contract.get('amount_spent_to_date', 0):,.0f} ({utilization:.0f}% used)</span><br>
+                            <span style='font-size:0.8rem;'>⭐ Performance: {performance}/5 | Payment: {contract.get('payment_terms', 'Not specified')}</span>
                         </div>
-                        <div>{badge}</div>
+                        <div style='text-align:right;'>
+                            {badge}<br>
+                            <span style='font-size:0.7rem;'>Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}</span>
+                        </div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1394,73 +1602,220 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION
+# ENHANCED CONTRACTS SECTION
 # ============================================
 elif choice == "📄 Contracts":
-    st.subheader("Contract Tracker")
+    st.subheader("Contract Management")
     
-    with st.expander("➕ Add New Contract", expanded=False):
-        with st.form("new_contract"):
+    # Create tabs for better organization
+    tab_overview, tab_active, tab_expiring, tab_add = st.tabs(["📊 Overview & Analytics", "✅ Active Contracts", "⚠️ Expiring & Expired", "➕ New Contract"])
+    
+    with tab_overview:
+        contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
+        if contracts:
+            df_contracts = pd.DataFrame(contracts)
+            
+            # Enhanced metrics
+            df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
+            df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
+            df_contracts['vendor_performance'] = pd.to_numeric(df_contracts.get('vendor_performance', 0), errors='coerce').fillna(0)
+            
+            total_value = df_contracts['contract_value'].sum()
+            total_spent = df_contracts['amount_spent_to_date'].sum()
+            overall_utilization = (total_spent/total_value*100) if total_value > 0 else 0
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
+            with col2:
+                st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
+            with col3:
+                active_count = len(df_contracts[df_contracts['status'] == 'active'])
+                st.metric("✅ Active Contracts", active_count)
+            with col4:
+                avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
+                st.metric("⭐ Avg Vendor Rating", f"{avg_performance:.1f}/5" if avg_performance > 0 else "N/A")
+            
+            st.markdown("---")
+            
+            # Show budget alerts
+            budget_alerts = df_contracts[df_contracts.get('budget_alert', False) == True]
+            if not budget_alerts.empty:
+                st.warning(f"⚠️ **Budget Alerts:** {len(budget_alerts)} contract(s) have exceeded 80% utilization")
+                for _, contract in budget_alerts.iterrows():
+                    st.caption(f"• {contract['contract_title']}: {contract.get('utilization_rate', 0):.0f}% utilized")
+            
+            # Show contracts with deliverables due soon
+            st.markdown("### 📋 Upcoming Deliverables")
+            for _, contract in df_contracts.iterrows():
+                deliverables = contract.get('deliverables')
+                if deliverables:
+                    try:
+                        if isinstance(deliverables, str):
+                            deliverables = json.loads(deliverables)
+                        if isinstance(deliverables, list):
+                            for deliverable in deliverables:
+                                if deliverable.get('due_date'):
+                                    due = datetime.strptime(deliverable['due_date'], "%Y-%m-%d").date()
+                                    days = (due - datetime.now().date()).days
+                                    if 0 <= days <= 30:
+                                        st.info(f"📌 **{contract['contract_title']}** - {deliverable.get('description', 'Deliverable')} due in {days} days")
+                    except:
+                        pass
+        else:
+            st.info("No contracts found. Add your first contract in the 'New Contract' tab.")
+    
+    with tab_active:
+        contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
+        if contracts:
+            active_contracts = [c for c in contracts if c.get('status') == 'active']
+            if active_contracts:
+                for contract in active_contracts:
+                    end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
+                    days_left = (end_date - datetime.now().date()).days
+                    
+                    utilization = contract.get('utilization_rate', 0)
+                    performance = contract.get('vendor_performance', 0)
+                    compliance = contract.get('compliance_status', 'Not assessed')
+                    
+                    st.markdown(f"""
+                    <div class='metric-card'>
+                        <div style='display:flex; justify-content:space-between; align-items:start;'>
+                            <div style='flex:2;'>
+                                <b>📄 {contract['contract_title']}</b><br>
+                                <span style='font-size:0.85rem;'>Vendor: {contract['vendor_name']}</span><br>
+                                <span style='font-size:0.8rem; color:#6B7280;'>End Date: {contract['end_date']} | {days_left} days remaining</span><br>
+                                <span style='font-size:0.8rem;'>💰 Value: KES {contract.get('contract_value', 0):,.0f} | Spent: KES {contract.get('amount_spent_to_date', 0):,.0f} ({utilization:.0f}% used)</span><br>
+                                <span style='font-size:0.8rem;'>⭐ Performance: {performance}/5 | Compliance: {compliance}</span><br>
+                                <span style='font-size:0.8rem;'>💳 Payment Terms: {contract.get('payment_terms', 'Not specified')}</span>
+                            </div>
+                            <div style='text-align:right;'>
+                                <span class='badge-active'>🟢 Active</span><br>
+                                <span style='font-size:0.7rem;'>Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Add update controls in expander
+                    with st.expander("✏️ Update Contract Performance", expanded=False):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            new_spent = st.number_input("Update Amount Spent", 
+                                                       min_value=0.0, 
+                                                       value=float(contract.get('amount_spent_to_date', 0)),
+                                                       step=10000.0,
+                                                       key=f"spent_{contract['id']}")
+                            if st.button(f"Update Spending", key=f"update_spent_{contract['id']}"):
+                                if update_contract_spending(contract['id'], new_spent):
+                                    st.success("✅ Spending updated!")
+                                    st.rerun()
+                        with col2:
+                            new_performance = st.slider("Vendor Performance Rating", 0.0, 5.0, 
+                                                       value=float(performance), step=0.5,
+                                                       key=f"perf_{contract['id']}")
+                            new_compliance = st.selectbox("Compliance Status", 
+                                                         ["Fully Compliant", "Partially Compliant", "Non-Compliant"],
+                                                         index=["Fully Compliant", "Partially Compliant", "Non-Compliant"].index(compliance) if compliance in ["Fully Compliant", "Partially Compliant", "Non-Compliant"] else 0,
+                                                         key=f"comp_{contract['id']}")
+                            if st.button(f"Update Performance", key=f"update_perf_{contract['id']}"):
+                                if update_vendor_performance(contract['id'], new_performance, new_compliance):
+                                    st.success("✅ Performance updated!")
+                                    st.rerun()
+            else:
+                st.info("No active contracts found.")
+        else:
+            st.info("No contracts found.")
+    
+    with tab_expiring:
+        contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
+        if contracts:
+            expiring_contracts = [c for c in contracts if c.get('status') in ['expiring_soon', 'expired']]
+            if expiring_contracts:
+                for contract in expiring_contracts:
+                    end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
+                    days_left = (end_date - datetime.now().date()).days
+                    
+                    status_badge = '<span class="badge-inprogress">🟡 Expiring Soon</span>' if days_left > 0 else '<span class="badge-expired">🔴 Expired</span>'
+                    
+                    st.markdown(f"""
+                    <div class='metric-card'>
+                        <div style='display:flex; justify-content:space-between; align-items:center;'>
+                            <div>
+                                <b>📄 {contract['contract_title']}</b><br>
+                                Vendor: {contract['vendor_name']}<br>
+                                End Date: {contract['end_date']} | {abs(days_left)} days {'overdue' if days_left < 0 else 'left'}<br>
+                                Auto-renewal: {'Yes' if contract.get('auto_renewal', False) else 'No'}
+                            </div>
+                            <div>{status_badge}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.success("✅ No expiring or expired contracts!")
+        else:
+            st.info("No contracts found.")
+    
+    with tab_add:
+        st.markdown("### Add New Contract with Enhanced Tracking")
+        
+        with st.form("new_contract_enhanced"):
             col1, col2 = st.columns(2)
             with col1:
                 title = st.text_input("Contract Title*")
-                vendor = st.text_input("Vendor*")
+                vendor = st.text_input("Vendor Name*")
+                contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
+                amount_spent = st.number_input("Initial Amount Spent (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
+                payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
             with col2:
-                end_date = st.date_input("End Date*")
+                end_date = st.date_input("Contract End Date*")
+                signed_date = st.date_input("Signed Date", value=datetime.now().date())
                 auto_renew = st.checkbox("Auto-renewal")
+                contract_url = st.text_input("Contract Document URL", placeholder="https://...")
+                compliance_status = st.selectbox("Initial Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
+            
+            st.markdown("#### 📋 Key Deliverables (Optional)")
+            st.info("Add deliverables as JSON array. Example: [{\"description\": \"Phase 1 Delivery\", \"due_date\": \"2025-03-31\"}]")
+            deliverables_json = st.text_area("Deliverables (JSON format)", 
+                                            placeholder='[{"description": "Initial deployment", "due_date": "2025-03-31"}, {"description": "Final delivery", "due_date": "2025-06-30"}]',
+                                            height=100)
             
             if st.form_submit_button("Save Contract", use_container_width=True):
-                if title and vendor:
-                    start_date = datetime.now().date()
-                    days_left = (end_date - start_date).days
-                    status = "expired" if days_left < 0 else ("expiring_soon" if days_left <= 30 else "active")
+                if title and vendor and contract_value > 0 and end_date:
+                    # Process deliverables
+                    deliverables = None
+                    if deliverables_json:
+                        try:
+                            deliverables = json.loads(deliverables_json)
+                        except:
+                            st.warning("Invalid JSON format for deliverables. Skipping...")
                     
-                    supabase.table("contracts").insert({
+                    contract_data = {
                         "contract_title": title,
                         "vendor_name": vendor,
-                        "start_date": start_date.isoformat(),
+                        "contract_value": contract_value,
+                        "amount_spent_to_date": amount_spent,
+                        "payment_terms": payment_terms,
+                        "start_date": datetime.now().date().isoformat(),
                         "end_date": end_date.isoformat(),
-                        "days_remaining": days_left,
-                        "status": status,
+                        "signed_date": signed_date.isoformat(),
                         "auto_renewal": auto_renew,
+                        "contract_url": contract_url if contract_url else None,
+                        "compliance_status": compliance_status,
+                        "deliverables": json.dumps(deliverables) if deliverables else None,
+                        "vendor_performance": 0,  # Initial rating
                         "department_id": st.session_state.user_dept
-                    }).execute()
-                    st.success("Contract added successfully!")
-                    st.rerun()
+                    }
+                    
+                    success, message = add_enhanced_contract(contract_data)
+                    if success:
+                        st.success(f"✅ {message}")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Failed to add contract: {message}")
                 else:
-                    st.error("Please fill all required fields")
-    
-    contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
-    if contracts:
-        for contract in contracts:
-            end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
-            days_left = (end_date - datetime.now().date()).days
-            
-            if days_left > 30:
-                color = "🟢"
-                badge = '<span class="badge-active">Active</span>'
-            elif days_left > 0:
-                color = "🟡"
-                badge = '<span class="badge-inprogress">Expiring Soon</span>'
-            else:
-                color = "🔴"
-                badge = '<span class="badge-expired">Expired</span>'
-            
-            st.markdown(f"""
-            <div class='metric-card'>
-                <div style='display:flex; justify-content:space-between; align-items:center;'>
-                    <div>
-                        <b>{color} {contract['contract_title']}</b><br>
-                        Vendor: {contract['vendor_name']}<br>
-                        End Date: {contract['end_date']} | {days_left} days remaining<br>
-                        Auto-renewal: {'Yes' if contract['auto_renewal'] else 'No'}
-                    </div>
-                    <div>{badge}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("No contracts found. Click 'Add New Contract' to get started.")
+                    st.error("Please fill all required fields (*)")
 
 # ============================================
 # POLICIES SECTION
@@ -1848,7 +2203,8 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
         all_contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
         if all_contracts:
             df = pd.DataFrame(all_contracts)
-            st.dataframe(df[["contract_title", "vendor_name", "end_date", "status"]], use_container_width=True, hide_index=True)
+            display_cols = ["contract_title", "vendor_name", "contract_value", "amount_spent_to_date", "end_date", "status"]
+            st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
         else:
             st.info("No contracts found")
     
