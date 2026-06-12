@@ -1989,7 +1989,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View)
+# CONTRACTS SECTION (User View) - ENHANCED WITH ALL FIELDS
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2036,7 +2036,9 @@ elif choice == "📄 Contracts":
                             <div>
                                 <b>📄 {contract['contract_title']}</b><br>
                                 Vendor: {contract['vendor_name']}<br>
-                                End Date: {contract['end_date']} | {days_left} days remaining
+                                End Date: {contract['end_date']} | {days_left} days remaining<br>
+                                Payment Terms: {contract.get('payment_terms', 'Not specified')}<br>
+                                Compliance: {contract.get('compliance_status', 'Not specified')}
                             </div>
                             <div><span class='badge-active'>Active</span></div>
                         </div>
@@ -2063,7 +2065,8 @@ elif choice == "📄 Contracts":
                             <div>
                                 <b>📄 {contract['contract_title']}</b><br>
                                 Vendor: {contract['vendor_name']}<br>
-                                End Date: {contract['end_date']} | {abs(days_left)} days {'overdue' if days_left < 0 else 'left'}
+                                End Date: {contract['end_date']} | {abs(days_left)} days {'overdue' if days_left < 0 else 'left'}<br>
+                                Compliance: {contract.get('compliance_status', 'Not specified')}
                             </div>
                             <div>{status_badge}</div>
                         </div>
@@ -2074,52 +2077,87 @@ elif choice == "📄 Contracts":
         else:
             st.info("No contracts found.")
     
+    # ========== ENHANCED ADD CONTRACT FORM WITH ALL FIELDS ==========
     with tab_add:
         st.markdown("### Add New Contract")
-        with st.form("new_contract"):
+        st.markdown("Please fill in all contract details below:")
+        
+        with st.form("new_contract_enhanced"):
             col1, col2 = st.columns(2)
-            with col1:
-                title = st.text_input("Contract Title*")
-                vendor = st.text_input("Vendor Name*")
-                contract_value = st.number_input("Contract Value (KES)", min_value=0.0, step=10000.0, format="%.2f")
-            with col2:
-                end_date = st.date_input("End Date*")
-                auto_renew = st.checkbox("Auto-renewal")
             
-            if st.form_submit_button("Save Contract"):
-                if title and vendor and end_date:
+            with col1:
+                st.markdown("#### Basic Information")
+                contract_title = st.text_input("Contract Title*", placeholder="e.g., ICT Infrastructure Supply Contract")
+                vendor_name = st.text_input("Vendor Name*", placeholder="e.g., ABC Technologies Ltd")
+                contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
+                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0, help="Initial amount already spent on this contract")
+                
+            with col2:
+                st.markdown("#### Dates & Terms")
+                start_date = st.date_input("Start Date", value=datetime.now().date())
+                end_date = st.date_input("End Date*")
+                signed_date = st.date_input("Signed Date", value=datetime.now().date())
+                payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                auto_renewal = st.checkbox("Auto-renewal", help="Check if contract automatically renews upon expiry")
+            
+            col3, col4 = st.columns(2)
+            
+            with col3:
+                st.markdown("#### Compliance & Performance")
+                compliance_status = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
+                vendor_performance = st.slider("Vendor Performance Rating", 0.0, 5.0, 3.0, 0.5, help="Rate vendor performance from 0 (Poor) to 5 (Excellent)")
+                contract_url = st.text_input("Contract Document URL", placeholder="https://drive.google.com/... or https://...")
+                
+            with col4:
+                st.markdown("#### Additional Details")
+                department_id = st.selectbox("Department", ["None"] + list(get_cached_departments()))
+                breach_notes = st.text_area("Breach/Compliance Notes (if any)", height=80, placeholder="Enter any breach details or compliance concerns...")
+                
+            st.markdown("---")
+            
+            if st.form_submit_button("Save Contract", use_container_width=True):
+                if contract_title and vendor_name and contract_value > 0 and end_date:
+                    # Prepare contract data with all fields
                     contract_data = {
-                        "contract_title": title,
-                        "vendor_name": vendor,
+                        "contract_title": contract_title,
+                        "vendor_name": vendor_name,
                         "contract_value": contract_value,
-                        "start_date": datetime.now().date().isoformat(),
+                        "amount_spent_to_date": amount_spent_to_date,
+                        "start_date": start_date.isoformat(),
                         "end_date": end_date.isoformat(),
-                        "auto_renewal": auto_renew,
-                        "department_id": st.session_state.user_dept
+                        "signed_date": signed_date.isoformat(),
+                        "payment_terms": payment_terms,
+                        "auto_renewal": auto_renewal,
+                        "compliance_status": compliance_status,
+                        "vendor_performance": vendor_performance,
+                        "contract_url": contract_url if contract_url else None,
+                        "breach_notes": breach_notes if breach_notes else None,
+                        "department_id": st.session_state.user_dept  # Link to user's department
                     }
+                    
                     success, message = add_enhanced_contract(contract_data)
                     if success:
-                        st.success(message)
+                        st.success(f"✅ {message}")
+                        st.balloons()
                         st.rerun()
                     else:
-                        st.error(message)
+                        st.error(f"❌ {message}")
                 else:
-                    st.error("Please fill required fields")
+                    st.error("Please fill all required fields (*)")
+            
+            st.caption("* Required fields")
 
 # ============================================
-# POLICIES SECTION (User View) - FIXED WITH ADD POLICY OPTION
+# POLICIES SECTION (User View)
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
     
-    # Create three tabs: Add, View, Analytics
     tab_add, tab_view, tab_analytics = st.tabs(["➕ Add New Policy", "📋 View All Policies", "📊 Analytics Dashboard"])
     
-    # ========== TAB 1: ADD NEW POLICY ==========
     with tab_add:
         st.markdown("### Add New Policy")
         
-        # Get departments for department-specific scope
         departments = get_cached_departments()
         dept_options = [d["name"] for d in departments]
         
@@ -2139,7 +2177,6 @@ elif choice == "📋 Policies":
                 review_date = st.date_input("Next Review Date*")
                 policy_url = st.text_input("Policy Document URL", placeholder="https://...")
             
-            # Scope specific fields
             st.markdown("#### Scope Details")
             if policy_scope == "Institution-Wide":
                 st.info("This policy applies to the entire institution")
@@ -2147,7 +2184,7 @@ elif choice == "📋 Policies":
             elif policy_scope == "Committee":
                 committee_name = st.text_input("Committee Name")
                 affected_entities = f"Committee: {committee_name}" if committee_name else "Committee"
-            else:  # Department-Specific
+            else:
                 affected_depts = st.multiselect("Affected Departments", dept_options)
                 affected_entities = ", ".join(affected_depts) if affected_depts else "Not specified"
             
@@ -2158,7 +2195,6 @@ elif choice == "📋 Policies":
             
             if st.form_submit_button("Save Policy", use_container_width=True):
                 if policy_name and category and policy_owner and expiry_date:
-                    # Prepare data
                     policy_data = {
                         "policy_name": policy_name,
                         "category": category,
@@ -2173,7 +2209,7 @@ elif choice == "📋 Policies":
                         "requires_acknowledgment": requires_acknowledgment,
                         "requires_sensitization": requires_sensitization,
                         "change_log": change_log,
-                        "department_id": st.session_state.user_dept,  # Link to user's department
+                        "department_id": st.session_state.user_dept,
                         "created_by": st.session_state.user_id
                     }
                     
@@ -2187,7 +2223,6 @@ elif choice == "📋 Policies":
                 else:
                     st.error("Please fill all required fields (*)")
     
-    # ========== TAB 2: VIEW ALL POLICIES ==========
     with tab_view:
         policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if policies:
@@ -2229,7 +2264,6 @@ elif choice == "📋 Policies":
         else:
             st.info("No policies found. Click 'Add New Policy' to get started.")
     
-    # ========== TAB 3: ANALYTICS DASHBOARD ==========
     with tab_analytics:
         policies = get_cached_policies(st.session_state.user_role, st.session_state.user_dept)
         if policies:
@@ -2572,6 +2606,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     auto_renew = st.checkbox("Auto-renewal")
                     contract_url = st.text_input("Contract Document URL", placeholder="https://...")
                     compliance_status = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"])
+                    vendor_performance = st.slider("Vendor Performance Rating", 0.0, 5.0, 3.0, 0.5)
+                    breach_notes = st.text_area("Breach/Compliance Notes", height=60)
                     department_id = st.selectbox("Department", ["None"] + list(dept_options.keys()))
                     
                     if st.form_submit_button("Save Contract", use_container_width=True):
@@ -2589,7 +2625,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 "auto_renewal": auto_renew,
                                 "contract_url": contract_url if contract_url else None,
                                 "compliance_status": compliance_status,
-                                "vendor_performance": 0,
+                                "vendor_performance": vendor_performance,
+                                "breach_notes": breach_notes if breach_notes else None,
                                 "department_id": dept_id
                             }
                             success, message = add_enhanced_contract(contract_data)
@@ -2622,6 +2659,9 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                     edit_spent = st.number_input("Amount Spent", value=float(selected_contract.get("amount_spent_to_date", 0)))
                                     edit_end_date = st.date_input("End Date", value=datetime.strptime(selected_contract["end_date"], "%Y-%m-%d").date())
                                     edit_status = st.selectbox("Status", ["active", "expiring_soon", "expired"], index=["active", "expiring_soon", "expired"].index(selected_contract.get("status", "active")))
+                                    edit_compliance = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"], 
+                                                                  index=["Fully Compliant", "Partially Compliant", "Non-Compliant"].index(selected_contract.get("compliance_status", "Fully Compliant")))
+                                    edit_performance = st.slider("Vendor Performance", 0.0, 5.0, float(selected_contract.get("vendor_performance", 3.0)), 0.5)
                                     
                                     if st.form_submit_button("Update Contract", use_container_width=True):
                                         update_data = {
@@ -2631,6 +2671,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                             "amount_spent_to_date": edit_spent,
                                             "end_date": edit_end_date.isoformat(),
                                             "status": edit_status,
+                                            "compliance_status": edit_compliance,
+                                            "vendor_performance": edit_performance,
                                             "updated_at": datetime.now().isoformat()
                                         }
                                         if update_contract_admin(selected_contract_id, update_data):
@@ -2655,7 +2697,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         all_contracts = get_cached_contracts("admin", None)
         if all_contracts:
             df_contracts_admin = pd.DataFrame(all_contracts)
-            display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
+            display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date', 'compliance_status', 'vendor_performance']
             st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
     
     # ========== TAB 4: WORK PLAN MANAGEMENT ==========
@@ -2967,7 +3009,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
         all_contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
         if all_contracts:
             df = pd.DataFrame(all_contracts)
-            display_cols = ["contract_title", "vendor_name", "contract_value", "amount_spent_to_date", "end_date", "status"]
+            display_cols = ["contract_title", "vendor_name", "contract_value", "amount_spent_to_date", "end_date", "status", "compliance_status"]
             st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
         else:
             st.info("No contracts found")
@@ -2987,5 +3029,5 @@ st.markdown("---")
 st.markdown("""
 <div class='footer'>
     <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
-    </div>
+</div>
 """, unsafe_allow_html=True)
