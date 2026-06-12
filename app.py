@@ -35,7 +35,6 @@ def toggle_theme():
         st.session_state.theme = "light"
     st.rerun()
 
-# Page config
 st.set_page_config(
     page_title="HELB Strategy Performance System",
     page_icon="🏦",
@@ -84,7 +83,6 @@ STRATEGIC_PILLARS = [
 
 ACTIVITY_CATEGORIES = ["SP Deliverable", "PC Deliverable"]
 
-# Quarter to Months Mapping
 QUARTER_MONTHS = {
     "Q1 (Jul-Sep)": ["July", "August", "September"],
     "Q2 (Oct-Dec)": ["October", "November", "December"],
@@ -232,7 +230,6 @@ def get_directorate_by_id(directorate_id):
     return None
 
 def get_directorate_for_department(department_id):
-    """Get directorate name for a given department"""
     if not department_id:
         return None
     dept = get_department_by_id(department_id)
@@ -440,13 +437,10 @@ def get_filtered_data(table_name):
 # ENHANCED CONTRACT FUNCTIONS
 # ============================================
 def add_enhanced_contract(data):
-    """Add new contract with enhanced fields"""
     try:
-        # Calculate days remaining
         end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
         days_left = (end_date - datetime.now().date()).days
         
-        # Determine status based on days remaining and utilization
         if days_left < 0:
             status = "expired"
         elif days_left <= 30:
@@ -454,12 +448,10 @@ def add_enhanced_contract(data):
         else:
             status = "active"
         
-        # Calculate utilization rate
         contract_value = data.get("contract_value", 0)
         amount_spent = data.get("amount_spent_to_date", 0)
         utilization_rate = (amount_spent / contract_value * 100) if contract_value > 0 else 0
         
-        # Add budget alert if needed
         if utilization_rate >= 80:
             data["budget_alert"] = True
         else:
@@ -476,9 +468,7 @@ def add_enhanced_contract(data):
         return False, str(e)
 
 def update_contract_spending(contract_id, amount_spent):
-    """Update contract spending and recalculate utilization"""
     try:
-        # Get current contract
         result = supabase.table("contracts").select("*").eq("id", contract_id).execute()
         if not result.data:
             return False
@@ -486,13 +476,9 @@ def update_contract_spending(contract_id, amount_spent):
         contract = result.data[0]
         contract_value = contract.get("contract_value", 0)
         
-        # Calculate new utilization
         utilization_rate = (amount_spent / contract_value * 100) if contract_value > 0 else 0
-        
-        # Set budget alert
         budget_alert = utilization_rate >= 80
         
-        # Update
         supabase.table("contracts").update({
             "amount_spent_to_date": amount_spent,
             "utilization_rate": utilization_rate,
@@ -506,7 +492,6 @@ def update_contract_spending(contract_id, amount_spent):
         return False
 
 def update_vendor_performance(contract_id, performance_rating, compliance_status, breach_notes=None):
-    """Update vendor performance metrics"""
     try:
         update_data = {
             "vendor_performance": performance_rating,
@@ -523,19 +508,16 @@ def update_vendor_performance(contract_id, performance_rating, compliance_status
         return False
 
 def get_contracts_analytics(contracts):
-    """Generate analytics data for contracts"""
     if not contracts:
         return None
     
     df = pd.DataFrame(contracts)
     
-    # Convert numeric columns
     df['contract_value'] = pd.to_numeric(df.get('contract_value', 0), errors='coerce').fillna(0)
     df['amount_spent_to_date'] = pd.to_numeric(df.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
     df['vendor_performance'] = pd.to_numeric(df.get('vendor_performance', 0), errors='coerce').fillna(0)
     df['utilization_rate'] = pd.to_numeric(df.get('utilization_rate', 0), errors='coerce').fillna(0)
     
-    # Add department info
     departments = get_cached_departments()
     dept_map = {d['id']: d['name'] for d in departments}
     df['department_name'] = df['department_id'].map(dept_map).fillna("Unknown")
@@ -694,7 +676,7 @@ if st.session_state.theme == "light":
             padding: 1rem;
             text-align: center;
         }}
-        .kpi-label {{ font-size: 0.7rem; text-transform: uppercase; color: {HELB_GOLD} !important; font-weight: 600; }}
+        .kpi-label {{ font-size: 0.7rem; text-transform: uppercase; color: {HELB_GOLD} !important; font-weight: 600; letter-spacing: 0.5px; }}
         .kpi-value {{ font-size: 1.5rem; font-weight: 700; margin: 0.2rem 0; color: white !important; }}
         .kpi-sub {{ font-size: 0.55rem; color: white !important; margin-top: 0.2rem; opacity: 0.9; }}
         .progress-bar {{ height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 0.5rem; }}
@@ -705,6 +687,7 @@ if st.session_state.theme == "light":
             border-radius: 12px;
             padding: 1rem;
             border-left: 4px solid {HELB_GOLD};
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }}
         .metric-card * {{ color: {HELB_BLACK} !important; }}
         
@@ -806,7 +789,7 @@ else:
         .login-container {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 20px; padding: 2.5rem; text-align: center; }}
         
         .kpi-card {{ background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border-radius: 10px; padding: 0.8rem; text-align: center; }}
-        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.65rem; }}
+        .kpi-label {{ color: {HELB_GOLD}; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px; }}
         .kpi-value {{ color: white; font-size: 1.3rem; font-weight: 700; }}
         .kpi-sub {{ color: rgba(255,255,255,0.7); font-size: 0.55rem; }}
         
@@ -975,7 +958,6 @@ if choice == "📋 Work Plans":
     else:
         st.markdown(f"<h2>📋 {st.session_state.user_dept_name} Department Work Plan</h2>", unsafe_allow_html=True)
     
-    # Filter Bar
     st.markdown("### 📅 Period Filters")
     col_fy, col_q, col_m = st.columns(3)
     with col_fy:
@@ -1001,11 +983,8 @@ if choice == "📋 Work Plans":
     
     tab_add, tab_view, tab_dashboard = st.tabs(["➕ Add Work Plan Activity", "📊 View All Activities", "📈 Performance Dashboard"])
     
-    # TAB 1: ADD NEW WORK PLAN ACTIVITY
     with tab_add:
         st.markdown("### Add New Work Plan Activity")
-        
-        # Get directorate for the user's department (auto-populate)
         user_directorate = get_directorate_for_department(st.session_state.user_dept)
         
         with st.form("add_work_plan_form"):
@@ -1023,7 +1002,6 @@ if choice == "📋 Work Plans":
                 activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
                 dept_name = st.session_state.user_dept_name if st.session_state.user_dept_name else "Current Department"
                 st.text_input("Department", value=dept_name, disabled=True)
-                # Auto-populate Directorate field
                 st.text_input("Directorate", value=user_directorate or "Not assigned", disabled=True)
             
             if st.form_submit_button("Save Work Plan Activity", use_container_width=True):
@@ -1053,7 +1031,6 @@ if choice == "📋 Work Plans":
                         st.balloons()
                         st.rerun()
     
-    # TAB 2: VIEW ALL ACTIVITIES
     with tab_view:
         if filtered_plans:
             filter_summary = []
@@ -1187,7 +1164,6 @@ if choice == "📋 Work Plans":
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
-    # TAB 3: WORK PLAN DASHBOARD
     with tab_dashboard:
         if filtered_plans:
             df = pd.DataFrame(filtered_plans)
