@@ -1800,7 +1800,7 @@ if choice == "📋 Work Plans":
                 total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
+                    <div class='kpi-label'> TOTAL BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Budget</div>
                 </div>
@@ -1915,7 +1915,7 @@ elif choice == "📊 Dashboard":
                 total_budget = filtered_work_df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>💰 BUDGET</div>
+                    <div class='kpi-label'> BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Budget</div>
                 </div>
@@ -2054,7 +2054,7 @@ elif choice == "📊 Dashboard":
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL VALUE</div>
+                    <div class='kpi-label'> TOTAL VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
                     <div class='kpi-sub'>Contract Value</div>
                 </div>
@@ -2260,7 +2260,7 @@ elif choice == "📄 Contracts":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
+                st.metric(" Total Contract Value", f"KES {total_value:,.0f}")
             with col2:
                 st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
             with col3:
@@ -2446,7 +2446,7 @@ elif choice == "📄 Contracts":
                             "status": "active"
                         })
                 
-                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
+                st.info(f" **Total Contract Value: KES {total_value:,.2f}**")
             else:
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
