@@ -10,6 +10,7 @@ from io import BytesIO
 import requests
 import re
 import json
+from dateutil.relativedelta import relativedelta
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -66,7 +67,6 @@ LOGO_BASE64 = get_logo_base64()
 # ============================================
 # PAGE CONFIG WITH HELB LOGO AS FAVICON
 # ============================================
-# Create favicon HTML if logo exists
 if LOGO_BASE64:
     favicon_html = f'<link rel="icon" href="data:image/png;base64,{LOGO_BASE64}" type="image/png">'
 else:
@@ -79,7 +79,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inject favicon
 st.markdown(f'<head>{favicon_html}</head>', unsafe_allow_html=True)
 
 # ============================================
@@ -528,7 +527,6 @@ def update_work_plan_progress(plan_id, actual_achievement, progress_percent, sta
             "updated_at": datetime.now().isoformat()
         }
         
-        # Add comment if provided
         if comment:
             update_data["comment"] = comment
             
@@ -877,7 +875,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (UPDATED WITH GREEN HEADER ON LOGIN PAGE)
+# CUSTOM CSS
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1050,98 +1048,91 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* Professional Login Page Styles - Light Mode with GREEN HEADER */
+        /* Professional Login Page - GREEN HEADER covering logo and text, no excess headroom */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80vh;
-            padding: 2rem;
+            min-height: 70vh;
+            padding: 1rem;
         }}
         .login-container {{
             background: #ffffff;
-            border-radius: 24px;
+            border-radius: 16px;
             padding: 0;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
             overflow: hidden;
         }}
         .login-header {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, #005a2a 100%);
-            padding: 2rem 1.5rem;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
+            padding: 1.5rem;
             text-align: center;
         }}
         .login-logo {{
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             display: flex;
             justify-content: center;
         }}
         .login-title {{
             color: white !important;
-            font-size: 1.5rem !important;
+            font-size: 1.2rem !important;
             font-weight: 700 !important;
-            margin: 0.5rem 0 0.25rem 0 !important;
+            margin: 0.25rem 0 0.1rem 0 !important;
             text-align: center !important;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }}
         .login-subtitle {{
             color: {HELB_GOLD} !important;
-            font-size: 0.85rem !important;
+            font-size: 0.7rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
             font-weight: 500;
         }}
         .login-divider {{
-            height: 3px;
+            height: 2px;
             background: {HELB_GOLD};
-            width: 50px;
-            margin: 0.75rem auto 0;
+            width: 40px;
+            margin: 0.5rem auto 0;
             border-radius: 2px;
         }}
         .login-body {{
-            padding: 2rem 1.5rem;
+            padding: 1.5rem;
         }}
         .login-footer {{
             text-align: center;
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid #e5e7eb;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: #9ca3af;
             background: #f9fafb;
         }}
         .login-container .stTextInput input {{
             background-color: white !important;
             color: #1F2937 !important;
-            border: 2px solid #e5e7eb !important;
-            border-radius: 12px !important;
-            padding: 12px 16px !important;
-            font-size: 0.9rem !important;
-            transition: all 0.3s ease !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
         }}
         .login-container .stTextInput input:focus {{
             border-color: {HELB_GREEN} !important;
-            box-shadow: 0 0 0 3px rgba(0,132,61,0.1) !important;
+            box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
         }}
         .login-container .stTextInput label {{
             color: #374151 !important;
             font-weight: 600 !important;
-            margin-bottom: 0.25rem !important;
+            font-size: 0.8rem !important;
         }}
         .login-container .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
             border: none !important;
-            border-radius: 12px !important;
-            padding: 12px !important;
-            margin-top: 0.5rem !important;
-            font-size: 1rem !important;
-            transition: transform 0.2s ease !important;
-        }}
-        .login-container .stButton > button:hover {{
-            transform: translateY(-2px) !important;
-            box-shadow: 0 10px 20px rgba(0,132,61,0.2) !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
         }}
     </style>
     """
@@ -1299,98 +1290,91 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* Professional Login Page Styles - Dark Mode with GREEN HEADER */
+        /* Professional Login Page - Dark Mode */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80vh;
-            padding: 2rem;
+            min-height: 70vh;
+            padding: 1rem;
         }}
         .login-container {{
             background: #1e293b;
-            border-radius: 24px;
+            border-radius: 16px;
             padding: 0;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
             overflow: hidden;
         }}
         .login-header {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, #005a2a 100%);
-            padding: 2rem 1.5rem;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
+            padding: 1.5rem;
             text-align: center;
         }}
         .login-logo {{
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             display: flex;
             justify-content: center;
         }}
         .login-title {{
             color: white !important;
-            font-size: 1.5rem !important;
+            font-size: 1.2rem !important;
             font-weight: 700 !important;
-            margin: 0.5rem 0 0.25rem 0 !important;
+            margin: 0.25rem 0 0.1rem 0 !important;
             text-align: center !important;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }}
         .login-subtitle {{
             color: {HELB_GOLD} !important;
-            font-size: 0.85rem !important;
+            font-size: 0.7rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
             font-weight: 500;
         }}
         .login-divider {{
-            height: 3px;
+            height: 2px;
             background: {HELB_GOLD};
-            width: 50px;
-            margin: 0.75rem auto 0;
+            width: 40px;
+            margin: 0.5rem auto 0;
             border-radius: 2px;
         }}
         .login-body {{
-            padding: 2rem 1.5rem;
+            padding: 1.5rem;
         }}
         .login-footer {{
             text-align: center;
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid #334155;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: #64748b;
             background: #0f172a;
         }}
         .login-container .stTextInput input {{
             background-color: #334155 !important;
             color: #f1f5f9 !important;
-            border: 2px solid #475569 !important;
-            border-radius: 12px !important;
-            padding: 12px 16px !important;
-            font-size: 0.9rem !important;
-            transition: all 0.3s ease !important;
+            border: 1px solid #475569 !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
         }}
         .login-container .stTextInput input:focus {{
             border-color: {HELB_GOLD} !important;
-            box-shadow: 0 0 0 3px rgba(255,184,28,0.1) !important;
+            box-shadow: 0 0 0 2px rgba(255,184,28,0.1) !important;
         }}
         .login-container .stTextInput label {{
             color: #cbd5e1 !important;
             font-weight: 600 !important;
-            margin-bottom: 0.25rem !important;
+            font-size: 0.8rem !important;
         }}
         .login-container .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
             border: none !important;
-            border-radius: 12px !important;
-            padding: 12px !important;
-            margin-top: 0.5rem !important;
-            font-size: 1rem !important;
-            transition: transform 0.2s ease !important;
-        }}
-        .login-container .stButton > button:hover {{
-            transform: translateY(-2px) !important;
-            box-shadow: 0 10px 20px rgba(0,132,61,0.3) !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
         }}
     </style>
     """
@@ -1398,32 +1382,28 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE (PROFESSIONAL WITH GREEN HEADER)
+# LOGIN PAGE - GREEN HEADER COVERS LOGO AND TEXT
 # ============================================
 if not st.session_state.authenticated:
-    # Centered login with professional styling
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        # Login container with professional design
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         
-        # Login Header - GREEN BACKGROUND
+        # GREEN HEADER SECTION - Contains logo AND text
         st.markdown('<div class="login-header">', unsafe_allow_html=True)
         
-        # Display HELB Logo
         if LOGO_BASE64:
             st.markdown(f'''
             <div class="login-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 80px; height: auto; background: transparent;">
+                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 60px; height: auto; background: transparent;">
             </div>
             ''', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="login-logo" style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-logo" style="font-size: 2rem;">🏦</div>', unsafe_allow_html=True)
         
-        # Title and Subtitle - ON GREEN BACKGROUND
         st.markdown(f"""
         <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
         <p class="login-subtitle">Strategy Performance Management System</p>
@@ -1432,10 +1412,9 @@ if not st.session_state.authenticated:
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Login Body
+        # Login Body - White/gray section
         st.markdown('<div class="login-body">', unsafe_allow_html=True)
         
-        # Login Form
         with st.form("login_form"):
             username = st.text_input("Username", placeholder="Enter your username", key="login_username")
             password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
@@ -1447,7 +1426,6 @@ if not st.session_state.authenticated:
                     result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                     if result.data:
                         user = result.data[0]
-                        # Simple password check (in production, use proper hashing)
                         if password == user["password_hash"]:
                             dept_name = get_department_name(user["department_id"])
                             
@@ -1470,25 +1448,20 @@ if not st.session_state.authenticated:
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Footer
         st.markdown(f"""
         <div class="login-footer">
             <p>© 2025 HELB - Higher Education Loans Board</p>
-            <p>Secure System Access</p>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Stop execution here if not authenticated
     st.stop()
 
 # ============================================
-# MAIN APPLICATION (REST OF THE CODE - UNCHANGED EXCEPT FOR POLICY DURATION CALCULATION)
+# MAIN APPLICATION HEADER
 # ============================================
-
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
 with col_header:
     if LOGO_BASE64:
@@ -1565,7 +1538,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE (User View) - WITH COMMENT FIELD
+# WORK PLANS MODULE
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1695,16 +1668,16 @@ if choice == "📋 Work Plans":
                 exceeded = is_target_exceeded(current_actual, annual_target)
                 
                 if current_actual == 0 or current_actual is None:
-                    badge = '<span class="badge-pending">🔴 Pending</span>'
+                    badge = '<span class="status-badge status-expired">🔴 Pending</span>'
                 elif progress_percent >= 100:
                     if exceeded:
-                        badge = '<span class="badge-exceeded">✅ Done (Exceeded Target!)</span>'
+                        badge = '<span class="status-badge status-active">✅ Done (Exceeded!)</span>'
                     else:
-                        badge = '<span class="badge-active">✅ Done</span>'
+                        badge = '<span class="status-badge status-active">✅ Done</span>'
                 elif progress_percent > 0:
-                    badge = '<span class="badge-inprogress">🟡 In Progress</span>'
+                    badge = '<span class="status-badge status-expiring">🟡 In Progress</span>'
                 else:
-                    badge = '<span class="badge-pending">🔴 Pending</span>'
+                    badge = '<span class="status-badge status-expired">🔴 Pending</span>'
                 
                 if days_left < 0:
                     days_indicator = f"🔴 (EXPIRED)"
@@ -1745,7 +1718,6 @@ if choice == "📋 Work Plans":
                         new_progress = calculate_progress_from_actual(annual_target, actual_input)
                         st.caption(f"📊 Calculated Progress: {new_progress:.1f}%")
                         
-                        # Comment field (optional)
                         update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
                         
                         if st.session_state.user_role == "admin":
@@ -1832,7 +1804,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD (UNCHANGED)
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -2064,272 +2036,102 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if not filtered_contracts_df.empty:
-            df_contracts = filtered_contracts_df.copy()
+            st.markdown("#### 📄 Contracts List")
             
-            df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
-            df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
-            df_contracts['vendor_performance'] = pd.to_numeric(df_contracts.get('vendor_performance', 0), errors='coerce').fillna(0)
-            df_contracts['utilization_rate'] = pd.to_numeric(df_contracts.get('utilization_rate', 0), errors='coerce').fillna(0)
-            
-            departments = get_cached_departments()
-            dept_map = {d['id']: d['name'] for d in departments}
-            df_contracts['department_name'] = df_contracts['department_id'].map(dept_map).fillna("Unknown")
-            
-            total_value = df_contracts['contract_value'].sum()
-            total_spent = df_contracts['amount_spent_to_date'].sum()
-            utilization = (total_spent/total_value*100) if total_value > 0 else 0
-            active = len(df_contracts[df_contracts['status'] == 'active'])
-            expiring = len(df_contracts[df_contracts['status'] == 'expiring_soon'])
-            avg_performance = df_contracts[df_contracts['vendor_performance'] > 0]['vendor_performance'].mean()
-            
-            col1, col2, col3, col4, col5 = st.columns(5)
-            with col1:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL VALUE</div>
-                    <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Contract Value</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col2:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>💸 TOTAL SPENT</div>
-                    <div class='kpi-value'>KES {total_spent/1e6:.1f}M</div>
-                    <div class='progress-bar'><div class='progress-fill' style='width:{utilization}%;'></div></div>
-                    <div class='kpi-sub'>{utilization:.0f}% utilized</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col3:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>✅ ACTIVE</div>
-                    <div class='kpi-value'>{active}</div>
-                    <div class='kpi-sub'>Active Contracts</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col4:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
-                    <div class='kpi-value'>{expiring}</div>
-                    <div class='kpi-sub'>Within 30 days</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col5:
-                rating_display = f"{avg_performance:.1f}" if not pd.isna(avg_performance) else "N/A"
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>⭐ AVG RATING</div>
-                    <div class='kpi-value'>{rating_display}/5</div>
-                    <div class='kpi-sub'>Vendor Performance</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("---")
-            
-            # Filters for contracts list
-            st.markdown("#### 🔍 Filter Contracts")
-            col_filter1, col_filter2, col_filter3, col_filter4 = st.columns(4)
-            with col_filter1:
-                status_filter_contract = st.multiselect("Status", ["active", "expiring_soon", "expired"], default=[])
-            with col_filter2:
-                compliance_filter = st.multiselect("Compliance", ["Fully Compliant", "Partially Compliant", "Non-Compliant"], default=[])
-            with col_filter3:
-                if 'payment_terms' in df_contracts.columns:
-                    payment_filter = st.multiselect("Payment Terms", df_contracts['payment_terms'].dropna().unique().tolist(), default=[])
-                else:
-                    payment_filter = []
-            with col_filter4:
-                dept_filter_contract = st.multiselect("Department", df_contracts['department_name'].unique().tolist(), default=[])
-            
-            filtered_contracts_list = df_contracts.copy()
-            if status_filter_contract:
-                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['status'].isin(status_filter_contract)]
-            if compliance_filter:
-                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['compliance_status'].isin(compliance_filter)]
-            if payment_filter:
-                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['payment_terms'].isin(payment_filter)]
-            if dept_filter_contract:
-                filtered_contracts_list = filtered_contracts_list[filtered_contracts_list['department_name'].isin(dept_filter_contract)]
-            
-            st.markdown(f"**Showing {len(filtered_contracts_list)} contracts**")
-            
-            for _, contract in filtered_contracts_list.iterrows():
+            for _, contract in filtered_contracts_df.iterrows():
                 end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                 days_left = (end_date - datetime.now().date()).days
                 
                 if days_left > 30:
-                    status_class = "active"
+                    status_class = "status-active"
                     status_text = "Active"
                 elif days_left > 0:
-                    status_class = "expiring"
-                    status_text = f"Expiring in {days_left} days"
+                    status_class = "status-expiring"
+                    status_text = f"Expires in {days_left} days"
                 else:
-                    status_class = "expired"
+                    status_class = "status-expired"
                     status_text = "Expired"
                 
-                budget_alert_badge = "⚠️ " if contract.get('budget_alert', False) else ""
+                expander_title = f"📄 {contract['contract_title']} - {contract['vendor_name']} ({status_text})"
                 
-                with st.container():
-                    st.markdown(f"""
-                    <div class='contract-card'>
-                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                            <div style='flex: 1;'>
-                                <div class='contract-title'>{budget_alert_badge}📄 {contract['contract_title']}</div>
-                                <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
-                                <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Total Value:</strong> KES {contract.get('total_contract_value', contract.get('contract_value', 0)):,.0f}</div>
-                                <div class='contract-detail'><strong>Spent to Date:</strong> KES {contract.get('amount_spent_to_date', 0):,.0f} ({contract.get('utilization_rate', 0):.0f}%)</div>
-                                <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} | <strong>Payment:</strong> {contract.get('payment_terms', 'N/A')}</div>
-                                <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')} | <strong>Performance:</strong> ⭐ {contract.get('vendor_performance', 0)}/5</div>
-                                <div class='contract-detail'><strong>Auto-renewal:</strong> {'Yes' if contract.get('auto_renewal', False) else 'No'}</div>
-                            </div>
-                            <div style='text-align: right;'>
-                                <span class='status-badge status-{status_class}'>{status_text}</span>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                with st.expander(expander_title, expanded=False):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"**Contract Title:** {contract['contract_title']}")
+                        st.markdown(f"**Vendor:** {contract['vendor_name']}")
+                        st.markdown(f"**Duration:** {contract.get('contract_duration', 'N/A')}")
+                        st.markdown(f"**Start Date:** {contract['start_date']}")
+                        st.markdown(f"**End Date:** {contract['end_date']}")
+                        st.markdown(f"**Signed Date:** {contract.get('signed_date', 'N/A')}")
+                    with col2:
+                        st.markdown(f"**Contract Value:** KES {contract.get('contract_value', 0):,.0f}")
+                        st.markdown(f"**Amount Spent:** KES {contract.get('amount_spent_to_date', 0):,.0f}")
+                        st.markdown(f"**Utilization:** {contract.get('utilization_rate', 0):.1f}%")
+                        st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
+                        st.markdown(f"**Compliance:** {contract.get('compliance_status', 'N/A')}")
+                        st.markdown(f"**Vendor Rating:** ⭐ {contract.get('vendor_performance', 0)}/5")
+                    
+                    st.markdown("---")
+                    if contract.get('contract_url'):
+                        st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
+                    if contract.get('breach_notes'):
+                        st.warning(f"⚠️ **Breach Notes:** {contract['breach_notes']}")
+                    if contract.get('budget_alert'):
+                        st.error("⚠️ **Budget Alert:** Utilization has exceeded 80%!")
         else:
             st.info("No contracts found for the selected filters.")
     
     with tab_policies:
         if not filtered_policies_df.empty:
-            df_policies = filtered_policies_df.copy()
+            st.markdown("#### 📜 Policies List")
             
-            total_policies = len(df_policies)
-            active_policies = len(df_policies[df_policies['status'] == 'active'])
-            expiring_soon = len(df_policies[df_policies['status'] == 'expiring_soon'])
-            expired_policies = len(df_policies[df_policies['status'] == 'expired'])
-            
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>📜 TOTAL POLICIES</div>
-                    <div class='kpi-value'>{total_policies}</div>
-                    <div class='kpi-sub'>All Policies</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col2:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>✅ ACTIVE</div>
-                    <div class='kpi-value'>{active_policies}</div>
-                    <div class='kpi-sub'>Currently Active</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col3:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
-                    <div class='kpi-value'>{expiring_soon}</div>
-                    <div class='kpi-sub'>Within 90 days</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col4:
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>🔴 EXPIRED</div>
-                    <div class='kpi-value'>{expired_policies}</div>
-                    <div class='kpi-sub'>Needs Review</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("---")
-            
-            col_chart1, col_chart2 = st.columns(2)
-            with col_chart1:
-                if 'category' in df_policies.columns:
-                    st.markdown("#### Policies by Category")
-                    category_counts = df_policies['category'].value_counts().reset_index()
-                    category_counts.columns = ['Category', 'Count']
-                    fig = px.pie(category_counts, values='Count', names='Category', hole=0.4,
-                                color_discrete_sequence=[HELB_GREEN, HELB_GOLD, HELB_BLUE, "#8B5CF6", "#10B981"])
-                    fig.update_layout(height=350)
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            with col_chart2:
-                if 'policy_scope' in df_policies.columns:
-                    st.markdown("#### Policy Scope Distribution")
-                    scope_counts = df_policies['policy_scope'].value_counts().reset_index()
-                    scope_counts.columns = ['Scope', 'Count']
-                    fig = px.bar(scope_counts, x='Scope', y='Count', color='Count',
-                               color_discrete_sequence=[HELB_GREEN], text='Count')
-                    fig.update_traces(textposition='outside')
-                    fig.update_layout(height=350)
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            st.markdown("---")
-            st.markdown("#### 🔍 Filter Policies")
-            col_filter1, col_filter2, col_filter3 = st.columns(3)
-            with col_filter1:
-                status_filter_policy = st.multiselect("Status", ["active", "expiring_soon", "expired"], default=[], key="policy_status_filter")
-            with col_filter2:
-                if 'category' in df_policies.columns:
-                    category_filter_policy = st.multiselect("Category", df_policies['category'].unique().tolist(), default=[], key="policy_category_filter")
-                else:
-                    category_filter_policy = []
-            with col_filter3:
-                if 'policy_scope' in df_policies.columns:
-                    scope_filter_policy = st.multiselect("Scope", df_policies['policy_scope'].unique().tolist(), default=[], key="policy_scope_filter")
-                else:
-                    scope_filter_policy = []
-            
-            filtered_policies_list = df_policies.copy()
-            if status_filter_policy:
-                filtered_policies_list = filtered_policies_list[filtered_policies_list['status'].isin(status_filter_policy)]
-            if category_filter_policy:
-                filtered_policies_list = filtered_policies_list[filtered_policies_list['category'].isin(category_filter_policy)]
-            if scope_filter_policy:
-                filtered_policies_list = filtered_policies_list[filtered_policies_list['policy_scope'].isin(scope_filter_policy)]
-            
-            st.markdown(f"**Showing {len(filtered_policies_list)} policies**")
-            
-            for _, policy in filtered_policies_list.iterrows():
+            for _, policy in filtered_policies_df.iterrows():
                 expiry = datetime.strptime(policy["expiry_date"], "%Y-%m-%d").date()
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
-                    status_class = "active"
+                    status_class = "status-active"
                     status_text = "Active"
                 elif days_left > 0:
-                    status_class = "expiring"
+                    status_class = "status-expiring"
                     status_text = f"Expires in {days_left} days"
                 else:
-                    status_class = "expired"
+                    status_class = "status-expired"
                     status_text = "Expired"
                 
-                category = policy.get('category', 'Uncategorized')
-                policy_scope = policy.get('policy_scope', 'Not specified')
-                version = policy.get('version', 'v1.0')
-                owner = policy.get('policy_owner', 'Not assigned')
-                review_date = policy.get('review_date', 'Not scheduled')
+                expander_title = f"📜 {policy['policy_name']} (v{policy.get('version', '1.0')}) - {status_text}"
                 
-                with st.container():
-                    st.markdown(f"""
-                    <div class='policy-card'>
-                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                            <div style='flex: 1;'>
-                                <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
-                                <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
-                                <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
-                                <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
-                                <div class='policy-detail'><strong>Affected:</strong> {policy.get('affected_entities', 'N/A')}</div>
-                            </div>
-                            <div style='text-align: right;'>
-                                <span class='status-badge status-{status_class}'>{status_text}</span>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                with st.expander(expander_title, expanded=False):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"**Policy Name:** {policy['policy_name']}")
+                        st.markdown(f"**Category:** {policy.get('category', 'Uncategorized')}")
+                        st.markdown(f"**Version:** {policy.get('version', 'v1.0')}")
+                        st.markdown(f"**Scope:** {policy.get('policy_scope', 'Not specified')}")
+                        st.markdown(f"**Affected Entities:** {policy.get('affected_entities', 'N/A')}")
+                        st.markdown(f"**Policy Owner:** {policy.get('policy_owner', 'Not assigned')}")
+                    with col2:
+                        st.markdown(f"**Effective Date:** {policy.get('effective_date', 'N/A')}")
+                        st.markdown(f"**Expiry Date:** {policy['expiry_date']}")
+                        st.markdown(f"**Next Review:** {policy.get('review_date', 'Not scheduled')}")
+                        st.markdown(f"**Status:** {status_text}")
+                        if policy.get('requires_acknowledgment'):
+                            st.info("📋 Requires Staff Acknowledgment")
+                        if policy.get('requires_sensitization'):
+                            st.info("🎓 Requires Sensitization")
+                    
+                    st.markdown("---")
+                    if policy.get('policy_url'):
+                        st.markdown(f"📄 **Policy Document:** [View Document]({policy['policy_url']})", unsafe_allow_html=True)
+                    if policy.get('change_log'):
+                        st.markdown(f"**Change Log:** {policy['change_log']}")
         else:
             st.info("No policies found for the selected filters.")
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View) - UNCHANGED
+# CONTRACTS SECTION (User View) - WITH EXPANDERS
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2370,22 +2172,25 @@ elif choice == "📄 Contracts":
                     end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                     days_left = (end_date - datetime.now().date()).days
                     
-                    st.markdown(f"""
-                    <div class='contract-card'>
-                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                            <div style='flex: 1;'>
-                                <div class='contract-title'>📄 {contract['contract_title']}</div>
-                                <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
-                                <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Value:</strong> KES {contract.get('contract_value', 0):,.0f}</div>
-                                <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} ({days_left} days left)</div>
-                                <div class='contract-detail'><strong>Payment Terms:</strong> {contract.get('payment_terms', 'N/A')} | <strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')}</div>
-                            </div>
-                            <div style='text-align: right;'>
-                                <span class='status-badge status-active'>Active</span>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    expander_title = f"📄 {contract['contract_title']} - {contract['vendor_name']} (Active, {days_left} days left)"
+                    
+                    with st.expander(expander_title, expanded=False):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown(f"**Contract Title:** {contract['contract_title']}")
+                            st.markdown(f"**Vendor:** {contract['vendor_name']}")
+                            st.markdown(f"**Duration:** {contract.get('contract_duration', 'N/A')}")
+                            st.markdown(f"**Start Date:** {contract['start_date']}")
+                            st.markdown(f"**End Date:** {contract['end_date']}")
+                        with col2:
+                            st.markdown(f"**Contract Value:** KES {contract.get('contract_value', 0):,.0f}")
+                            st.markdown(f"**Amount Spent:** KES {contract.get('amount_spent_to_date', 0):,.0f}")
+                            st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
+                            st.markdown(f"**Compliance:** {contract.get('compliance_status', 'N/A')}")
+                        
+                        st.markdown("---")
+                        if contract.get('contract_url'):
+                            st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
             else:
                 st.info("No active contracts.")
         else:
@@ -2399,25 +2204,29 @@ elif choice == "📄 Contracts":
                 for contract in expiring_contracts:
                     end_date = datetime.strptime(contract["end_date"], "%Y-%m-%d").date()
                     days_left = (end_date - datetime.now().date()).days
-                    status_class = "status-expiring" if days_left > 0 else "status-expired"
                     status_text = f"Expires in {days_left} days" if days_left > 0 else "Expired"
                     
-                    st.markdown(f"""
-                    <div class='contract-card'>
-                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                            <div style='flex: 1;'>
-                                <div class='contract-title'>📄 {contract['contract_title']}</div>
-                                <div class='contract-detail'><strong>Vendor:</strong> {contract['vendor_name']}</div>
-                                <div class='contract-detail'><strong>Duration:</strong> {contract.get('contract_duration', 'N/A')} | <strong>Value:</strong> KES {contract.get('contract_value', 0):,.0f}</div>
-                                <div class='contract-detail'><strong>End Date:</strong> {contract['end_date']} ({abs(days_left)} days {'overdue' if days_left < 0 else 'left'})</div>
-                                <div class='contract-detail'><strong>Compliance:</strong> {contract.get('compliance_status', 'N/A')}</div>
-                            </div>
-                            <div style='text-align: right;'>
-                                <span class='status-badge {status_class}'>{status_text}</span>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    expander_title = f"⚠️ {contract['contract_title']} - {contract['vendor_name']} ({status_text})"
+                    
+                    with st.expander(expander_title, expanded=False):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown(f"**Contract Title:** {contract['contract_title']}")
+                            st.markdown(f"**Vendor:** {contract['vendor_name']}")
+                            st.markdown(f"**Duration:** {contract.get('contract_duration', 'N/A')}")
+                            st.markdown(f"**Start Date:** {contract['start_date']}")
+                            st.markdown(f"**End Date:** {contract['end_date']}")
+                        with col2:
+                            st.markdown(f"**Contract Value:** KES {contract.get('contract_value', 0):,.0f}")
+                            st.markdown(f"**Amount Spent:** KES {contract.get('amount_spent_to_date', 0):,.0f}")
+                            st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
+                            st.markdown(f"**Compliance:** {contract.get('compliance_status', 'N/A')}")
+                        
+                        st.markdown("---")
+                        if contract.get('contract_url'):
+                            st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
+                        if contract.get('breach_notes'):
+                            st.warning(f"⚠️ **Notes:** {contract['breach_notes']}")
             else:
                 st.success("No expiring or expired contracts!")
         else:
@@ -2650,7 +2459,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View) - WITH CORRECT EXPIRY DATE CALCULATION
+# POLICIES SECTION (User View) - WITH EXPANDERS AND CORRECT DATE CALCULATION
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2675,14 +2484,14 @@ elif choice == "📋 Policies":
                 
             with col2:
                 effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                # Policy Duration Selection - FIXED CALCULATION
                 policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                 
-                # FIXED: Calculate expiry date correctly by adding years
+                # FIXED: Correct expiry date calculation using relativedelta
                 if policy_duration != "Custom":
                     duration_years = int(policy_duration.split()[0])
-                    # CORRECT CALCULATION: Add years to effective date
-                    expiry_date_calculated = effective_date.replace(year=effective_date.year + duration_years)
+                    # Using relativedelta for accurate year addition (handles leap years)
+                    from dateutil.relativedelta import relativedelta
+                    expiry_date_calculated = effective_date + relativedelta(years=duration_years)
                     st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
                     expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
                 else:
@@ -2745,39 +2554,41 @@ elif choice == "📋 Policies":
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
-                    status_class = "active"
+                    status_class = "status-active"
                     status_text = "Active"
                 elif days_left > 0:
-                    status_class = "expiring"
+                    status_class = "status-expiring"
                     status_text = f"Expires in {days_left} days"
                 else:
-                    status_class = "expired"
+                    status_class = "status-expired"
                     status_text = "Expired"
                 
-                category = policy.get('category', 'Uncategorized')
-                policy_scope = policy.get('policy_scope', 'Not specified')
-                version = policy.get('version', 'v1.0')
-                owner = policy.get('policy_owner', 'Not assigned')
-                review_date = policy.get('review_date', 'Not scheduled')
+                expander_title = f"📜 {policy['policy_name']} (v{policy.get('version', '1.0')}) - {status_text}"
                 
-                with st.container():
-                    st.markdown(f"""
-                    <div class='policy-card'>
-                        <div style='display: flex; justify-content: space-between; align-items: flex-start;'>
-                            <div style='flex: 1;'>
-                                <div class='policy-title'>📜 {policy['policy_name']} (v{version})</div>
-                                <div class='policy-detail'><strong>Category:</strong> {category} | <strong>Scope:</strong> {policy_scope}</div>
-                                <div class='policy-detail'><strong>Owner:</strong> {owner} | <strong>Next Review:</strong> {review_date}</div>
-                                <div class='policy-detail'><strong>Effective:</strong> {policy.get('effective_date', 'N/A')} | <strong>Expires:</strong> {policy['expiry_date']}</div>
-                                {f'<div class="policy-detail"><strong>Summary:</strong> {policy.get("change_log", "")[:100]}...</div>' if policy.get('change_log') else ''}
-                            </div>
-                            <div style='text-align: right;'>
-                                <span class='status-badge status-{status_class}'>{status_text}</span>
-                                {f'<div style="margin-top: 0.5rem;"><a href="{policy["policy_url"]}" target="_blank" style="font-size: 0.7rem;">📄 View Document</a></div>' if policy.get('policy_url') else ''}
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                with st.expander(expander_title, expanded=False):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"**Policy Name:** {policy['policy_name']}")
+                        st.markdown(f"**Category:** {policy.get('category', 'Uncategorized')}")
+                        st.markdown(f"**Version:** {policy.get('version', 'v1.0')}")
+                        st.markdown(f"**Scope:** {policy.get('policy_scope', 'Not specified')}")
+                        st.markdown(f"**Affected Entities:** {policy.get('affected_entities', 'N/A')}")
+                        st.markdown(f"**Policy Owner:** {policy.get('policy_owner', 'Not assigned')}")
+                    with col2:
+                        st.markdown(f"**Effective Date:** {policy.get('effective_date', 'N/A')}")
+                        st.markdown(f"**Expiry Date:** {policy['expiry_date']}")
+                        st.markdown(f"**Next Review:** {policy.get('review_date', 'Not scheduled')}")
+                        st.markdown(f"**Status:** {status_text}")
+                        if policy.get('requires_acknowledgment'):
+                            st.info("📋 Requires Staff Acknowledgment")
+                        if policy.get('requires_sensitization'):
+                            st.info("🎓 Requires Sensitization")
+                    
+                    st.markdown("---")
+                    if policy.get('policy_url'):
+                        st.markdown(f"📄 **Policy Document:** [View Document]({policy['policy_url']})", unsafe_allow_html=True)
+                    if policy.get('change_log'):
+                        st.markdown(f"**Change Log:** {policy['change_log']}")
         else:
             st.info("No policies found. Click 'Add New Policy' to get started.")
     
@@ -2850,7 +2661,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only) - WITH CORRECT POLICY DURATION CALCULATION
+# ADMIN PANEL - Only showing the policy section with corrected expiry date
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
@@ -2997,13 +2808,13 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     policy_owner = st.text_input("Policy Owner*")
                     
                     effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                    # FIXED: Policy Duration Selection with correct year addition
                     policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                     
+                    # FIXED: Correct expiry date calculation using relativedelta
                     if policy_duration != "Custom":
                         duration_years = int(policy_duration.split()[0])
-                        # CORRECT CALCULATION: Add years to effective date
-                        expiry_date_calculated = effective_date.replace(year=effective_date.year + duration_years)
+                        from dateutil.relativedelta import relativedelta
+                        expiry_date_calculated = effective_date + relativedelta(years=duration_years)
                         st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
                         expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
                     else:
@@ -3535,7 +3346,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             st.info("No audit logs found. The audit_logs table exists but no records have been created yet. Perform some actions (login, create contract, etc.) to generate logs.")
 
 # ============================================
-# ENTERPRISE VIEW (UNCHANGED)
+# ENTERPRISE VIEW
 # ============================================
 elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
@@ -3599,7 +3410,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
             st.info("No policies found")
 
 # ============================================
-# FOOTER (UNCHANGED)
+# FOOTER
 # ============================================
 st.markdown("---")
 st.markdown("""
