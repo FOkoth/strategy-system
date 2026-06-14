@@ -877,7 +877,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (UPDATED WITH PROFESSIONAL LOGIN STYLES)
+# CUSTOM CSS (UPDATED WITH GREEN HEADER ON LOGIN PAGE)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1050,7 +1050,7 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* Professional Login Page Styles - Light Mode */
+        /* Professional Login Page Styles - Light Mode with GREEN HEADER */
         .login-wrapper {{
             display: flex;
             justify-content: center;
@@ -1059,17 +1059,18 @@ if st.session_state.theme == "light":
             padding: 2rem;
         }}
         .login-container {{
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            background: #ffffff;
             border-radius: 24px;
-            padding: 2.5rem;
+            padding: 0;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             max-width: 450px;
             width: 100%;
-            border: 1px solid rgba(0,132,61,0.1);
+            overflow: hidden;
         }}
         .login-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #005a2a 100%);
+            padding: 2rem 1.5rem;
             text-align: center;
-            margin-bottom: 2rem;
         }}
         .login-logo {{
             margin-bottom: 1rem;
@@ -1077,32 +1078,37 @@ if st.session_state.theme == "light":
             justify-content: center;
         }}
         .login-title {{
-            color: {HELB_GREEN} !important;
-            font-size: 1.75rem !important;
+            color: white !important;
+            font-size: 1.5rem !important;
             font-weight: 700 !important;
             margin: 0.5rem 0 0.25rem 0 !important;
             text-align: center !important;
+            letter-spacing: 1px;
         }}
         .login-subtitle {{
-            color: #6b7280 !important;
-            font-size: 0.875rem !important;
+            color: {HELB_GOLD} !important;
+            font-size: 0.85rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
+            font-weight: 500;
         }}
         .login-divider {{
-            height: 4px;
-            background: linear-gradient(90deg, {HELB_GREEN}, {HELB_GOLD}, {HELB_BLUE});
-            width: 60px;
-            margin: 1rem auto;
+            height: 3px;
+            background: {HELB_GOLD};
+            width: 50px;
+            margin: 0.75rem auto 0;
             border-radius: 2px;
+        }}
+        .login-body {{
+            padding: 2rem 1.5rem;
         }}
         .login-footer {{
             text-align: center;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
+            padding: 1rem;
             border-top: 1px solid #e5e7eb;
             font-size: 0.7rem;
             color: #9ca3af;
+            background: #f9fafb;
         }}
         .login-container .stTextInput input {{
             background-color: white !important;
@@ -1293,7 +1299,7 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* Professional Login Page Styles - Dark Mode */
+        /* Professional Login Page Styles - Dark Mode with GREEN HEADER */
         .login-wrapper {{
             display: flex;
             justify-content: center;
@@ -1302,17 +1308,18 @@ else:
             padding: 2rem;
         }}
         .login-container {{
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            background: #1e293b;
             border-radius: 24px;
-            padding: 2.5rem;
+            padding: 0;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             max-width: 450px;
             width: 100%;
-            border: 1px solid rgba(255,184,28,0.2);
+            overflow: hidden;
         }}
         .login-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #005a2a 100%);
+            padding: 2rem 1.5rem;
             text-align: center;
-            margin-bottom: 2rem;
         }}
         .login-logo {{
             margin-bottom: 1rem;
@@ -1320,32 +1327,37 @@ else:
             justify-content: center;
         }}
         .login-title {{
-            color: {HELB_GOLD} !important;
-            font-size: 1.75rem !important;
+            color: white !important;
+            font-size: 1.5rem !important;
             font-weight: 700 !important;
             margin: 0.5rem 0 0.25rem 0 !important;
             text-align: center !important;
+            letter-spacing: 1px;
         }}
         .login-subtitle {{
-            color: #94a3b8 !important;
-            font-size: 0.875rem !important;
+            color: {HELB_GOLD} !important;
+            font-size: 0.85rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
+            font-weight: 500;
         }}
         .login-divider {{
-            height: 4px;
-            background: linear-gradient(90deg, {HELB_GREEN}, {HELB_GOLD}, {HELB_BLUE});
-            width: 60px;
-            margin: 1rem auto;
+            height: 3px;
+            background: {HELB_GOLD};
+            width: 50px;
+            margin: 0.75rem auto 0;
             border-radius: 2px;
+        }}
+        .login-body {{
+            padding: 2rem 1.5rem;
         }}
         .login-footer {{
             text-align: center;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
+            padding: 1rem;
             border-top: 1px solid #334155;
             font-size: 0.7rem;
             color: #64748b;
+            background: #0f172a;
         }}
         .login-container .stTextInput input {{
             background-color: #334155 !important;
@@ -1386,7 +1398,7 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE (PROFESSIONAL REDESIGN)
+# LOGIN PAGE (PROFESSIONAL WITH GREEN HEADER)
 # ============================================
 if not st.session_state.authenticated:
     # Centered login with professional styling
@@ -1398,7 +1410,7 @@ if not st.session_state.authenticated:
         # Login container with professional design
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         
-        # Login Header
+        # Login Header - GREEN BACKGROUND
         st.markdown('<div class="login-header">', unsafe_allow_html=True)
         
         # Display HELB Logo
@@ -1411,13 +1423,17 @@ if not st.session_state.authenticated:
         else:
             st.markdown('<div class="login-logo" style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
         
-        # Title and Subtitle
+        # Title and Subtitle - ON GREEN BACKGROUND
         st.markdown(f"""
         <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
         <p class="login-subtitle">Strategy Performance Management System</p>
         <div class="login-divider"></div>
-        </div>
         """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Login Body
+        st.markdown('<div class="login-body">', unsafe_allow_html=True)
         
         # Login Form
         with st.form("login_form"):
@@ -1452,6 +1468,8 @@ if not st.session_state.authenticated:
                 else:
                     st.warning("Please enter both username and password")
         
+        st.markdown('</div>', unsafe_allow_html=True)
+        
         # Footer
         st.markdown(f"""
         <div class="login-footer">
@@ -1468,7 +1486,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ============================================
-# MAIN APPLICATION (REST OF THE CODE - UNCHANGED EXCEPT FOR WORK PLAN UPDATE WITH COMMENT)
+# MAIN APPLICATION (REST OF THE CODE - UNCHANGED EXCEPT FOR POLICY DURATION CALCULATION)
 # ============================================
 
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
@@ -1547,7 +1565,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE (User View) - UPDATED WITH COMMENT FIELD
+# WORK PLANS MODULE (User View) - WITH COMMENT FIELD
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1727,7 +1745,7 @@ if choice == "📋 Work Plans":
                         new_progress = calculate_progress_from_actual(annual_target, actual_input)
                         st.caption(f"📊 Calculated Progress: {new_progress:.1f}%")
                         
-                        # NEW: Comment field (optional)
+                        # Comment field (optional)
                         update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
                         
                         if st.session_state.user_role == "admin":
@@ -1750,7 +1768,6 @@ if choice == "📋 Work Plans":
                                     new_status = "In Progress"
                                 else:
                                     new_status = "Pending"
-                                # Pass comment to update function
                                 if update_work_plan_progress(plan['id'], actual_input, new_progress, new_status, update_comment if update_comment else None):
                                     st.success("✅ Achievement updated successfully!")
                                     if update_comment:
@@ -2633,7 +2650,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View) - UPDATED WITH POLICY DURATION
+# POLICIES SECTION (User View) - WITH CORRECT EXPIRY DATE CALCULATION
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2658,15 +2675,16 @@ elif choice == "📋 Policies":
                 
             with col2:
                 effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                # NEW: Policy Duration Selection
+                # Policy Duration Selection - FIXED CALCULATION
                 policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                 
-                # Calculate expiry date based on duration
+                # FIXED: Calculate expiry date correctly by adding years
                 if policy_duration != "Custom":
                     duration_years = int(policy_duration.split()[0])
-                    expiry_date = effective_date + timedelta(days=365 * duration_years)
-                    st.info(f"📅 Expiry date set to: {expiry_date.strftime('%Y-%m-%d')} ({policy_duration})")
-                    expiry_date_input = st.date_input("Expiry Date*", value=expiry_date)
+                    # CORRECT CALCULATION: Add years to effective date
+                    expiry_date_calculated = effective_date.replace(year=effective_date.year + duration_years)
+                    st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
+                    expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
                 else:
                     expiry_date_input = st.date_input("Expiry Date*")
                 
@@ -2832,7 +2850,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only) - UNCHANGED
+# ADMIN PANEL (Admin Only) - WITH CORRECT POLICY DURATION CALCULATION
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
@@ -2979,14 +2997,15 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     policy_owner = st.text_input("Policy Owner*")
                     
                     effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                    # NEW: Policy Duration Selection in Admin Panel
+                    # FIXED: Policy Duration Selection with correct year addition
                     policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                     
                     if policy_duration != "Custom":
                         duration_years = int(policy_duration.split()[0])
-                        expiry_date = effective_date + timedelta(days=365 * duration_years)
-                        st.info(f"📅 Expiry date set to: {expiry_date.strftime('%Y-%m-%d')} ({policy_duration})")
-                        expiry_date_input = st.date_input("Expiry Date*", value=expiry_date)
+                        # CORRECT CALCULATION: Add years to effective date
+                        expiry_date_calculated = effective_date.replace(year=effective_date.year + duration_years)
+                        st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
+                        expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
                     else:
                         expiry_date_input = st.date_input("Expiry Date*")
                     
