@@ -922,6 +922,10 @@ if st.session_state.theme == "light":
             border-radius: 12px !important;
             padding: 1rem !important;
             text-align: center !important;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }}
         .kpi-card .kpi-label {{
             font-size: 0.7rem !important;
@@ -929,9 +933,10 @@ if st.session_state.theme == "light":
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
             letter-spacing: 0.5px !important;
+            margin-bottom: 0.25rem;
         }}
         .kpi-card .kpi-value {{
-            font-size: 1.5rem !important;
+            font-size: 1.3rem !important;
             font-weight: 700 !important;
             margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
@@ -947,6 +952,7 @@ if st.session_state.theme == "light":
             background: rgba(255,255,255,0.3) !important;
             border-radius: 2px !important;
             margin-top: 0.5rem !important;
+            width: 100%;
         }}
         .kpi-card .progress-fill {{
             height: 100% !important;
@@ -1176,6 +1182,10 @@ else:
             border-radius: 12px !important;
             padding: 1rem !important;
             text-align: center !important;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }}
         .kpi-card .kpi-label {{
             font-size: 0.7rem !important;
@@ -1183,9 +1193,10 @@ else:
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
             letter-spacing: 0.5px !important;
+            margin-bottom: 0.25rem;
         }}
         .kpi-card .kpi-value {{
-            font-size: 1.5rem !important;
+            font-size: 1.3rem !important;
             font-weight: 700 !important;
             margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
@@ -1201,6 +1212,7 @@ else:
             background: rgba(255,255,255,0.3) !important;
             border-radius: 2px !important;
             margin-top: 0.5rem !important;
+            width: 100%;
         }}
         .kpi-card .progress-fill {{
             height: 100% !important;
@@ -1780,6 +1792,15 @@ if choice == "📋 Work Plans":
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
+                avg_progress = filtered_work_df['calculated_progress'].mean()
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📈 AVG PROGRESS</div>
+                    <div class='kpi-value'>{avg_progress:.0f}%</div>
+                    <div class='kpi-sub'>Average Progress</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col4:
                 total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
@@ -1788,20 +1809,11 @@ if choice == "📋 Work Plans":
                     <div class='kpi-sub'>Total Budget</div>
                 </div>
                 """, unsafe_allow_html=True)
-            with col4:
-                exceeded_count = len(df[df['exceeded'] == True])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
-                    <div class='kpi-value'>{exceeded_count}</div>
-                    <div class='kpi-sub'>Exceeded Targets</div>
-                </div>
-                """, unsafe_allow_html=True)
         else:
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH STYLED KPIs
+# DASHBOARD - WITH UPDATED CONTRACTS KPI CARDS
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -2033,20 +2045,22 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if not filtered_contracts_df.empty:
-            # STYLED KPIs for Contracts
-            col1, col2, col3, col4 = st.columns(4)
+            # STYLED KPIs for Contracts - 5 cards in a row (Active, Expiring Soon, Expired)
+            col1, col2, col3, col4, col5 = st.columns(5)
             
             total_value = filtered_contracts_df['contract_value'].sum()
             total_spent = filtered_contracts_df['amount_spent_to_date'].sum()
             utilization = (total_spent/total_value*100) if total_value > 0 else 0
             active_count = len(filtered_contracts_df[filtered_contracts_df['status'] == 'active'])
+            expiring_count = len(filtered_contracts_df[filtered_contracts_df['status'] == 'expiring_soon'])
+            expired_count = len(filtered_contracts_df[filtered_contracts_df['status'] == 'expired'])
             
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>💰 TOTAL VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Contract Value</div>
+                    <div class='kpi-sub'>Contract Value</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col2:
@@ -2061,17 +2075,25 @@ elif choice == "📊 Dashboard":
             with col3:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>📊 UTILIZATION</div>
-                    <div class='kpi-value'>{utilization:.0f}%</div>
-                    <div class='kpi-sub'>Budget Utilization</div>
+                    <div class='kpi-label'>✅ ACTIVE</div>
+                    <div class='kpi-value'>{active_count}</div>
+                    <div class='kpi-sub'>Active Contracts</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col4:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>✅ ACTIVE</div>
-                    <div class='kpi-value'>{active_count}</div>
-                    <div class='kpi-sub'>Active Contracts</div>
+                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
+                    <div class='kpi-value'>{expiring_count}</div>
+                    <div class='kpi-sub'>Within 30 days</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col5:
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🔴 EXPIRED</div>
+                    <div class='kpi-value'>{expired_count}</div>
+                    <div class='kpi-sub'>Expired Contracts</div>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -2588,7 +2610,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View) - WITH CORRECT EXPIRY DATE
+# POLICIES SECTION (User View)
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2615,10 +2637,9 @@ elif choice == "📋 Policies":
                 effective_date = st.date_input("Effective Date*", value=datetime.now().date())
                 policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                 
-                # FIXED: Correct expiry date calculation using relativedelta
+                # CORRECT expiry date calculation using relativedelta
                 if policy_duration != "Custom":
                     duration_years = int(policy_duration.split()[0])
-                    # CORRECT: Adding years properly - Feb 2025 + 5 years = Feb 2030
                     expiry_date_calculated = effective_date + relativedelta(years=duration_years)
                     st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
                     expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
@@ -2944,7 +2965,6 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     effective_date = st.date_input("Effective Date*", value=datetime.now().date())
                     policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                     
-                    # FIXED: Correct expiry date calculation using relativedelta
                     if policy_duration != "Custom":
                         duration_years = int(policy_duration.split()[0])
                         expiry_date_calculated = effective_date + relativedelta(years=duration_years)
@@ -3548,6 +3568,6 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
 st.markdown("---")
 st.markdown("""
 <div class='footer'>
-    <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
+    <p>© 2026 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
 </div>
 """, unsafe_allow_html=True)
