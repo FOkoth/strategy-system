@@ -960,6 +960,16 @@ if st.session_state.theme == "light":
             border-radius: 2px !important;
         }}
         
+        .comment-box {{
+            background: #f0fdf4;
+            border-left: 4px solid {HELB_GREEN};
+            padding: 0.5rem 0.8rem;
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #166534;
+        }}
+        
         .contract-card, .policy-card {{
             background: #ffffff !important;
             border: 1px solid #e5e7eb !important;
@@ -1216,6 +1226,16 @@ else:
             height: 100% !important;
             background: {HELB_GOLD} !important;
             border-radius: 2px !important;
+        }}
+        
+        .comment-box {{
+            background: #1e3a2f;
+            border-left: 4px solid {HELB_GOLD};
+            padding: 0.5rem 0.8rem;
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #d1fae5;
         }}
         
         .contract-card, .policy-card {{
@@ -1708,6 +1728,16 @@ if choice == "📋 Work Plans":
                         st.markdown(f"**Due Date:** {plan['due_date']} ({days_left} days left)")
                         st.markdown(f"**Activity Category:** {plan.get('activity_category', 'N/A')}")
                         st.markdown(f"**Department:** {plan.get('department_name', 'N/A')}")
+                        
+                        # DISPLAY COMMENT IF EXISTS
+                        if plan.get('comment'):
+                            st.markdown(f"""
+                            <div class='comment-box'>
+                                <strong>📝 Latest Comment:</strong><br>
+                                {plan['comment']}
+                            </div>
+                            """, unsafe_allow_html=True)
+                    
                     with col2:
                         st.markdown(f"**Status:** {badge}", unsafe_allow_html=True)
                         if plan.get('budget_allocation') and plan.get('budget_allocation') > 0:
@@ -1725,6 +1755,7 @@ if choice == "📋 Work Plans":
                         
                         update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
                         
+                        # ONLY ADMIN CAN SEE AND EDIT DUE DATE
                         if st.session_state.user_role == "admin":
                             st.markdown("---")
                             st.markdown("**📅 Admin: Edit Due Date**")
