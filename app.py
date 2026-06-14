@@ -875,7 +875,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS (SIMPLIFIED)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -884,19 +884,6 @@ if st.session_state.theme == "light":
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
         div, span, p, label, .stMetric label, .stMetric div {{
-            color: #000000 !important;
-        }}
-        
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
-            background-color: #f0f0f0 !important;
             color: #000000 !important;
         }}
         
@@ -913,6 +900,10 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
+        [data-testid="stSidebar"] {{
+            background-color: {HELB_GREEN} !important;
+            padding-top: 1rem;
+        }}
         [data-testid="stSidebar"] * {{
             color: white !important;
         }}
@@ -928,54 +919,13 @@ if st.session_state.theme == "light":
             text-transform: uppercase !important;
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
         }}
         .kpi-card .kpi-value {{
             font-size: 1.5rem !important;
             font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
-        }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 4px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
         }}
         
-        .contract-card, .policy-card {{
-            background: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            margin-bottom: 0.75rem !important;
-            transition: all 0.2s ease !important;
-        }}
-        .contract-card:hover, .policy-card:hover {{
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
-        }}
-        .contract-title, .policy-title {{
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            color: {HELB_GREEN} !important;
-            margin-bottom: 0.5rem !important;
-        }}
-        .contract-detail, .policy-detail {{
-            font-size: 0.75rem !important;
-            color: #4b5563 !important;
-            margin: 0.25rem 0 !important;
-        }}
         .status-badge {{
             display: inline-block !important;
             padding: 0.2rem 0.6rem !important;
@@ -987,51 +937,6 @@ if st.session_state.theme == "light":
         .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
         .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
         
-        .metric-card, .metric-card * {{ color: #000000 !important; }}
-        .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
-        .stTabs [aria-selected="true"] {{ color: #000000 !important; background-color: {HELB_GOLD} !important; }}
-        .streamlit-expanderHeader p {{ color: #000000 !important; }}
-        
-        .stTextInput input, .stSelectbox div, .stDateInput input, 
-        .stNumberInput input, .stTextArea textarea {{
-            background-color: white !important;
-            color: #000000 !important;
-            border: 1px solid #D1D5DB !important;
-        }}
-        
-        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GREEN} !important; }}
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        .stAppDeployButton {{display: none;}}
-        .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
-        [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
-        
-        .sidebar-user-info {{
-            background: rgba(255,255,255,0.15);
-            padding: 0.8rem;
-            border-radius: 10px;
-            margin: 0.5rem 0;
-            text-align: center;
-        }}
-        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
-        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
-        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
-            border-radius: 8px !important;
-            padding: 8px 12px !important;
-            margin: 4px 0 !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem !important;
-        }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_BLUE} !important;
-            color: white !important;
-        }}
-        
         .dashboard-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
             padding: 0.8rem 1.5rem;
@@ -1041,99 +946,14 @@ if st.session_state.theme == "light":
             align-items: center;
             justify-content: space-between;
         }}
-        .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
-        .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
+        .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; }}
+        .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
-        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
-        .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* Professional Login Page - GREEN HEADER covering logo and text, no excess headroom */
-        .login-wrapper {{
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 70vh;
-            padding: 1rem;
-        }}
-        .login-container {{
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 420px;
-            width: 100%;
-            overflow: hidden;
-        }}
-        .login-header {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
-            padding: 1.5rem;
-            text-align: center;
-        }}
-        .login-logo {{
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: center;
-        }}
-        .login-title {{
-            color: white !important;
-            font-size: 1.2rem !important;
-            font-weight: 700 !important;
-            margin: 0.25rem 0 0.1rem 0 !important;
-            text-align: center !important;
-            letter-spacing: 0.5px;
-        }}
-        .login-subtitle {{
-            color: {HELB_GOLD} !important;
-            font-size: 0.7rem !important;
-            text-align: center !important;
-            margin-bottom: 0 !important;
-            font-weight: 500;
-        }}
-        .login-divider {{
-            height: 2px;
-            background: {HELB_GOLD};
-            width: 40px;
-            margin: 0.5rem auto 0;
-            border-radius: 2px;
-        }}
-        .login-body {{
-            padding: 1.5rem;
-        }}
-        .login-footer {{
-            text-align: center;
-            padding: 0.75rem;
-            border-top: 1px solid #e5e7eb;
-            font-size: 0.6rem;
-            color: #9ca3af;
-            background: #f9fafb;
-        }}
-        .login-container .stTextInput input {{
-            background-color: white !important;
-            color: #1F2937 !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 8px !important;
-            padding: 10px 12px !important;
-            font-size: 0.85rem !important;
-        }}
-        .login-container .stTextInput input:focus {{
-            border-color: {HELB_GREEN} !important;
-            box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
-        }}
-        .login-container .stTextInput label {{
-            color: #374151 !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem !important;
-        }}
-        .login-container .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            color: white !important;
-            font-weight: 600 !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 10px !important;
-            font-size: 0.9rem !important;
-        }}
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        .stAppDeployButton {{display: none;}}
     </style>
     """
 else:
@@ -1143,19 +963,6 @@ else:
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
         div, span, p, label, .stMetric label, .stMetric div {{
-            color: #FFFFFF !important;
-        }}
-        
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
-        
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
-            background-color: #3d3d5c !important;
             color: #FFFFFF !important;
         }}
         
@@ -1172,6 +979,14 @@ else:
             color: white !important;
         }}
         
+        [data-testid="stSidebar"] {{
+            background-color: #0f3460 !important;
+            padding-top: 1rem;
+        }}
+        [data-testid="stSidebar"] * {{
+            color: white !important;
+        }}
+        
         .kpi-card {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             border-radius: 12px !important;
@@ -1183,96 +998,23 @@ else:
             text-transform: uppercase !important;
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
         }}
         .kpi-card .kpi-value {{
             font-size: 1.5rem !important;
             font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
         }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 4px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
-        }}
         
-        .contract-card, .policy-card {{
-            background: #1e293b !important;
-            border: 1px solid #334155 !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            margin-bottom: 0.75rem !important;
-        }}
-        .contract-title, .policy-title {{
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            color: {HELB_GOLD} !important;
-            margin-bottom: 0.5rem !important;
-        }}
-        .contract-detail, .policy-detail {{
-            font-size: 0.75rem !important;
-            color: #cbd5e1 !important;
-            margin: 0.25rem 0 !important;
-        }}
-        
-        .metric-card, .metric-card * {{ color: #FFFFFF !important; }}
-        .stTabs [data-baseweb="tab"] {{ color: #FFFFFF !important; }}
-        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: #1F2937 !important; }}
-        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
-        
-        .stTextInput input, .stSelectbox div, .stDateInput input, 
-        .stNumberInput input, .stTextArea textarea {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-            border: 1px solid #4a4a6a !important;
-        }}
-        
-        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GOLD} !important; }}
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        .stAppDeployButton {{display: none;}}
-        .main, .stApp {{ background-color: #1a1a2e !important; }}
-        [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
-        [data-testid="stSidebar"] * {{ color: white !important; }}
-        
-        .sidebar-user-info {{
-            background: rgba(255,255,255,0.15);
-            padding: 0.8rem;
-            border-radius: 10px;
-            margin: 0.5rem 0;
-            text-align: center;
-        }}
-        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
-        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
-        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
-            border-radius: 8px !important;
-            padding: 8px 12px !important;
-            margin: 4px 0 !important;
+        .status-badge {{
+            display: inline-block !important;
+            padding: 0.2rem 0.6rem !important;
+            border-radius: 20px !important;
+            font-size: 0.7rem !important;
             font-weight: 600 !important;
-            font-size: 0.8rem !important;
         }}
-        
-        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
-        }}
+        .status-active {{ background-color: #10b981 !important; color: white !important; }}
+        .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
+        .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
         
         .dashboard-header {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
@@ -1287,137 +1029,101 @@ else:
         .dashboard-header p {{ color: {HELB_GOLD} !important; }}
         
         .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
-        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
-        .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* Professional Login Page - Dark Mode */
-        .login-wrapper {{
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 70vh;
-            padding: 1rem;
-        }}
-        .login-container {{
-            background: #1e293b;
-            border-radius: 16px;
-            padding: 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            max-width: 420px;
-            width: 100%;
-            overflow: hidden;
-        }}
-        .login-header {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
-            padding: 1.5rem;
-            text-align: center;
-        }}
-        .login-logo {{
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: center;
-        }}
-        .login-title {{
-            color: white !important;
-            font-size: 1.2rem !important;
-            font-weight: 700 !important;
-            margin: 0.25rem 0 0.1rem 0 !important;
-            text-align: center !important;
-            letter-spacing: 0.5px;
-        }}
-        .login-subtitle {{
-            color: {HELB_GOLD} !important;
-            font-size: 0.7rem !important;
-            text-align: center !important;
-            margin-bottom: 0 !important;
-            font-weight: 500;
-        }}
-        .login-divider {{
-            height: 2px;
-            background: {HELB_GOLD};
-            width: 40px;
-            margin: 0.5rem auto 0;
-            border-radius: 2px;
-        }}
-        .login-body {{
-            padding: 1.5rem;
-        }}
-        .login-footer {{
-            text-align: center;
-            padding: 0.75rem;
-            border-top: 1px solid #334155;
-            font-size: 0.6rem;
-            color: #64748b;
-            background: #0f172a;
-        }}
-        .login-container .stTextInput input {{
-            background-color: #334155 !important;
-            color: #f1f5f9 !important;
-            border: 1px solid #475569 !important;
-            border-radius: 8px !important;
-            padding: 10px 12px !important;
-            font-size: 0.85rem !important;
-        }}
-        .login-container .stTextInput input:focus {{
-            border-color: {HELB_GOLD} !important;
-            box-shadow: 0 0 0 2px rgba(255,184,28,0.1) !important;
-        }}
-        .login-container .stTextInput label {{
-            color: #cbd5e1 !important;
-            font-weight: 600 !important;
-            font-size: 0.8rem !important;
-        }}
-        .login-container .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            color: white !important;
-            font-weight: 600 !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 10px !important;
-            font-size: 0.9rem !important;
-        }}
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        .stAppDeployButton {{display: none;}}
     </style>
     """
 
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - GREEN HEADER COVERS LOGO AND TEXT
+# LOGIN PAGE - SIMPLE & RELIABLE
 # ============================================
 if not st.session_state.authenticated:
-    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+    # Remove Streamlit default padding
+    st.markdown("""
+        <style>
+            .main > div {
+                padding-top: 0rem;
+            }
+            .block-container {
+                padding-top: 0rem !important;
+                padding-bottom: 0rem !important;
+            }
+            header {
+                display: none !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Center the login box
+    col_space1, col_center, col_space2 = st.columns([1, 2, 1])
     
-    with col2:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        
-        # GREEN HEADER SECTION - Contains logo AND text
-        st.markdown('<div class="login-header">', unsafe_allow_html=True)
-        
-        if LOGO_BASE64:
-            st.markdown(f'''
-            <div class="login-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 60px; height: auto; background: transparent;">
-            </div>
-            ''', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="login-logo" style="font-size: 2rem;">🏦</div>', unsafe_allow_html=True)
-        
+    with col_center:
+        # GREEN BACKGROUND BOX (contains logo and text)
         st.markdown(f"""
-        <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
-        <p class="login-subtitle">Strategy Performance Management System</p>
-        <div class="login-divider"></div>
+        <div style='
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 2rem 2rem 1.5rem 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        '>
         """, unsafe_allow_html=True)
         
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Logo
+        if LOGO_BASE64:
+            st.markdown(f"""
+            <div style='text-align: center; margin-bottom: 1rem;'>
+                <img src="data:image/png;base64,{LOGO_BASE64}" style='width: 70px; height: auto;'>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='font-size: 3rem; text-align: center;'>🏦</div>", unsafe_allow_html=True)
         
-        # Login Body - White/gray section
-        st.markdown('<div class="login-body">', unsafe_allow_html=True)
+        # Title and Subtitle
+        st.markdown(f"""
+        <h1 style='
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0.5rem 0 0.2rem 0;
+            text-align: center;
+        '>HIGHER EDUCATION LOANS BOARD</h1>
+        
+        <p style='
+            color: {HELB_GOLD};
+            font-size: 0.75rem;
+            margin: 0;
+            text-align: center;
+            font-weight: 500;
+        '>Strategy Performance Management System</p>
+        
+        <div style='
+            height: 3px;
+            background: {HELB_GOLD};
+            width: 50px;
+            margin: 0.8rem auto 0;
+            border-radius: 2px;
+        '></div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # White form section
+        st.markdown(f"""
+        <div style='
+            background: {'white' if st.session_state.theme == 'light' else '#1e293b'};
+            border-radius: 0 0 20px 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        '>
+        """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            username = st.text_input("Username", placeholder="Enter your username", key="login_username")
-            password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+            username = st.text_input("Username", placeholder="Enter your username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
             
             submitted = st.form_submit_button("Sign In", use_container_width=True)
             
@@ -1446,17 +1152,20 @@ if not st.session_state.authenticated:
                 else:
                     st.warning("Please enter both username and password")
         
-        st.markdown('</div>', unsafe_allow_html=True)
-        
         st.markdown(f"""
-        <div class="login-footer">
-            <p>© 2025 HELB - Higher Education Loans Board</p>
+        <div style='
+            text-align: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid {'#e5e7eb' if st.session_state.theme == 'light' else '#334155'};
+            font-size: 0.65rem;
+            color: {'#9ca3af' if st.session_state.theme == 'light' else '#64748b'};
+        '>
+            © 2025 HELB - Higher Education Loans Board
+        </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ============================================
@@ -1512,10 +1221,10 @@ with st.sidebar:
         dept_display = st.session_state.user_dept_name if st.session_state.user_dept_name else "No Department"
     
     st.markdown(f"""
-    <div class='sidebar-user-info'>
+    <div style='background: rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 10px; margin: 0.5rem 0; text-align: center;'>
         <strong>{st.session_state.user_fullname or "User"}</strong>
-        <span class='dept'>{dept_display}</span>
-        <span class='role'>{role_display}</span>
+        <div style='font-size: 0.7rem;'>{dept_display}</div>
+        <div style='font-size: 0.65rem;'>{role_display}</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1538,7 +1247,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE
+# WORK PLANS MODULE (User View)
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -2131,7 +1840,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View) - WITH EXPANDERS
+# CONTRACTS SECTION (User View)
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2459,7 +2168,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View) - WITH EXPANDERS AND CORRECT DATE CALCULATION
+# POLICIES SECTION (User View) - WITH CORRECT EXPIRY DATE
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2489,8 +2198,7 @@ elif choice == "📋 Policies":
                 # FIXED: Correct expiry date calculation using relativedelta
                 if policy_duration != "Custom":
                     duration_years = int(policy_duration.split()[0])
-                    # Using relativedelta for accurate year addition (handles leap years)
-                    from dateutil.relativedelta import relativedelta
+                    # This correctly adds years - Feb 2025 + 5 years = Feb 2030
                     expiry_date_calculated = effective_date + relativedelta(years=duration_years)
                     st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
                     expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
@@ -2813,7 +2521,6 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     # FIXED: Correct expiry date calculation using relativedelta
                     if policy_duration != "Custom":
                         duration_years = int(policy_duration.split()[0])
-                        from dateutil.relativedelta import relativedelta
                         expiry_date_calculated = effective_date + relativedelta(years=duration_years)
                         st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
                         expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
