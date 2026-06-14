@@ -920,15 +920,15 @@ if st.session_state.theme == "light":
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             border-radius: 12px !important;
-            padding: 1rem !important;
+            padding: 0.8rem !important;
             text-align: center !important;
-            min-height: 110px;
+            min-height: 100px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }}
         .kpi-card .kpi-label {{
-            font-size: 0.7rem !important;
+            font-size: 0.65rem !important;
             text-transform: uppercase !important;
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
@@ -936,19 +936,19 @@ if st.session_state.theme == "light":
             margin-bottom: 0.25rem;
         }}
         .kpi-card .kpi-value {{
-            font-size: 1.3rem !important;
+            font-size: 1.2rem !important;
             font-weight: 700 !important;
             margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
         }}
         .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
+            font-size: 0.5rem !important;
             color: #FFFFFF !important;
             margin-top: 0.2rem !important;
             opacity: 0.9 !important;
         }}
         .kpi-card .progress-bar {{
-            height: 4px !important;
+            height: 3px !important;
             background: rgba(255,255,255,0.3) !important;
             border-radius: 2px !important;
             margin-top: 0.5rem !important;
@@ -1066,78 +1066,76 @@ if st.session_state.theme == "light":
             border-radius: 20px;
             padding: 0;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
             overflow: hidden;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
-            padding: 2rem 1.5rem;
+            padding: 1.5rem;
             text-align: center;
         }}
         .login-logo {{
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             display: flex;
             justify-content: center;
         }}
         .login-title {{
             color: white !important;
-            font-size: 1.3rem !important;
+            font-size: 1.2rem !important;
             font-weight: 700 !important;
-            margin: 0.5rem 0 0.25rem 0 !important;
+            margin: 0.25rem 0 0.1rem 0 !important;
             text-align: center !important;
         }}
         .login-subtitle {{
             color: {HELB_GOLD} !important;
-            font-size: 0.8rem !important;
+            font-size: 0.7rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
         }}
         .login-divider {{
-            height: 3px;
+            height: 2px;
             background: {HELB_GOLD};
-            width: 50px;
-            margin: 0.75rem auto 0;
+            width: 40px;
+            margin: 0.5rem auto 0;
             border-radius: 2px;
         }}
         .login-body {{
-            padding: 2rem;
+            padding: 1.5rem;
         }}
         .login-footer {{
             text-align: center;
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid #e5e7eb;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #9ca3af;
             background: #f9fafb;
         }}
         .login-container .stTextInput input {{
             background-color: white !important;
             color: #1F2937 !important;
-            border: 2px solid #e5e7eb !important;
-            border-radius: 10px !important;
-            padding: 12px 16px !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
         }}
         .login-container .stTextInput input:focus {{
             border-color: {HELB_GREEN} !important;
-            box-shadow: 0 0 0 3px rgba(0,132,61,0.1) !important;
+            box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
         }}
         .login-container .stTextInput label {{
             color: #374151 !important;
             font-weight: 600 !important;
+            font-size: 0.8rem !important;
         }}
         .login-container .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
             border: none !important;
-            border-radius: 10px !important;
-            padding: 12px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .login-container .stButton > button:hover {{
-            transform: translateY(-2px) !important;
-            box-shadow: 0 10px 20px rgba(0,132,61,0.2) !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
         }}
     </style>
     """
@@ -1180,15 +1178,15 @@ else:
         .kpi-card {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             border-radius: 12px !important;
-            padding: 1rem !important;
+            padding: 0.8rem !important;
             text-align: center !important;
-            min-height: 110px;
+            min-height: 100px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }}
         .kpi-card .kpi-label {{
-            font-size: 0.7rem !important;
+            font-size: 0.65rem !important;
             text-transform: uppercase !important;
             color: {HELB_GOLD} !important;
             font-weight: 600 !important;
@@ -1196,19 +1194,19 @@ else:
             margin-bottom: 0.25rem;
         }}
         .kpi-card .kpi-value {{
-            font-size: 1.3rem !important;
+            font-size: 1.2rem !important;
             font-weight: 700 !important;
             margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
         }}
         .kpi-card .kpi-sub {{
-            font-size: 0.55rem !important;
+            font-size: 0.5rem !important;
             color: #FFFFFF !important;
             margin-top: 0.2rem !important;
             opacity: 0.9 !important;
         }}
         .kpi-card .progress-bar {{
-            height: 4px !important;
+            height: 3px !important;
             background: rgba(255,255,255,0.3) !important;
             border-radius: 2px !important;
             margin-top: 0.5rem !important;
@@ -1313,78 +1311,76 @@ else:
             border-radius: 20px;
             padding: 0;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
             overflow: hidden;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
-            padding: 2rem 1.5rem;
+            padding: 1.5rem;
             text-align: center;
         }}
         .login-logo {{
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             display: flex;
             justify-content: center;
         }}
         .login-title {{
             color: white !important;
-            font-size: 1.3rem !important;
+            font-size: 1.2rem !important;
             font-weight: 700 !important;
-            margin: 0.5rem 0 0.25rem 0 !important;
+            margin: 0.25rem 0 0.1rem 0 !important;
             text-align: center !important;
         }}
         .login-subtitle {{
             color: {HELB_GOLD} !important;
-            font-size: 0.8rem !important;
+            font-size: 0.7rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
         }}
         .login-divider {{
-            height: 3px;
+            height: 2px;
             background: {HELB_GOLD};
-            width: 50px;
-            margin: 0.75rem auto 0;
+            width: 40px;
+            margin: 0.5rem auto 0;
             border-radius: 2px;
         }}
         .login-body {{
-            padding: 2rem;
+            padding: 1.5rem;
         }}
         .login-footer {{
             text-align: center;
-            padding: 1rem;
+            padding: 0.75rem;
             border-top: 1px solid #334155;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #64748b;
             background: #0f172a;
         }}
         .login-container .stTextInput input {{
             background-color: #334155 !important;
             color: #f1f5f9 !important;
-            border: 2px solid #475569 !important;
-            border-radius: 10px !important;
-            padding: 12px 16px !important;
+            border: 1px solid #475569 !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
         }}
         .login-container .stTextInput input:focus {{
             border-color: {HELB_GOLD} !important;
-            box-shadow: 0 0 0 3px rgba(255,184,28,0.1) !important;
+            box-shadow: 0 0 0 2px rgba(255,184,28,0.1) !important;
         }}
         .login-container .stTextInput label {{
             color: #cbd5e1 !important;
             font-weight: 600 !important;
+            font-size: 0.8rem !important;
         }}
         .login-container .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
             border: none !important;
-            border-radius: 10px !important;
-            padding: 12px !important;
-            margin-top: 0.5rem !important;
-        }}
-        .login-container .stButton > button:hover {{
-            transform: translateY(-2px) !important;
-            box-shadow: 0 10px 20px rgba(0,132,61,0.3) !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
         }}
     </style>
     """
@@ -1407,11 +1403,11 @@ if not st.session_state.authenticated:
         if LOGO_BASE64:
             st.markdown(f'''
             <div class="login-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 70px; height: auto; background: transparent;">
+                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 60px; height: auto; background: transparent;">
             </div>
             ''', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="login-logo" style="font-size: 2.5rem;">🏦</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-logo" style="font-size: 2rem;">🏦</div>', unsafe_allow_html=True)
         
         st.markdown(f"""
         <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
@@ -1792,11 +1788,11 @@ if choice == "📋 Work Plans":
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
-                avg_progress = filtered_work_df['calculated_progress'].mean()
+                avg_progress_val = df['calculated_progress'].mean()
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>📈 AVG PROGRESS</div>
-                    <div class='kpi-value'>{avg_progress:.0f}%</div>
+                    <div class='kpi-value'>{avg_progress_val:.0f}%</div>
                     <div class='kpi-sub'>Average Progress</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1813,7 +1809,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH UPDATED CONTRACTS KPI CARDS
+# DASHBOARD
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1907,11 +1903,11 @@ elif choice == "📊 Dashboard":
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
-                avg_progress = filtered_work_df['calculated_progress'].mean()
+                avg_progress_val = filtered_work_df['calculated_progress'].mean()
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>📈 AVG PROGRESS</div>
-                    <div class='kpi-value'>{avg_progress:.0f}%</div>
+                    <div class='kpi-value'>{avg_progress_val:.0f}%</div>
                     <div class='kpi-sub'>Average Progress</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -2045,7 +2041,7 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if not filtered_contracts_df.empty:
-            # STYLED KPIs for Contracts - 5 cards in a row (Active, Expiring Soon, Expired)
+            # STYLED KPIs for Contracts - 5 cards in a row
             col1, col2, col3, col4, col5 = st.columns(5)
             
             total_value = filtered_contracts_df['contract_value'].sum()
