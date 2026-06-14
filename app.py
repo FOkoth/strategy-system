@@ -1801,7 +1801,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD - WITH EXPANDABLE CONTRACTS AND POLICIES
+# DASHBOARD - WITH STYLED KPIs
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -2033,25 +2033,47 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if not filtered_contracts_df.empty:
-            # Analytics KPIs
-            df_contracts = filtered_contracts_df.copy()
-            df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
-            df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
-            
-            total_value = df_contracts['contract_value'].sum()
-            total_spent = df_contracts['amount_spent_to_date'].sum()
-            utilization = (total_spent/total_value*100) if total_value > 0 else 0
-            active = len(df_contracts[df_contracts['status'] == 'active'])
-            
+            # STYLED KPIs for Contracts
             col1, col2, col3, col4 = st.columns(4)
+            
+            total_value = filtered_contracts_df['contract_value'].sum()
+            total_spent = filtered_contracts_df['amount_spent_to_date'].sum()
+            utilization = (total_spent/total_value*100) if total_value > 0 else 0
+            active_count = len(filtered_contracts_df[filtered_contracts_df['status'] == 'active'])
+            
             with col1:
-                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>💰 TOTAL VALUE</div>
+                    <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
+                    <div class='kpi-sub'>Total Contract Value</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
-                st.metric("💸 Total Spent", f"KES {total_spent:,.0f}")
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>💸 TOTAL SPENT</div>
+                    <div class='kpi-value'>KES {total_spent/1e6:.1f}M</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{utilization}%;'></div></div>
+                    <div class='kpi-sub'>{utilization:.0f}% utilized</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
-                st.metric("📊 Utilization", f"{utilization:.0f}%")
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📊 UTILIZATION</div>
+                    <div class='kpi-value'>{utilization:.0f}%</div>
+                    <div class='kpi-sub'>Budget Utilization</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col4:
-                st.metric("✅ Active Contracts", active)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ ACTIVE</div>
+                    <div class='kpi-value'>{active_count}</div>
+                    <div class='kpi-sub'>Active Contracts</div>
+                </div>
+                """, unsafe_allow_html=True)
             
             st.markdown("---")
             st.markdown("#### 📄 Contracts List")
@@ -2061,11 +2083,16 @@ elif choice == "📊 Dashboard":
                 days_left = (end_date - datetime.now().date()).days
                 
                 if days_left > 30:
+                    status_class = "active"
                     status_text = "Active"
                 elif days_left > 0:
+                    status_class = "expiring"
                     status_text = f"Expiring in {days_left} days"
                 else:
+                    status_class = "expired"
                     status_text = "Expired"
+                
+                budget_alert_badge = "⚠️ " if contract.get('budget_alert', False) else ""
                 
                 expander_title = f"📄 {contract['contract_title']} - {contract['vendor_name']} ({status_text})"
                 
@@ -2098,19 +2125,46 @@ elif choice == "📊 Dashboard":
     
     with tab_policies:
         if not filtered_policies_df.empty:
-            # Analytics KPIs
-            df_policies = filtered_policies_df.copy()
-            total_policies = len(df_policies)
-            active_policies = len(df_policies[df_policies['status'] == 'active'])
-            expiring_soon = len(df_policies[df_policies['status'] == 'expiring_soon'])
+            # STYLED KPIs for Policies
+            col1, col2, col3, col4 = st.columns(4)
             
-            col1, col2, col3 = st.columns(3)
+            total_policies = len(filtered_policies_df)
+            active_policies = len(filtered_policies_df[filtered_policies_df['status'] == 'active'])
+            expiring_soon = len(filtered_policies_df[filtered_policies_df['status'] == 'expiring_soon'])
+            expired_policies = len(filtered_policies_df[filtered_policies_df['status'] == 'expired'])
+            
             with col1:
-                st.metric("📜 Total Policies", total_policies)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📜 TOTAL POLICIES</div>
+                    <div class='kpi-value'>{total_policies}</div>
+                    <div class='kpi-sub'>All Policies</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
-                st.metric("✅ Active Policies", active_policies)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ ACTIVE</div>
+                    <div class='kpi-value'>{active_policies}</div>
+                    <div class='kpi-sub'>Currently Active</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
-                st.metric("⚠️ Expiring Soon", expiring_soon)
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>⚠️ EXPIRING SOON</div>
+                    <div class='kpi-value'>{expiring_soon}</div>
+                    <div class='kpi-sub'>Within 90 days</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🔴 EXPIRED</div>
+                    <div class='kpi-value'>{expired_policies}</div>
+                    <div class='kpi-sub'>Needs Review</div>
+                </div>
+                """, unsafe_allow_html=True)
             
             st.markdown("---")
             st.markdown("#### 📜 Policies List")
@@ -2120,27 +2174,36 @@ elif choice == "📊 Dashboard":
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
+                    status_class = "active"
                     status_text = "Active"
                 elif days_left > 0:
+                    status_class = "expiring"
                     status_text = f"Expires in {days_left} days"
                 else:
+                    status_class = "expired"
                     status_text = "Expired"
                 
-                expander_title = f"📜 {policy['policy_name']} (v{policy.get('version', '1.0')}) - {status_text}"
+                category = policy.get('category', 'Uncategorized')
+                policy_scope = policy.get('policy_scope', 'Not specified')
+                version = policy.get('version', 'v1.0')
+                owner = policy.get('policy_owner', 'Not assigned')
+                review_date = policy.get('review_date', 'Not scheduled')
+                
+                expander_title = f"📜 {policy['policy_name']} (v{version}) - {status_text}"
                 
                 with st.expander(expander_title, expanded=False):
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown(f"**Policy Name:** {policy['policy_name']}")
-                        st.markdown(f"**Category:** {policy.get('category', 'Uncategorized')}")
-                        st.markdown(f"**Version:** {policy.get('version', 'v1.0')}")
-                        st.markdown(f"**Scope:** {policy.get('policy_scope', 'Not specified')}")
+                        st.markdown(f"**Category:** {category}")
+                        st.markdown(f"**Version:** {version}")
+                        st.markdown(f"**Scope:** {policy_scope}")
                         st.markdown(f"**Affected Entities:** {policy.get('affected_entities', 'N/A')}")
-                        st.markdown(f"**Policy Owner:** {policy.get('policy_owner', 'Not assigned')}")
+                        st.markdown(f"**Policy Owner:** {owner}")
                     with col2:
                         st.markdown(f"**Effective Date:** {policy.get('effective_date', 'N/A')}")
                         st.markdown(f"**Expiry Date:** {policy['expiry_date']}")
-                        st.markdown(f"**Next Review:** {policy.get('review_date', 'Not scheduled')}")
+                        st.markdown(f"**Next Review:** {review_date}")
                         st.markdown(f"**Status:** {status_text}")
                         if policy.get('requires_acknowledgment'):
                             st.info("📋 Requires Staff Acknowledgment")
@@ -2158,7 +2221,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View) - WITH EXPANDABLE CONTRACTS
+# CONTRACTS SECTION (User View)
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2525,7 +2588,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View) - WITH EXPANDABLE POLICIES AND CORRECT EXPIRY DATE
+# POLICIES SECTION (User View) - WITH CORRECT EXPIRY DATE
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2552,10 +2615,10 @@ elif choice == "📋 Policies":
                 effective_date = st.date_input("Effective Date*", value=datetime.now().date())
                 policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                 
-                # CORRECT expiry date calculation using relativedelta
+                # FIXED: Correct expiry date calculation using relativedelta
                 if policy_duration != "Custom":
                     duration_years = int(policy_duration.split()[0])
-                    # This correctly adds years - Feb 2025 + 5 years = Feb 2030
+                    # CORRECT: Adding years properly - Feb 2025 + 5 years = Feb 2030
                     expiry_date_calculated = effective_date + relativedelta(years=duration_years)
                     st.info(f"📅 Expiry date set to: {expiry_date_calculated.strftime('%Y-%m-%d')} ({policy_duration})")
                     expiry_date_input = st.date_input("Expiry Date*", value=expiry_date_calculated)
@@ -2619,27 +2682,36 @@ elif choice == "📋 Policies":
                 days_left = (expiry - datetime.now().date()).days
                 
                 if days_left > 90:
+                    status_class = "active"
                     status_text = "Active"
                 elif days_left > 0:
+                    status_class = "expiring"
                     status_text = f"Expires in {days_left} days"
                 else:
+                    status_class = "expired"
                     status_text = "Expired"
                 
-                expander_title = f"📜 {policy['policy_name']} (v{policy.get('version', '1.0')}) - {status_text}"
+                category = policy.get('category', 'Uncategorized')
+                policy_scope = policy.get('policy_scope', 'Not specified')
+                version = policy.get('version', 'v1.0')
+                owner = policy.get('policy_owner', 'Not assigned')
+                review_date = policy.get('review_date', 'Not scheduled')
+                
+                expander_title = f"📜 {policy['policy_name']} (v{version}) - {status_text}"
                 
                 with st.expander(expander_title, expanded=False):
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown(f"**Policy Name:** {policy['policy_name']}")
-                        st.markdown(f"**Category:** {policy.get('category', 'Uncategorized')}")
-                        st.markdown(f"**Version:** {policy.get('version', 'v1.0')}")
-                        st.markdown(f"**Scope:** {policy.get('policy_scope', 'Not specified')}")
+                        st.markdown(f"**Category:** {category}")
+                        st.markdown(f"**Version:** {version}")
+                        st.markdown(f"**Scope:** {policy_scope}")
                         st.markdown(f"**Affected Entities:** {policy.get('affected_entities', 'N/A')}")
-                        st.markdown(f"**Policy Owner:** {policy.get('policy_owner', 'Not assigned')}")
+                        st.markdown(f"**Policy Owner:** {owner}")
                     with col2:
                         st.markdown(f"**Effective Date:** {policy.get('effective_date', 'N/A')}")
                         st.markdown(f"**Expiry Date:** {policy['expiry_date']}")
-                        st.markdown(f"**Next Review:** {policy.get('review_date', 'Not scheduled')}")
+                        st.markdown(f"**Next Review:** {review_date}")
                         st.markdown(f"**Status:** {status_text}")
                         if policy.get('requires_acknowledgment'):
                             st.info("📋 Requires Staff Acknowledgment")
@@ -2723,7 +2795,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only) - Keep original working code
+# ADMIN PANEL (Admin Only)
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
@@ -2872,7 +2944,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     effective_date = st.date_input("Effective Date*", value=datetime.now().date())
                     policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                     
-                    # CORRECT expiry date calculation using relativedelta
+                    # FIXED: Correct expiry date calculation using relativedelta
                     if policy_duration != "Custom":
                         duration_years = int(policy_duration.split()[0])
                         expiry_date_calculated = effective_date + relativedelta(years=duration_years)
