@@ -103,6 +103,8 @@ POLICY_CATEGORIES = [
 
 POLICY_SCOPE = ["Institution-Wide", "Department-Specific", "Committee"]
 
+POLICY_DURATIONS = ["2 years", "3 years", "4 years", "5 years"]
+
 QUARTER_MONTHS = {
     "Q1 (Jul-Sep)": ["July", "August", "September"],
     "Q2 (Oct-Dec)": ["October", "November", "December"],
@@ -515,7 +517,7 @@ def add_work_plan(data):
     except:
         return False
 
-def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status):
+def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status, comment=None):
     try:
         progress_int = int(progress_percent) if progress_percent else 0
         
@@ -525,6 +527,11 @@ def update_work_plan_progress(plan_id, actual_achievement, progress_percent, sta
             "status": status,
             "updated_at": datetime.now().isoformat()
         }
+        
+        # Add comment if provided
+        if comment:
+            update_data["comment"] = comment
+            
         supabase.table("work_plan").update(update_data).eq("id", plan_id).execute()
         st.cache_data.clear()
         add_audit_log("UPDATE", "work_plan", plan_id, f"Updated progress to {progress_percent}%")
@@ -870,7 +877,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (UPDATED WITH BETTER LOGIN STYLES)
+# CUSTOM CSS (UPDATED WITH PROFESSIONAL LOGIN STYLES)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1043,53 +1050,92 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* Login Page Styles - FIXED */
-        .login-container {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
-            border-radius: 20px;
+        /* Professional Login Page Styles - Light Mode */
+        .login-wrapper {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
             padding: 2rem;
+        }}
+        .login-container {{
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid rgba(0,132,61,0.1);
+        }}
+        .login-header {{
             text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            margin-top: 2rem;
+            margin-bottom: 2rem;
         }}
         .login-logo {{
             margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
         }}
         .login-title {{
-            color: white !important;
-            font-size: 1.5rem !important;
+            color: {HELB_GREEN} !important;
+            font-size: 1.75rem !important;
             font-weight: 700 !important;
-            margin-bottom: 0.5rem !important;
+            margin: 0.5rem 0 0.25rem 0 !important;
             text-align: center !important;
         }}
         .login-subtitle {{
-            color: {HELB_GOLD} !important;
-            font-size: 0.9rem !important;
+            color: #6b7280 !important;
+            font-size: 0.875rem !important;
             text-align: center !important;
-            margin-bottom: 1.5rem !important;
+            margin-bottom: 0 !important;
         }}
-        /* Style login form inputs */
+        .login-divider {{
+            height: 4px;
+            background: linear-gradient(90deg, {HELB_GREEN}, {HELB_GOLD}, {HELB_BLUE});
+            width: 60px;
+            margin: 1rem auto;
+            border-radius: 2px;
+        }}
+        .login-footer {{
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }}
         .login-container .stTextInput input {{
             background-color: white !important;
             color: #1F2937 !important;
-            border: 1px solid #D1D5DB !important;
-            border-radius: 8px !important;
-            padding: 10px 12px !important;
+            border: 2px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            padding: 12px 16px !important;
+            font-size: 0.9rem !important;
+            transition: all 0.3s ease !important;
+        }}
+        .login-container .stTextInput input:focus {{
+            border-color: {HELB_GREEN} !important;
+            box-shadow: 0 0 0 3px rgba(0,132,61,0.1) !important;
         }}
         .login-container .stTextInput label {{
-            color: white !important;
+            color: #374151 !important;
+            font-weight: 600 !important;
+            margin-bottom: 0.25rem !important;
         }}
-        /* Style login button */
         .login-container .stButton > button {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
             font-weight: 700 !important;
             border: none !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
             margin-top: 0.5rem !important;
+            font-size: 1rem !important;
+            transition: transform 0.2s ease !important;
         }}
         .login-container .stButton > button:hover {{
-            background-color: #e6a800 !important;
-            color: {HELB_DARK} !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 20px rgba(0,132,61,0.2) !important;
         }}
     </style>
     """
@@ -1247,50 +1293,92 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* Login Page Styles for Dark Mode - FIXED */
-        .login-container {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-            border-radius: 20px;
+        /* Professional Login Page Styles - Dark Mode */
+        .login-wrapper {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
             padding: 2rem;
+        }}
+        .login-container {{
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid rgba(255,184,28,0.2);
+        }}
+        .login-header {{
             text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }}
+        .login-logo {{
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
         }}
         .login-title {{
-            color: white !important;
-            font-size: 1.5rem !important;
+            color: {HELB_GOLD} !important;
+            font-size: 1.75rem !important;
             font-weight: 700 !important;
-            margin-bottom: 0.5rem !important;
+            margin: 0.5rem 0 0.25rem 0 !important;
             text-align: center !important;
         }}
         .login-subtitle {{
-            color: {HELB_GOLD} !important;
-            font-size: 0.9rem !important;
+            color: #94a3b8 !important;
+            font-size: 0.875rem !important;
             text-align: center !important;
-            margin-bottom: 1.5rem !important;
+            margin-bottom: 0 !important;
         }}
-        /* Style login form inputs in dark mode */
+        .login-divider {{
+            height: 4px;
+            background: linear-gradient(90deg, {HELB_GREEN}, {HELB_GOLD}, {HELB_BLUE});
+            width: 60px;
+            margin: 1rem auto;
+            border-radius: 2px;
+        }}
+        .login-footer {{
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #334155;
+            font-size: 0.7rem;
+            color: #64748b;
+        }}
         .login-container .stTextInput input {{
-            background-color: #2d2d44 !important;
-            color: white !important;
-            border: 1px solid #4a4a6a !important;
-            border-radius: 8px !important;
-            padding: 10px 12px !important;
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+            border: 2px solid #475569 !important;
+            border-radius: 12px !important;
+            padding: 12px 16px !important;
+            font-size: 0.9rem !important;
+            transition: all 0.3s ease !important;
+        }}
+        .login-container .stTextInput input:focus {{
+            border-color: {HELB_GOLD} !important;
+            box-shadow: 0 0 0 3px rgba(255,184,28,0.1) !important;
         }}
         .login-container .stTextInput label {{
-            color: white !important;
+            color: #cbd5e1 !important;
+            font-weight: 600 !important;
+            margin-bottom: 0.25rem !important;
         }}
-        /* Style login button in dark mode */
         .login-container .stButton > button {{
-            background-color: {HELB_GOLD} !important;
-            color: {HELB_DARK} !important;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
             font-weight: 700 !important;
             border: none !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
             margin-top: 0.5rem !important;
+            font-size: 1rem !important;
+            transition: transform 0.2s ease !important;
         }}
         .login-container .stButton > button:hover {{
-            background-color: #e6a800 !important;
-            color: {HELB_DARK} !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 20px rgba(0,132,61,0.3) !important;
         }}
     </style>
     """
@@ -1298,31 +1386,36 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE (FIXED WITH PROPER STYLING)
+# LOGIN PAGE (PROFESSIONAL REDESIGN)
 # ============================================
 if not st.session_state.authenticated:
-    # Center the login form on the page
+    # Centered login with professional styling
+    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        # Login container with gradient background
+        # Login container with professional design
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        
+        # Login Header
+        st.markdown('<div class="login-header">', unsafe_allow_html=True)
         
         # Display HELB Logo
         if LOGO_BASE64:
             st.markdown(f'''
             <div class="login-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 100px; height: auto; background: transparent;">
+                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 80px; height: auto; background: transparent;">
             </div>
             ''', unsafe_allow_html=True)
         else:
             st.markdown('<div class="login-logo" style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
         
         # Title and Subtitle
-        st.markdown("""
-        <div>
-            <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
-            <p class="login-subtitle">Strategy Performance Management System</p>
+        st.markdown(f"""
+        <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
+        <p class="login-subtitle">Strategy Performance Management System</p>
+        <div class="login-divider"></div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1331,7 +1424,7 @@ if not st.session_state.authenticated:
             username = st.text_input("Username", placeholder="Enter your username", key="login_username")
             password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
             
-            submitted = st.form_submit_button("Login", use_container_width=True)
+            submitted = st.form_submit_button("Sign In", use_container_width=True)
             
             if submitted:
                 if username and password:
@@ -1359,13 +1452,23 @@ if not st.session_state.authenticated:
                 else:
                     st.warning("Please enter both username and password")
         
+        # Footer
+        st.markdown(f"""
+        <div class="login-footer">
+            <p>© 2025 HELB - Higher Education Loans Board</p>
+            <p>Secure System Access</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Stop execution here if not authenticated
     st.stop()
 
 # ============================================
-# MAIN APPLICATION (REST OF THE CODE - UNCHANGED)
+# MAIN APPLICATION (REST OF THE CODE - UNCHANGED EXCEPT FOR WORK PLAN UPDATE WITH COMMENT)
 # ============================================
 
 col_header, col_theme, col_refresh = st.columns([5, 1, 1])
@@ -1444,7 +1547,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE (User View)
+# WORK PLANS MODULE (User View) - UPDATED WITH COMMENT FIELD
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1624,6 +1727,9 @@ if choice == "📋 Work Plans":
                         new_progress = calculate_progress_from_actual(annual_target, actual_input)
                         st.caption(f"📊 Calculated Progress: {new_progress:.1f}%")
                         
+                        # NEW: Comment field (optional)
+                        update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
+                        
                         if st.session_state.user_role == "admin":
                             st.markdown("---")
                             st.markdown("**📅 Admin: Edit Due Date**")
@@ -1644,8 +1750,11 @@ if choice == "📋 Work Plans":
                                     new_status = "In Progress"
                                 else:
                                     new_status = "Pending"
-                                if update_work_plan_progress(plan['id'], actual_input, new_progress, new_status):
+                                # Pass comment to update function
+                                if update_work_plan_progress(plan['id'], actual_input, new_progress, new_status, update_comment if update_comment else None):
                                     st.success("✅ Achievement updated successfully!")
+                                    if update_comment:
+                                        st.info(f"📝 Comment saved: {update_comment}")
                                     st.rerun()
                                 else:
                                     st.error("❌ Failed to update. Please try again.")
@@ -1706,7 +1815,7 @@ if choice == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD
+# DASHBOARD (UNCHANGED)
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -2203,7 +2312,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View) - WITH UPDATE CAPABILITY
+# CONTRACTS SECTION (User View) - UNCHANGED
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2524,7 +2633,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View)
+# POLICIES SECTION (User View) - UPDATED WITH POLICY DURATION
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2549,7 +2658,18 @@ elif choice == "📋 Policies":
                 
             with col2:
                 effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                expiry_date = st.date_input("Expiry Date*")
+                # NEW: Policy Duration Selection
+                policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
+                
+                # Calculate expiry date based on duration
+                if policy_duration != "Custom":
+                    duration_years = int(policy_duration.split()[0])
+                    expiry_date = effective_date + timedelta(days=365 * duration_years)
+                    st.info(f"📅 Expiry date set to: {expiry_date.strftime('%Y-%m-%d')} ({policy_duration})")
+                    expiry_date_input = st.date_input("Expiry Date*", value=expiry_date)
+                else:
+                    expiry_date_input = st.date_input("Expiry Date*")
+                
                 review_date = st.date_input("Next Review Date*")
                 policy_url = st.text_input("Policy Document URL", placeholder="https://...")
             
@@ -2570,7 +2690,7 @@ elif choice == "📋 Policies":
             change_log = st.text_area("Change Log / Summary", height=80)
             
             if st.form_submit_button("Save Policy", use_container_width=True):
-                if policy_name and category and policy_owner and expiry_date:
+                if policy_name and category and policy_owner and expiry_date_input:
                     policy_data = {
                         "policy_name": policy_name,
                         "category": category,
@@ -2579,7 +2699,7 @@ elif choice == "📋 Policies":
                         "affected_entities": affected_entities,
                         "policy_owner": policy_owner,
                         "effective_date": effective_date.isoformat(),
-                        "expiry_date": expiry_date.isoformat(),
+                        "expiry_date": expiry_date_input.isoformat(),
                         "review_date": review_date.isoformat(),
                         "policy_url": policy_url if policy_url else None,
                         "requires_acknowledgment": requires_acknowledgment,
@@ -2712,7 +2832,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only)
+# ADMIN PANEL (Admin Only) - UNCHANGED
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
@@ -2859,7 +2979,17 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     policy_owner = st.text_input("Policy Owner*")
                     
                     effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                    expiry_date = st.date_input("Expiry Date*")
+                    # NEW: Policy Duration Selection in Admin Panel
+                    policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
+                    
+                    if policy_duration != "Custom":
+                        duration_years = int(policy_duration.split()[0])
+                        expiry_date = effective_date + timedelta(days=365 * duration_years)
+                        st.info(f"📅 Expiry date set to: {expiry_date.strftime('%Y-%m-%d')} ({policy_duration})")
+                        expiry_date_input = st.date_input("Expiry Date*", value=expiry_date)
+                    else:
+                        expiry_date_input = st.date_input("Expiry Date*")
+                    
                     review_date = st.date_input("Next Review Date*")
                     policy_url = st.text_input("Policy Document URL", placeholder="https://...")
                     
@@ -2891,7 +3021,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 "affected_entities": affected_entities,
                                 "policy_owner": policy_owner,
                                 "effective_date": effective_date.isoformat(),
-                                "expiry_date": expiry_date.isoformat(),
+                                "expiry_date": expiry_date_input.isoformat(),
                                 "review_date": review_date.isoformat(),
                                 "policy_url": policy_url if policy_url else None,
                                 "requires_acknowledgment": requires_acknowledgment,
@@ -3386,7 +3516,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             st.info("No audit logs found. The audit_logs table exists but no records have been created yet. Perform some actions (login, create contract, etc.) to generate logs.")
 
 # ============================================
-# ENTERPRISE VIEW
+# ENTERPRISE VIEW (UNCHANGED)
 # ============================================
 elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
@@ -3450,7 +3580,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
             st.info("No policies found")
 
 # ============================================
-# FOOTER
+# FOOTER (UNCHANGED)
 # ============================================
 st.markdown("---")
 st.markdown("""
