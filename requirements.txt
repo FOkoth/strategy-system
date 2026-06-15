@@ -6,3 +6,4 @@ pillow
 requests
 python-dateutil
 openpyxl
+reportlab
