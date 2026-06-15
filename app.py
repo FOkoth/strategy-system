@@ -17,6 +17,9 @@ from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import hashlib
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -41,6 +44,12 @@ def toggle_theme():
     else:
         st.session_state.theme = "light"
     st.rerun()
+
+# ============================================
+# PASSWORD HASHING FUNCTION
+# ============================================
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # ============================================
 # LOAD HELB LOGO FOR FAVICON AND DISPLAY
@@ -138,6 +147,32 @@ mobile_css = """
         [data-testid="stSidebar"] {
             width: 80% !important;
         }
+    }
+    .calendar-day {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 0.5rem;
+        min-height: 100px;
+        background-color: white;
+    }
+    .calendar-day-header {
+        font-weight: bold;
+        text-align: center;
+        padding: 0.5rem;
+        background-color: #f3f4f6;
+        border-radius: 6px;
+    }
+    .calendar-event {
+        background-color: #00843D;
+        color: white;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
+        cursor: pointer;
+    }
+    .calendar-event:hover {
+        background-color: #00529B;
     }
 </style>
 """
@@ -355,6 +390,93 @@ def filter_policies_by_date(df, financial_year, quarter, month):
     return df
 
 # ============================================
+# PREDICTIVE ANALYTICS FUNCTIONS
+# ============================================
+def predict_completion_trend(df):
+    """Predict future completion rates using linear regression"""
+    if len(df) < 3:
+        return None, None, None
+    
+    # Prepare data for prediction
+    df['date'] = pd.to_datetime(df['created_at'])
+    df = df.sort_values('date')
+    df['days_since_start'] = (df['date'] - df['date'].min()).dt.days
+    
+    # Use progress_percent for prediction
+    X = df['days_since_start'].values.reshape(-1, 1)
+    y = df['progress_percent'].values
+    
+    # Train model
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    # Predict next 30, 60, 90 days
+    max_days = df['days_since_start'].max()
+    future_days = [max_days + 30, max_days + 60, max_days + 90]
+    future_predictions = model.predict(np.array(future_days).reshape(-1, 1))
+    
+    # Calculate R-squared for confidence
+    r2 = model.score(X, y)
+    
+    return future_predictions, future_days, r2
+
+def calculate_risk_score(progress, days_left, total_days):
+    """Calculate risk score for an activity"""
+    if days_left <= 0:
+        return 100 if progress < 100 else 0
+    
+    expected_progress = max(0, min(100, (1 - (days_left / total_days)) * 100)) if total_days > 0 else 0
+    progress_gap = expected_progress - progress
+    
+    if progress_gap > 30:
+        return 90  # High risk
+    elif progress_gap > 15:
+        return 60  # Medium risk
+    elif progress_gap > 0:
+        return 30  # Low risk
+    else:
+        return 10  # On track or ahead
+
+# ============================================
+# PASSWORD MANAGEMENT FUNCTIONS
+# ============================================
+def change_user_password(username, old_password, new_password):
+    """Allow user to change their own password"""
+    try:
+        # Verify old password
+        result = supabase.table("users").select("*").eq("username", username).execute()
+        if not result.data:
+            return False, "User not found"
+        
+        user = result.data[0]
+        if user["password_hash"] != old_password:
+            return False, "Current password is incorrect"
+        
+        # Update to new password
+        supabase.table("users").update({
+            "password_hash": new_password,
+            "updated_at": datetime.now().isoformat()
+        }).eq("username", username).execute()
+        
+        add_audit_log("PASSWORD_CHANGE", "user", None, f"User {username} changed password")
+        return True, "Password changed successfully!"
+    except Exception as e:
+        return False, str(e)
+
+def admin_reset_password(username, new_password="password123"):
+    """Admin function to reset user password"""
+    try:
+        supabase.table("users").update({
+            "password_hash": new_password,
+            "updated_at": datetime.now().isoformat()
+        }).eq("username", username).execute()
+        
+        add_audit_log("PASSWORD_RESET", "user", None, f"Admin reset password for {username}")
+        return True, f"Password reset to '{new_password}' for {username}"
+    except Exception as e:
+        return False, str(e)
+
+# ============================================
 # DATABASE FUNCTIONS
 # ============================================
 @st.cache_resource
@@ -371,8 +493,8 @@ supabase = init_supabase()
 def add_audit_log(action, entity_type, entity_id, details):
     try:
         audit_data = {
-            "user_id": st.session_state.user_id,
-            "username": st.session_state.user_name,
+            "user_id": st.session_state.user_id if hasattr(st.session_state, 'user_id') else None,
+            "username": st.session_state.user_name if hasattr(st.session_state, 'user_name') else "system",
             "action": action,
             "entity_type": entity_type,
             "entity_id": entity_id,
@@ -984,6 +1106,58 @@ def generate_policies_pdf_report(df, title="HELB Policies Report"):
     return buffer
 
 # ============================================
+# CALENDAR VIEW FUNCTIONS
+# ============================================
+def generate_calendar_html(activities, year, month):
+    """Generate HTML for month calendar view"""
+    import calendar
+    
+    cal = calendar.monthcalendar(year, month)
+    month_name = calendar.month_name[month]
+    
+    # Group activities by date
+    activities_by_date = {}
+    for activity in activities:
+        if activity.get('due_date'):
+            due_date = pd.to_datetime(activity['due_date']).date()
+            if due_date.year == year and due_date.month == month:
+                date_key = due_date.day
+                if date_key not in activities_by_date:
+                    activities_by_date[date_key] = []
+                activities_by_date[date_key].append(activity)
+    
+    # Build HTML
+    html = f'<h4>{month_name} {year}</h4>'
+    html += '<table style="width:100%; border-collapse: collapse;">'
+    html += '<tr>'
+    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+        html += f'<th style="padding: 8px; text-align: center; background-color: #f3f4f6; border: 1px solid #e5e7eb;">{day}</th>'
+    html += '</tr>'
+    
+    for week in cal:
+        html += '<tr>'
+        for day in week:
+            if day == 0:
+                html += '<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: #f9fafb;"></td>'
+            else:
+                day_activities = activities_by_date.get(day, [])
+                bg_color = '#fef3c7' if day_activities else 'white'
+                html += f'<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: {bg_color};">'
+                html += f'<strong>{day}</strong>'
+                for act in day_activities[:3]:
+                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
+                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px;">'
+                    html += f'{status_icon} {act["planned_activity"][:30]}...'
+                    html += '</div>'
+                if len(day_activities) > 3:
+                    html += f'<div style="font-size: 0.6rem; margin-top: 2px; color: #6b7280;">+{len(day_activities)-3} more</div>'
+                html += '</td>'
+        html += '</tr>'
+    html += '</table>'
+    
+    return html
+
+# ============================================
 # CONTRACT YEAR FUNCTIONS
 # ============================================
 def get_contract_years(contract_id):
@@ -1443,6 +1617,9 @@ if st.session_state.theme == "light":
         .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
         .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
         .status-urgent {{ background-color: #dc2626 !important; color: white !important; }}
+        .status-risk-high {{ background-color: #dc2626 !important; color: white !important; }}
+        .status-risk-medium {{ background-color: #f59e0b !important; color: white !important; }}
+        .status-risk-low {{ background-color: #10b981 !important; color: white !important; }}
         
         .metric-card, .metric-card * {{ color: #000000 !important; }}
         .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
@@ -2072,6 +2249,26 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Add Password Change option in sidebar
+    with st.expander("🔐 Account Settings", expanded=False):
+        st.markdown("#### Change Password")
+        with st.form("change_password_form"):
+            current_pwd = st.text_input("Current Password", type="password", key="current_pwd")
+            new_pwd = st.text_input("New Password", type="password", key="new_pwd")
+            confirm_pwd = st.text_input("Confirm New Password", type="password", key="confirm_pwd")
+            
+            if st.form_submit_button("Update Password", use_container_width=True):
+                if new_pwd == confirm_pwd:
+                    success, message = change_user_password(st.session_state.user_name, current_pwd, new_pwd)
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+                else:
+                    st.error("New passwords do not match")
+    
+    st.markdown("---")
+    
     menu_options = ["📊 Dashboard", "📋 Work Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
         menu_options.append("⚙️ Admin Panel")
@@ -2120,11 +2317,13 @@ if choice == "📋 Work Plans":
     else:
         filtered_plans = work_plans
     
-    # Updated tabs to include Gantt Chart, Bulk Upload, and PDF Export
-    tab_add, tab_view, tab_gantt, tab_expiring, tab_bulk, tab_dashboard = st.tabs([
+    # Updated tabs to include Calendar View and Predictive Analytics
+    tab_add, tab_view, tab_calendar, tab_gantt, tab_predictive, tab_expiring, tab_bulk, tab_dashboard = st.tabs([
         "➕ Add Work Plan Activity", 
         "📊 View All Activities", 
+        "📅 Calendar View",
         "📅 Gantt Chart View",
+        "🔮 Predictive Analytics",
         "⚠️ Expiring in 60 Days",
         "📤 Bulk Upload",
         "📈 Performance Dashboard"
@@ -2351,6 +2550,30 @@ if choice == "📋 Work Plans":
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
+    with tab_calendar:
+        st.markdown("### 📅 Calendar View")
+        st.markdown("Visualize all activities by month")
+        
+        if filtered_plans:
+            # Year and month selection
+            col_year, col_month = st.columns(2)
+            with col_year:
+                current_year = datetime.now().year
+                selected_year = st.selectbox("Select Year", [current_year - 1, current_year, current_year + 1], index=1)
+            with col_month:
+                selected_month = st.selectbox("Select Month", list(range(1, 13)), format_func=lambda x: datetime(2000, x, 1).strftime('%B'), index=datetime.now().month - 1)
+            
+            # Generate calendar
+            calendar_html = generate_calendar_html(filtered_plans, selected_year, selected_month)
+            st.components.v1.html(calendar_html, height=600)
+            
+            st.markdown("---")
+            st.markdown("**Legend:**")
+            st.markdown("- 🔴 Pending | 🟡 In Progress | ✅ Done")
+            st.markdown("- Colored dates have activities scheduled")
+        else:
+            st.info("No activities to display")
+    
     with tab_gantt:
         st.markdown("### 📅 Work Plan Gantt Chart")
         st.markdown("Visualize all activities by month and quarter")
@@ -2419,6 +2642,85 @@ if choice == "📋 Work Plans":
                 st.info("No activities with start and end dates found. Please add start and end dates to activities.")
         else:
             st.info("No work plan activities found")
+    
+    with tab_predictive:
+        st.markdown("### 🔮 Predictive Analytics")
+        st.markdown("AI-powered predictions for project completion and risk assessment")
+        
+        if filtered_plans:
+            df_predict = pd.DataFrame(filtered_plans)
+            df_predict['created_at'] = pd.to_datetime(df_predict['created_at'])
+            df_predict['progress_percent'] = pd.to_numeric(df_predict['progress_percent'], errors='coerce').fillna(0)
+            df_predict['due_date'] = pd.to_datetime(df_predict['due_date'])
+            
+            # Completion trend prediction
+            st.markdown("#### 📈 Completion Trend Prediction")
+            predictions, future_days, r2 = predict_completion_trend(df_predict)
+            
+            if predictions is not None:
+                col_pred1, col_pred2, col_pred3 = st.columns(3)
+                with col_pred1:
+                    st.metric("30-Day Prediction", f"{max(0, min(100, predictions[0])):.0f}%", 
+                             delta=f"{predictions[0] - df_predict['progress_percent'].iloc[-1]:.0f}%")
+                with col_pred2:
+                    st.metric("60-Day Prediction", f"{max(0, min(100, predictions[1])):.0f}%",
+                             delta=f"{predictions[1] - df_predict['progress_percent'].iloc[-1]:.0f}%")
+                with col_pred3:
+                    st.metric("90-Day Prediction", f"{max(0, min(100, predictions[2])):.0f}%",
+                             delta=f"{predictions[2] - df_predict['progress_percent'].iloc[-1]:.0f}%")
+                st.caption(f"Model confidence (R² score): {r2:.2f}")
+                
+                # Create prediction chart
+                hist_data = df_predict[['created_at', 'progress_percent']].dropna()
+                if len(hist_data) > 1:
+                    fig_pred = px.line(hist_data, x='created_at', y='progress_percent', 
+                                       title="Historical Progress Trend", markers=True)
+                    fig_pred.update_layout(yaxis_title="Progress %", xaxis_title="Date")
+                    st.plotly_chart(fig_pred, use_container_width=True)
+            else:
+                st.info("Need at least 3 data points for prediction. Continue updating progress to enable predictions.")
+            
+            # Risk assessment
+            st.markdown("#### ⚠️ Risk Assessment")
+            st.markdown("Activities identified as at-risk based on progress vs. timeline")
+            
+            today = datetime.now().date()
+            risk_data = []
+            for plan in filtered_plans:
+                due_date = datetime.strptime(plan["due_date"], "%Y-%m-%d").date()
+                days_left = (due_date - today).days
+                start_date = datetime.strptime(plan.get("start_date", plan["due_date"]), "%Y-%m-%d").date() if plan.get("start_date") else due_date - timedelta(days=90)
+                total_days = (due_date - start_date).days
+                risk_score = calculate_risk_score(plan.get("progress_percent", 0), days_left, total_days)
+                
+                if risk_score >= 60:
+                    risk_data.append({
+                        "Activity": plan["planned_activity"][:60] + "...",
+                        "Department": plan.get("department_name", "Unknown"),
+                        "Progress": f"{plan.get('progress_percent', 0)}%",
+                        "Days Left": days_left,
+                        "Risk Level": "High" if risk_score >= 80 else "Medium",
+                        "Risk Score": risk_score
+                    })
+            
+            if risk_data:
+                df_risk = pd.DataFrame(risk_data)
+                df_risk = df_risk.sort_values('Risk Score', ascending=False)
+                
+                for _, row in df_risk.head(10).iterrows():
+                    risk_color = "#dc2626" if row["Risk Level"] == "High" else "#f59e0b"
+                    st.markdown(f"""
+                    <div style='background-color: {risk_color}20; border-left: 4px solid {risk_color}; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 8px;'>
+                        <strong>{'🔴' if row['Risk Level'] == 'High' else '🟡'} {row['Risk Level']} Risk:</strong> {row['Activity']}<br>
+                        <small>Department: {row['Department']} | Progress: {row['Progress']} | Days Left: {row['Days Left']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.caption(f"Found {len(risk_data)} at-risk activities requiring attention")
+            else:
+                st.success("✅ No high-risk activities found! All activities are on track.")
+        else:
+            st.info("No data available for predictive analytics")
     
     with tab_expiring:
         st.markdown("### ⚠️ Activities Expiring in 60 Days")
@@ -2508,7 +2810,6 @@ if choice == "📋 Work Plans":
         selected_dept_name = None
         
         if st.session_state.user_role in ["admin", "management"]:
-            # Strategy and Admin users can select any department
             departments_list = get_cached_departments()
             dept_options = {d["name"]: d["id"] for d in departments_list}
             dept_names = ["Same as my department"] + sorted(list(dept_options.keys()))
@@ -2522,7 +2823,6 @@ if choice == "📋 Work Plans":
             if selected_dept_option != "Same as my department":
                 selected_dept_name = selected_dept_option
                 selected_upload_dept = dept_options.get(selected_dept_option)
-                # Show directorate mapping
                 dept_details = get_department_by_id(selected_upload_dept)
                 if dept_details:
                     directorate_name = dept_details.get("directorate_name", "Unknown")
@@ -2537,7 +2837,6 @@ if choice == "📋 Work Plans":
                     st.info(f"📌 Activities will be assigned to your department: **{selected_dept_name}**")
                     st.caption(f"🏛️ This maps to directorate: **{directorate_name}**")
         else:
-            # Regular users can only upload to their own department
             selected_upload_dept = st.session_state.user_dept
             selected_dept_name = st.session_state.user_dept_name
             dept_details = get_department_by_id(selected_upload_dept)
@@ -2642,7 +2941,7 @@ if choice == "📋 Work Plans":
                 total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> TOTAL BUDGET</div>
+                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Budget Allocation</div>
                 </div>
@@ -3018,7 +3317,7 @@ elif choice == "📊 Dashboard":
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> TOTAL VALUE</div>
+                    <div class='kpi-label'>💰 TOTAL VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
                     <div class='kpi-sub'>Contract Value</div>
                 </div>
@@ -3233,7 +3532,7 @@ elif choice == "📄 Contracts":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric(" Total Contract Value", f"KES {total_value:,.0f}")
+                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
             with col2:
                 st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
             with col3:
@@ -3419,7 +3718,7 @@ elif choice == "📄 Contracts":
                             "status": "active"
                         })
                 
-                st.info(f" **Total Contract Value: KES {total_value:,.2f}**")
+                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
             else:
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
@@ -3784,7 +4083,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only) - PRESERVED
+# ADMIN PANEL (Admin Only) - PRESERVED with Password Reset
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
@@ -3856,11 +4155,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                             default_index = dept_list.index(current_dept) if current_dept in dept_list else 0
                             new_department = st.selectbox("Department", dept_list, index=default_index)
                             
-                            reset_password = st.checkbox("Reset Password")
-                            new_password = None
-                            if reset_password:
-                                new_password = st.text_input("New Password", type="password")
-                                confirm_new = st.text_input("Confirm New Password", type="password")
+                            reset_password = st.checkbox("Reset Password to 'password123'")
                             
                             if st.button("Save Changes", use_container_width=True):
                                 dept_id = dept_options.get(new_department) if new_department != "None" else None
@@ -3869,15 +4164,12 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 else:
                                     st.error("Failed to update role/department")
                                 
-                                if reset_password and new_password:
-                                    if new_password == confirm_new and len(new_password) >= 4:
-                                        if reset_user_password(selected_username, new_password):
-                                            st.success(f"✅ Password reset for {selected_username}")
-                                            st.info(f"New password: {new_password}")
-                                        else:
-                                            st.error("Failed to reset password")
+                                if reset_password:
+                                    success, message = admin_reset_password(selected_username, "password123")
+                                    if success:
+                                        st.success(f"✅ {message}")
                                     else:
-                                        st.error("Passwords don't match or are too short")
+                                        st.error(f"❌ {message}")
                                 st.rerun()
         
         with st.expander("🗑️ Delete User", expanded=False):
