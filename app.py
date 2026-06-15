@@ -11,6 +11,7 @@ import requests
 import re
 import json
 from dateutil.relativedelta import relativedelta
+import io
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -570,6 +571,62 @@ def update_work_plan_admin(plan_id, data):
         return False
 
 # ============================================
+# BULK UPLOAD FUNCTIONS
+# ============================================
+def generate_work_plan_template():
+    template_df = pd.DataFrame({
+        "strategic_pillar": ["1. Customer Excellence", "2. Financial Sustainability and Stewardship", "3. Innovation & Digital Transformation", "4. Our People Centricity and Compliance", "5. Strategy"],
+        "key_result_area": ["Example KRA", "Another KRA"],
+        "planned_activity": ["Example activity description", "Another activity"],
+        "performance_indicator": ["% complete", "Number of reports"],
+        "annual_target": ["90%", "5 reports"],
+        "start_date": ["2025-01-01", "2025-02-01"],
+        "end_date": ["2025-12-31", "2025-06-30"],
+        "budget_allocation": ["100000", "50000"],
+        "activity_category": ["SP Deliverable", "PC Deliverable"]
+    })
+    return template_df
+
+def bulk_upload_work_plans(df, department_id, department_name, user_id):
+    success_count = 0
+    error_count = 0
+    errors = []
+    
+    for idx, row in df.iterrows():
+        try:
+            work_plan_data = {
+                "strategic_pillar": row.get("strategic_pillar", ""),
+                "strategy": None,
+                "key_result_area": row.get("key_result_area", ""),
+                "planned_activity": row.get("planned_activity", ""),
+                "performance_indicator": row.get("performance_indicator", ""),
+                "budget_allocation": float(row.get("budget_allocation", 0)) if pd.notna(row.get("budget_allocation")) else None,
+                "annual_target": str(row.get("annual_target", "")),
+                "actual_achievement": 0,
+                "start_date": pd.to_datetime(row.get("start_date")).date().isoformat() if pd.notna(row.get("start_date")) else None,
+                "end_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
+                "due_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
+                "activity_category": row.get("activity_category", "SP Deliverable"),
+                "status": "Pending",
+                "progress_percent": 0,
+                "department_id": department_id,
+                "department_name": department_name,
+                "created_by": user_id,
+                "created_at": datetime.now().isoformat()
+            }
+            
+            if add_work_plan(work_plan_data):
+                success_count += 1
+            else:
+                error_count += 1
+                errors.append(f"Row {idx+2}: Failed to insert")
+        except Exception as e:
+            error_count += 1
+            errors.append(f"Row {idx+2}: {str(e)}")
+    
+    return success_count, error_count, errors
+
+# ============================================
 # CONTRACT YEAR FUNCTIONS
 # ============================================
 def get_contract_years(contract_id):
@@ -922,7 +979,7 @@ if st.session_state.theme == "light":
             border-radius: 12px !important;
             padding: 0.8rem !important;
             text-align: center !important;
-            min-height: 100px;
+            min-height: 110px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -936,7 +993,7 @@ if st.session_state.theme == "light":
             margin-bottom: 0.25rem;
         }}
         .kpi-card .kpi-value {{
-            font-size: 1.2rem !important;
+            font-size: 1.3rem !important;
             font-weight: 700 !important;
             margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
@@ -958,6 +1015,32 @@ if st.session_state.theme == "light":
             height: 100% !important;
             background: {HELB_GOLD} !important;
             border-radius: 2px !important;
+        }}
+        
+        .kpi-card-small {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            border-radius: 10px !important;
+            padding: 0.6rem !important;
+            text-align: center !important;
+            min-height: 85px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+        .kpi-card-small .kpi-label {{
+            font-size: 0.6rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+        }}
+        .kpi-card-small .kpi-value {{
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card-small .kpi-sub {{
+            font-size: 0.45rem !important;
+            color: #FFFFFF !important;
         }}
         
         .comment-box {{
@@ -1002,6 +1085,7 @@ if st.session_state.theme == "light":
         .status-active {{ background-color: #10b981 !important; color: white !important; }}
         .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
         .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
+        .status-urgent {{ background-color: #dc2626 !important; color: white !important; }}
         
         .metric-card, .metric-card * {{ color: #000000 !important; }}
         .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
@@ -1190,7 +1274,7 @@ else:
             border-radius: 12px !important;
             padding: 0.8rem !important;
             text-align: center !important;
-            min-height: 100px;
+            min-height: 110px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -1204,7 +1288,7 @@ else:
             margin-bottom: 0.25rem;
         }}
         .kpi-card .kpi-value {{
-            font-size: 1.2rem !important;
+            font-size: 1.3rem !important;
             font-weight: 700 !important;
             margin: 0.2rem 0 !important;
             color: #FFFFFF !important;
@@ -1226,6 +1310,32 @@ else:
             height: 100% !important;
             background: {HELB_GOLD} !important;
             border-radius: 2px !important;
+        }}
+        
+        .kpi-card-small {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            border-radius: 10px !important;
+            padding: 0.6rem !important;
+            text-align: center !important;
+            min-height: 85px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+        .kpi-card-small .kpi-label {{
+            font-size: 0.6rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+        }}
+        .kpi-card-small .kpi-value {{
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card-small .kpi-sub {{
+            font-size: 0.45rem !important;
+            color: #FFFFFF !important;
         }}
         
         .comment-box {{
@@ -1563,7 +1673,7 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE
+# WORK PLANS MODULE (WITH START/END DATES & BULK UPLOAD)
 # ============================================
 if choice == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -1594,7 +1704,15 @@ if choice == "📋 Work Plans":
     else:
         filtered_plans = work_plans
     
-    tab_add, tab_view, tab_dashboard = st.tabs(["➕ Add Work Plan Activity", "📊 View All Activities", "📈 Performance Dashboard"])
+    # Updated tabs to include Gantt Chart and Bulk Upload
+    tab_add, tab_view, tab_gantt, tab_expiring, tab_bulk, tab_dashboard = st.tabs([
+        "➕ Add Work Plan Activity", 
+        "📊 View All Activities", 
+        "📅 Gantt Chart View",
+        "⚠️ Expiring in 60 Days",
+        "📤 Bulk Upload",
+        "📈 Performance Dashboard"
+    ])
     
     with tab_add:
         st.markdown("### Add New Work Plan Activity")
@@ -1611,7 +1729,8 @@ if choice == "📋 Work Plans":
             with col2:
                 budget_allocation = st.number_input("Budget Allocation (KShs.)", min_value=0.0, step=10000.0, format="%.2f")
                 annual_target = st.text_input("Annual Target*", placeholder="e.g., 90% or 5 reports")
-                due_date = st.date_input("Due Date*")
+                start_date = st.date_input("Start Date*", value=datetime.now().date())
+                end_date = st.date_input("End Date*")
                 activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
                 dept_name = st.session_state.user_dept_name if st.session_state.user_dept_name else "Current Department"
                 st.text_input("Department", value=dept_name, disabled=True)
@@ -1630,7 +1749,9 @@ if choice == "📋 Work Plans":
                         "budget_allocation": budget_allocation if budget_allocation > 0 else None,
                         "annual_target": annual_target,
                         "actual_achievement": 0,
-                        "due_date": due_date.isoformat(),
+                        "start_date": start_date.isoformat(),
+                        "end_date": end_date.isoformat(),
+                        "due_date": end_date.isoformat(),
                         "activity_category": activity_category,
                         "status": "Pending",
                         "progress_percent": 0,
@@ -1725,11 +1846,12 @@ if choice == "📋 Work Plans":
                         st.markdown(f"**Planned Activity:** {plan.get('planned_activity', 'N/A')}")
                         st.markdown(f"**Performance Indicator:** {plan.get('performance_indicator', 'N/A')}")
                         st.markdown(f"**Annual Target:** {plan.get('annual_target', 'N/A')}")
+                        st.markdown(f"**Start Date:** {plan.get('start_date', 'N/A')}")
+                        st.markdown(f"**End Date:** {plan.get('end_date', 'N/A')}")
                         st.markdown(f"**Due Date:** {plan['due_date']} ({days_left} days left)")
                         st.markdown(f"**Activity Category:** {plan.get('activity_category', 'N/A')}")
                         st.markdown(f"**Department:** {plan.get('department_name', 'N/A')}")
                         
-                        # DISPLAY COMMENT IF EXISTS
                         if plan.get('comment'):
                             st.markdown(f"""
                             <div class='comment-box'>
@@ -1755,14 +1877,19 @@ if choice == "📋 Work Plans":
                         
                         update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
                         
-                        # ONLY ADMIN CAN SEE AND EDIT DUE DATE
                         if st.session_state.user_role == "admin":
                             st.markdown("---")
-                            st.markdown("**📅 Admin: Edit Due Date**")
-                            new_due_date = st.date_input("New Due Date", value=due_date, key=f"duedate_{plan['id']}")
-                            if st.button(f"Update Due Date", key=f"updatedate_{plan['id']}"):
-                                if update_work_plan_due_date(plan['id'], new_due_date):
-                                    st.success("✅ Due date updated!")
+                            st.markdown("**📅 Admin: Edit Dates**")
+                            new_start_date = st.date_input("New Start Date", value=datetime.strptime(plan.get('start_date', plan['due_date']), "%Y-%m-%d").date() if plan.get('start_date') else due_date, key=f"startdate_{plan['id']}")
+                            new_end_date = st.date_input("New End Date", value=due_date, key=f"enddate_{plan['id']}")
+                            if st.button(f"Update Dates", key=f"updatedates_{plan['id']}"):
+                                update_data = {
+                                    "start_date": new_start_date.isoformat(),
+                                    "end_date": new_end_date.isoformat(),
+                                    "due_date": new_end_date.isoformat()
+                                }
+                                if update_work_plan_admin(plan['id'], update_data):
+                                    st.success("✅ Dates updated!")
                                     st.rerun()
                         
                         col_update, col_delete = st.columns(2)
@@ -1792,55 +1919,379 @@ if choice == "📋 Work Plans":
         else:
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
+    with tab_gantt:
+        st.markdown("### 📅 Work Plan Gantt Chart")
+        st.markdown("Visualize all activities by month and quarter")
+        
+        if filtered_plans:
+            gantt_data = []
+            for plan in filtered_plans:
+                if plan.get('start_date') and plan.get('end_date'):
+                    gantt_data.append({
+                        "Activity": plan['planned_activity'][:50] + "...",
+                        "Start": plan['start_date'],
+                        "Finish": plan['end_date'],
+                        "Department": plan.get('department_name', 'Unknown'),
+                        "Progress": plan.get('progress_percent', 0),
+                        "Status": plan.get('status', 'Pending')
+                    })
+            
+            if gantt_data:
+                df_gantt = pd.DataFrame(gantt_data)
+                
+                # Month filter for Gantt chart
+                col_month_filter, col_dept_filter_gantt = st.columns(2)
+                with col_month_filter:
+                    selected_month = st.selectbox("Filter by Month", ["All"] + ALL_MONTHS)
+                with col_dept_filter_gantt:
+                    if st.session_state.user_role in ["admin", "management"]:
+                        depts = df_gantt['Department'].unique().tolist()
+                        selected_dept_gantt = st.selectbox("Filter by Department", ["All"] + depts)
+                    else:
+                        selected_dept_gantt = "All"
+                
+                filtered_gantt = df_gantt.copy()
+                if selected_month != "All":
+                    month_num = ALL_MONTHS.index(selected_month) + 1
+                    filtered_gantt = filtered_gantt[
+                        (pd.to_datetime(filtered_gantt['Start']).dt.month <= month_num) &
+                        (pd.to_datetime(filtered_gantt['Finish']).dt.month >= month_num)
+                    ]
+                if selected_dept_gantt != "All":
+                    filtered_gantt = filtered_gantt[filtered_gantt['Department'] == selected_dept_gantt]
+                
+                if not filtered_gantt.empty:
+                    # Create Gantt chart using plotly
+                    fig = px.timeline(
+                        filtered_gantt, 
+                        x_start="Start", 
+                        x_end="Finish", 
+                        y="Activity",
+                        color="Progress",
+                        color_continuous_scale="Viridis",
+                        hover_data=["Department", "Status"],
+                        title="Activity Timeline"
+                    )
+                    fig.update_yaxes(autorange="reversed")
+                    fig.update_layout(height=500, margin=dict(l=0, r=0, t=40, b=0))
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Summary by quarter
+                    st.markdown("#### Quarterly Activity Summary")
+                    filtered_gantt['Quarter'] = pd.to_datetime(filtered_gantt['Start']).dt.quarter
+                    quarter_summary = filtered_gantt.groupby('Quarter').size().reset_index(name='Count')
+                    quarter_summary['Quarter Name'] = quarter_summary['Quarter'].map({1: "Q3 (Jan-Mar)", 2: "Q4 (Apr-Jun)", 3: "Q1 (Jul-Sep)", 4: "Q2 (Oct-Dec)"})
+                    fig2 = px.bar(quarter_summary, x='Quarter Name', y='Count', title="Activities by Quarter", color='Count', color_continuous_scale='Greens')
+                    st.plotly_chart(fig2, use_container_width=True)
+                else:
+                    st.info("No activities found for the selected filters")
+            else:
+                st.info("No activities with start and end dates found. Please add start and end dates to activities.")
+        else:
+            st.info("No work plan activities found")
+    
+    with tab_expiring:
+        st.markdown("### ⚠️ Activities Expiring in 60 Days")
+        
+        if filtered_plans:
+            today = datetime.now().date()
+            expiring_activities = []
+            for plan in filtered_plans:
+                due_date = datetime.strptime(plan["due_date"], "%Y-%m-%d").date()
+                days_left = (due_date - today).days
+                if 0 <= days_left <= 60:
+                    expiring_activities.append({
+                        "Activity": plan['planned_activity'],
+                        "Department": plan.get('department_name', 'Unknown'),
+                        "Due Date": plan['due_date'],
+                        "Days Left": days_left,
+                        "Progress": f"{plan.get('progress_percent', 0)}%",
+                        "Status": plan.get('status', 'Pending')
+                    })
+            
+            if expiring_activities:
+                df_expiring = pd.DataFrame(expiring_activities)
+                df_expiring = df_expiring.sort_values('Days Left')
+                
+                # Color code based on urgency
+                for _, row in df_expiring.iterrows():
+                    if row['Days Left'] <= 14:
+                        st.markdown(f"""
+                        <div style='background-color: #7f1a1a; border-left: 4px solid #ef4444; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 8px;'>
+                            <strong>🔴 URGENT:</strong> {row['Activity']}<br>
+                            <small>Department: {row['Department']} | Due: {row['Due Date']} | {row['Days Left']} days left | Progress: {row['Progress']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    elif row['Days Left'] <= 30:
+                        st.markdown(f"""
+                        <div style='background-color: #92400e; border-left: 4px solid #f59e0b; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 8px;'>
+                            <strong>🟡 WARNING:</strong> {row['Activity']}<br>
+                            <small>Department: {row['Department']} | Due: {row['Due Date']} | {row['Days Left']} days left | Progress: {row['Progress']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div style='background-color: #1e3a5f; border-left: 4px solid #3b82f6; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 8px;'>
+                            <strong>🔵 APPROACHING:</strong> {row['Activity']}<br>
+                            <small>Department: {row['Department']} | Due: {row['Due Date']} | {row['Days Left']} days left | Progress: {row['Progress']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                st.metric("Total Activities Expiring in 60 Days", len(expiring_activities))
+            else:
+                st.success("✅ No activities expiring in the next 60 days!")
+        else:
+            st.info("No work plan activities found")
+    
+    with tab_bulk:
+        st.markdown("### 📤 Bulk Upload Work Plan Activities")
+        st.markdown("Download the template, fill it with your activities, and upload back to the system.")
+        
+        col_info, col_download = st.columns([2, 1])
+        with col_info:
+            st.info("""
+            **Instructions:**
+            1. Download the Excel template below
+            2. Fill in your work plan activities (do not change column names)
+            3. Save as Excel file (.xlsx)
+            4. Upload the file using the upload button below
+            """)
+        with col_download:
+            template_df = generate_work_plan_template()
+            template_buffer = io.BytesIO()
+            with pd.ExcelWriter(template_buffer, engine='openpyxl') as writer:
+                template_df.to_excel(writer, index=False, sheet_name='Work Plan Template')
+            template_buffer.seek(0)
+            st.download_button(
+                label="📥 Download Excel Template",
+                data=template_buffer,
+                file_name="helb_work_plan_template.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        
+        st.markdown("---")
+        st.markdown("#### Upload Filled Template")
+        
+        uploaded_file = st.file_uploader("Choose Excel file", type=["xlsx", "xls"], key="bulk_upload")
+        
+        if uploaded_file is not None:
+            try:
+                df_upload = pd.read_excel(uploaded_file)
+                st.success(f"✅ File loaded successfully! Found {len(df_upload)} rows.")
+                
+                # Preview
+                st.markdown("**Preview of uploaded data:**")
+                st.dataframe(df_upload.head(10), use_container_width=True)
+                
+                if st.button("🚀 Start Bulk Upload", use_container_width=True):
+                    with st.spinner("Uploading work plan activities..."):
+                        success_count, error_count, errors = bulk_upload_work_plans(
+                            df_upload, 
+                            st.session_state.user_dept, 
+                            st.session_state.user_dept_name, 
+                            st.session_state.user_id
+                        )
+                        
+                        if success_count > 0:
+                            st.success(f"✅ Successfully uploaded {success_count} activities!")
+                            st.balloons()
+                        if error_count > 0:
+                            st.error(f"❌ Failed to upload {error_count} activities")
+                            with st.expander("View Errors"):
+                                for err in errors[:20]:
+                                    st.write(f"- {err}")
+                        
+                        st.cache_data.clear()
+                        st.rerun()
+            except Exception as e:
+                st.error(f"Error reading file: {str(e)}")
+    
     with tab_dashboard:
         if filtered_plans:
             df = pd.DataFrame(filtered_plans)
             df['calculated_progress'] = df.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
             df['exceeded'] = df.apply(lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1)
             
+            # Enhanced KPI Cards
+            total_activities = len(df)
+            completed_count = len(df[df['calculated_progress'] >= 100])
+            in_progress_count = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)])
+            not_started_count = len(df[df['calculated_progress'] == 0])
+            
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
-                    <div class='kpi-value'>{len(df)}</div>
-                    <div class='kpi-sub'>Total Activities</div>
+                    <div class='kpi-value'>{total_activities}</div>
+                    <div class='kpi-sub'>All Activities</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col2:
-                completed = len(df[df['calculated_progress'] >= 100])
-                rate = (completed/len(df)*100) if len(df)>0 else 0
+                completed_rate = (completed_count/total_activities*100) if total_activities > 0 else 0
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>✅ COMPLETION RATE</div>
-                    <div class='kpi-value'>{rate:.0f}%</div>
-                    <div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div>
-                    <div class='kpi-sub'>Completion Rate</div>
+                    <div class='kpi-label'>✅ COMPLETED</div>
+                    <div class='kpi-value'>{completed_count} ({completed_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{completed_rate}%;'></div></div>
+                    <div class='kpi-sub'>Activities Completed</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
-                avg_progress_val = df['calculated_progress'].mean()
+                in_progress_rate = (in_progress_count/total_activities*100) if total_activities > 0 else 0
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>📈 AVG PROGRESS</div>
-                    <div class='kpi-value'>{avg_progress_val:.0f}%</div>
-                    <div class='kpi-sub'>Average Progress</div>
+                    <div class='kpi-label'>🟡 IN PROGRESS</div>
+                    <div class='kpi-value'>{in_progress_count} ({in_progress_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{in_progress_rate}%; background: {HELB_GOLD};'></div></div>
+                    <div class='kpi-sub'>In Progress</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col4:
+                not_started_rate = (not_started_count/total_activities*100) if total_activities > 0 else 0
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🔴 NOT STARTED</div>
+                    <div class='kpi-value'>{not_started_count} ({not_started_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{not_started_rate}%; background: #dc2626;'></div></div>
+                    <div class='kpi-sub'>Not Started</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            col_budget, col_exceeded = st.columns(2)
+            with col_budget:
                 total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> TOTAL BUDGET</div>
+                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Budget</div>
+                    <div class='kpi-sub'>Total Budget Allocation</div>
                 </div>
                 """, unsafe_allow_html=True)
+            with col_exceeded:
+                exceeded_count = len(df[df['exceeded'] == True])
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
+                    <div class='kpi-value'>{exceeded_count}</div>
+                    <div class='kpi-sub'>Exceeded Targets</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            col_chart1, col_chart2 = st.columns(2)
+            with col_chart1:
+                st.markdown("#### Status Distribution")
+                status_counts = df['status'].value_counts().reset_index()
+                status_counts.columns = ['Status', 'Count']
+                fig = go.Figure(data=[go.Pie(
+                    labels=status_counts['Status'],
+                    values=status_counts['Count'],
+                    hole=0.4,
+                    marker=dict(colors=[HELB_GREEN, HELB_GOLD, "#dc2626", "#6b7280"]),
+                    textinfo='label+percent',
+                    textposition='auto'
+                )])
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart2:
+                st.markdown("#### Progress by Strategic Pillar")
+                pillar_progress = df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
+                pillar_progress.columns = ['Pillar', 'Progress %']
+                pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
+                fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
+                            color='Progress %', color_continuous_scale='Greens',
+                            text='Progress %')
+                fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+                fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("#### Department Performance")
+            dept_progress = df.groupby('department_name')['calculated_progress'].mean().reset_index()
+            dept_progress.columns = ['Department', 'Progress %']
+            dept_progress = dept_progress.sort_values('Progress %', ascending=True)
+            fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
+                        color='Progress %', color_continuous_scale='Greens',
+                        text='Progress %')
+            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+            fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+            
+            col_chart3, col_chart4 = st.columns(2)
+            with col_chart3:
+                st.markdown("#### Activity Category Breakdown")
+                category_stats = df['activity_category'].value_counts().reset_index()
+                category_stats.columns = ['Category', 'Count']
+                fig = px.bar(category_stats, x='Category', y='Count',
+                            color='Count', color_discrete_sequence=[HELB_GREEN],
+                            text='Count')
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart4:
+                st.markdown("#### Quarterly Performance Trend")
+                if 'quarter' in df.columns:
+                    quarterly_data = df.groupby('quarter').agg({
+                        'id': 'count',
+                        'calculated_progress': 'mean'
+                    }).reset_index()
+                    quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
+                    quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
+                    quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
+                    quarterly_data = quarterly_data.sort_values('Quarter')
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
+                                         name='Activities', marker_color=HELB_GREEN,
+                                         text=quarterly_data['Activities'], textposition='outside'))
+                    fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
+                                             name='Avg Progress %', marker_color=HELB_GOLD,
+                                             line=dict(width=3), yaxis='y2'))
+                    fig.update_layout(
+                        height=350,
+                        yaxis_title="Number of Activities",
+                        yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                        margin=dict(l=20, r=60, t=30, b=20)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("### ⚠️ Priority Alerts")
+            col_alert1, col_alert2 = st.columns(2)
+            
+            df['days_left'] = (pd.to_datetime(df['due_date']) - pd.Timestamp.now()).dt.days
+            overdue_df = df[(df['days_left'] < 0) & (df['calculated_progress'] < 100)]
+            urgent_df = df[(df['days_left'] >= 0) & (df['days_left'] <= 14) & (df['calculated_progress'] < 80)]
+            
+            with col_alert1:
+                if not overdue_df.empty:
+                    st.error(f"🔴 **{len(overdue_df)} Overdue Activities**")
+                    for _, row in overdue_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... (Due: {row['due_date']})")
+                else:
+                    st.success("✅ No overdue activities")
+            
+            with col_alert2:
+                if not urgent_df.empty:
+                    st.warning(f"🟡 **{len(urgent_df)} Urgent Activities**")
+                    for _, row in urgent_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... ({row['days_left']} days left)")
+                else:
+                    st.success("✅ No urgent at-risk activities")
+            
+            with st.expander("📥 Export Data", expanded=False):
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
             st.info("No data available for the selected period.")
 
 # ============================================
-# DASHBOARD
+# DASHBOARD (REST OF THE CODE - PRESERVED)
 # ============================================
 elif choice == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
@@ -1913,51 +2364,58 @@ elif choice == "📊 Dashboard":
     
     with tab_work:
         if not filtered_work_df.empty:
+            # Enhanced KPI Cards for Dashboard
+            total_activities = len(filtered_work_df)
+            completed_count = len(filtered_work_df[filtered_work_df['calculated_progress'] >= 100])
+            in_progress_count = len(filtered_work_df[(filtered_work_df['calculated_progress'] > 0) & (filtered_work_df['calculated_progress'] < 100)])
+            not_started_count = len(filtered_work_df[filtered_work_df['calculated_progress'] == 0])
+            
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>📋 TOTAL</div>
-                    <div class='kpi-value'>{len(filtered_work_df)}</div>
+                    <div class='kpi-value'>{total_activities}</div>
                     <div class='kpi-sub'>Activities</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col2:
-                completed = len(filtered_work_df[filtered_work_df['calculated_progress'] >= 100])
-                rate = (completed/len(filtered_work_df)*100) if len(filtered_work_df)>0 else 0
+                completed_rate = (completed_count/total_activities*100) if total_activities > 0 else 0
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>✅ COMPLETED</div>
-                    <div class='kpi-value'>{rate:.0f}%</div>
-                    <div class='progress-bar'><div class='progress-fill' style='width:{rate}%;'></div></div>
-                    <div class='kpi-sub'>Completion Rate</div>
+                    <div class='kpi-value'>{completed_count} ({completed_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{completed_rate}%;'></div></div>
+                    <div class='kpi-sub'>Completed</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col3:
+                in_progress_rate = (in_progress_count/total_activities*100) if total_activities > 0 else 0
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🟡 IN PROGRESS</div>
+                    <div class='kpi-value'>{in_progress_count} ({in_progress_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{in_progress_rate}%; background: {HELB_GOLD};'></div></div>
+                    <div class='kpi-sub'>In Progress</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                not_started_rate = (not_started_count/total_activities*100) if total_activities > 0 else 0
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🔴 NOT STARTED</div>
+                    <div class='kpi-value'>{not_started_count} ({not_started_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{not_started_rate}%; background: #dc2626;'></div></div>
+                    <div class='kpi-sub'>Not Started</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col5:
                 avg_progress_val = filtered_work_df['calculated_progress'].mean()
                 st.markdown(f"""
                 <div class='kpi-card'>
                     <div class='kpi-label'>📈 AVG PROGRESS</div>
                     <div class='kpi-value'>{avg_progress_val:.0f}%</div>
-                    <div class='kpi-sub'>Average Progress</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col4:
-                total_budget = filtered_work_df['budget_allocation'].fillna(0).sum()
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'> BUDGET</div>
-                    <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
-                    <div class='kpi-sub'>Total Budget</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col5:
-                exceeded = len(filtered_work_df[filtered_work_df['exceeded'] == True])
-                st.markdown(f"""
-                <div class='kpi-card'>
-                    <div class='kpi-label'>🏆 EXCEEDED</div>
-                    <div class='kpi-value'>{exceeded}</div>
-                    <div class='kpi-sub'>Targets Exceeded</div>
+                    <div class='kpi-sub'>Overall Progress</div>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -2072,7 +2530,6 @@ elif choice == "📊 Dashboard":
     
     with tab_contracts:
         if not filtered_contracts_df.empty:
-            # STYLED KPIs for Contracts - 5 cards in a row
             col1, col2, col3, col4, col5 = st.columns(5)
             
             total_value = filtered_contracts_df['contract_value'].sum()
@@ -2085,7 +2542,7 @@ elif choice == "📊 Dashboard":
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'> TOTAL VALUE</div>
+                    <div class='kpi-label'>💰 TOTAL VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
                     <div class='kpi-sub'>Contract Value</div>
                 </div>
@@ -2141,8 +2598,6 @@ elif choice == "📊 Dashboard":
                     status_class = "expired"
                     status_text = "Expired"
                 
-                budget_alert_badge = "⚠️ " if contract.get('budget_alert', False) else ""
-                
                 expander_title = f"📄 {contract['contract_title']} - {contract['vendor_name']} ({status_text})"
                 
                 with st.expander(expander_title, expanded=False):
@@ -2174,7 +2629,6 @@ elif choice == "📊 Dashboard":
     
     with tab_policies:
         if not filtered_policies_df.empty:
-            # STYLED KPIs for Policies
             col1, col2, col3, col4 = st.columns(4)
             
             total_policies = len(filtered_policies_df)
@@ -2232,27 +2686,21 @@ elif choice == "📊 Dashboard":
                     status_class = "expired"
                     status_text = "Expired"
                 
-                category = policy.get('category', 'Uncategorized')
-                policy_scope = policy.get('policy_scope', 'Not specified')
-                version = policy.get('version', 'v1.0')
-                owner = policy.get('policy_owner', 'Not assigned')
-                review_date = policy.get('review_date', 'Not scheduled')
-                
-                expander_title = f"📜 {policy['policy_name']} (v{version}) - {status_text}"
+                expander_title = f"📜 {policy['policy_name']} (v{policy.get('version', '1.0')}) - {status_text}"
                 
                 with st.expander(expander_title, expanded=False):
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown(f"**Policy Name:** {policy['policy_name']}")
-                        st.markdown(f"**Category:** {category}")
-                        st.markdown(f"**Version:** {version}")
-                        st.markdown(f"**Scope:** {policy_scope}")
+                        st.markdown(f"**Category:** {policy.get('category', 'Uncategorized')}")
+                        st.markdown(f"**Version:** {policy.get('version', 'v1.0')}")
+                        st.markdown(f"**Scope:** {policy.get('policy_scope', 'Not specified')}")
                         st.markdown(f"**Affected Entities:** {policy.get('affected_entities', 'N/A')}")
-                        st.markdown(f"**Policy Owner:** {owner}")
+                        st.markdown(f"**Policy Owner:** {policy.get('policy_owner', 'Not assigned')}")
                     with col2:
                         st.markdown(f"**Effective Date:** {policy.get('effective_date', 'N/A')}")
                         st.markdown(f"**Expiry Date:** {policy['expiry_date']}")
-                        st.markdown(f"**Next Review:** {review_date}")
+                        st.markdown(f"**Next Review:** {policy.get('review_date', 'Not scheduled')}")
                         st.markdown(f"**Status:** {status_text}")
                         if policy.get('requires_acknowledgment'):
                             st.info("📋 Requires Staff Acknowledgment")
@@ -2270,7 +2718,7 @@ elif choice == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION (User View)
+# CONTRACTS SECTION (User View) - PRESERVED
 # ============================================
 elif choice == "📄 Contracts":
     st.subheader("Contract Management")
@@ -2291,7 +2739,7 @@ elif choice == "📄 Contracts":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric(" Total Contract Value", f"KES {total_value:,.0f}")
+                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
             with col2:
                 st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
             with col3:
@@ -2477,7 +2925,7 @@ elif choice == "📄 Contracts":
                             "status": "active"
                         })
                 
-                st.info(f" **Total Contract Value: KES {total_value:,.2f}**")
+                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
             else:
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
@@ -2637,7 +3085,7 @@ elif choice == "📄 Contracts":
             st.info("No contracts found.")
 
 # ============================================
-# POLICIES SECTION (User View)
+# POLICIES SECTION (User View) - PRESERVED
 # ============================================
 elif choice == "📋 Policies":
     st.subheader("Policy Management")
@@ -2664,7 +3112,6 @@ elif choice == "📋 Policies":
                 effective_date = st.date_input("Effective Date*", value=datetime.now().date())
                 policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
                 
-                # CORRECT expiry date calculation using relativedelta
                 if policy_duration != "Custom":
                     duration_years = int(policy_duration.split()[0])
                     expiry_date_calculated = effective_date + relativedelta(years=duration_years)
@@ -2843,7 +3290,7 @@ elif choice == "📋 Policies":
             st.info("No policy data available for analytics.")
 
 # ============================================
-# ADMIN PANEL (Admin Only)
+# ADMIN PANEL (Admin Only) - PRESERVED
 # ============================================
 elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
@@ -3241,7 +3688,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     planned_activity = st.text_area("Planned Activity*")
                     performance_indicator = st.text_input("Performance Indicator*")
                     annual_target = st.text_input("Annual Target*")
-                    due_date = st.date_input("Due Date*")
+                    start_date = st.date_input("Start Date*", value=datetime.now().date())
+                    end_date = st.date_input("End Date*")
                     activity_category = st.selectbox("Activity Category*", ACTIVITY_CATEGORIES)
                     budget_allocation = st.number_input("Budget Allocation (KES)", min_value=0.0, step=10000.0, format="%.2f")
                     department = st.selectbox("Department", ["None"] + list(dept_options.keys()))
@@ -3256,7 +3704,9 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 "planned_activity": planned_activity,
                                 "performance_indicator": performance_indicator,
                                 "annual_target": annual_target,
-                                "due_date": due_date.isoformat(),
+                                "start_date": start_date.isoformat(),
+                                "end_date": end_date.isoformat(),
+                                "due_date": end_date.isoformat(),
                                 "activity_category": activity_category,
                                 "budget_allocation": budget_allocation if budget_allocation > 0 else None,
                                 "actual_achievement": 0,
@@ -3291,7 +3741,8 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                 with st.form("admin_edit_workplan_form"):
                                     edit_activity = st.text_area("Planned Activity", value=selected_wp.get("planned_activity", ""))
                                     edit_target = st.text_input("Annual Target", value=selected_wp.get("annual_target", ""))
-                                    edit_due_date = st.date_input("Due Date", value=datetime.strptime(selected_wp["due_date"], "%Y-%m-%d").date())
+                                    edit_start_date = st.date_input("Start Date", value=datetime.strptime(selected_wp.get("start_date", selected_wp["due_date"]), "%Y-%m-%d").date() if selected_wp.get("start_date") else datetime.strptime(selected_wp["due_date"], "%Y-%m-%d").date())
+                                    edit_end_date = st.date_input("End Date", value=datetime.strptime(selected_wp["due_date"], "%Y-%m-%d").date())
                                     edit_progress = st.number_input("Progress %", min_value=0, max_value=100, value=int(selected_wp.get("progress_percent", 0)))
                                     edit_status = st.selectbox("Status", ["Pending", "In Progress", "Done"], index=["Pending", "In Progress", "Done"].index(selected_wp.get("status", "Pending")))
                                     edit_actual = st.number_input("Actual Achievement", value=float(selected_wp.get("actual_achievement", 0)))
@@ -3300,7 +3751,9 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                                         update_data = {
                                             "planned_activity": edit_activity,
                                             "annual_target": edit_target,
-                                            "due_date": edit_due_date.isoformat(),
+                                            "start_date": edit_start_date.isoformat(),
+                                            "end_date": edit_end_date.isoformat(),
+                                            "due_date": edit_end_date.isoformat(),
                                             "progress_percent": edit_progress,
                                             "status": edit_status,
                                             "actual_achievement": edit_actual,
@@ -3327,7 +3780,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         st.markdown("### All Work Plans")
         if work_plans:
             df_wp_admin = pd.DataFrame(work_plans)
-            display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'due_date']
+            display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'start_date', 'end_date', 'due_date']
             st.dataframe(df_wp_admin[display_cols], use_container_width=True, hide_index=True)
     
     # ========== TAB 5: DEPARTMENT MANAGEMENT ==========
@@ -3567,7 +4020,7 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
         if work_plans:
             df = pd.DataFrame(work_plans)
             display_cols = ['strategic_pillar', 'key_result_area', 'planned_activity', 
-                           'department_name', 'status', 'progress_percent', 'due_date']
+                           'department_name', 'status', 'progress_percent', 'start_date', 'end_date', 'due_date']
             st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
         else:
             st.info("No work plans found")
@@ -3595,6 +4048,6 @@ elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin"
 st.markdown("---")
 st.markdown("""
 <div class='footer'>
-    <p>© 2026 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
+    <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
 </div>
 """, unsafe_allow_html=True)
