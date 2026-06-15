@@ -12,6 +12,14 @@ import re
 import json
 from dateutil.relativedelta import relativedelta
 import io
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -66,7 +74,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# PAGE CONFIG WITH HELB LOGO AS FAVICON
+# PAGE CONFIG WITH HELB LOGO AS FAVICON & MOBILE RESPONSIVE
 # ============================================
 if LOGO_BASE64:
     favicon_html = f'<link rel="icon" href="data:image/png;base64,{LOGO_BASE64}" type="image/png">'
@@ -80,7 +88,70 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Mobile responsive CSS
+mobile_css = """
+<style>
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .stApp {
+            padding: 0.5rem;
+        }
+        .stColumns {
+            flex-direction: column;
+        }
+        .kpi-card {
+            min-height: 80px !important;
+            padding: 0.5rem !important;
+        }
+        .kpi-card .kpi-value {
+            font-size: 1rem !important;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.55rem !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            flex-wrap: wrap;
+        }
+        .stTabs [data-baseweb="tab"] {
+            padding: 0.5rem 1rem !important;
+            font-size: 0.8rem !important;
+        }
+        .dashboard-header h1 {
+            font-size: 1rem !important;
+        }
+        .dashboard-header p {
+            font-size: 0.6rem !important;
+        }
+        .sidebar-user-info strong {
+            font-size: 0.75rem !important;
+        }
+        .stExpander {
+            margin-bottom: 0.5rem;
+        }
+    }
+    
+    /* Better touch targets on mobile */
+    @media (max-width: 768px) {
+        button, .stButton > button {
+            padding: 0.5rem 1rem !important;
+            min-height: 44px;
+        }
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+    }
+    
+    /* Hide sidebar on mobile by default with toggle */
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            width: 80% !important;
+        }
+    }
+</style>
+"""
+
 st.markdown(f'<head>{favicon_html}</head>', unsafe_allow_html=True)
+st.markdown(mobile_css, unsafe_allow_html=True)
 
 # ============================================
 # CONSTANTS
@@ -571,14 +642,18 @@ def update_work_plan_admin(plan_id, data):
         return False
 
 # ============================================
-# BULK UPLOAD FUNCTIONS - FIXED
+# BULK UPLOAD FUNCTIONS
 # ============================================
 def generate_work_plan_template():
-    """Generate Excel template for bulk upload"""
+    """Generate Excel template for bulk upload with Strategy column"""
     template_df = pd.DataFrame({
         "strategic_pillar": [
             "1. Customer Excellence",
             "2. Financial Sustainability and Stewardship"
+        ],
+        "strategy": [
+            "Enhance customer service through digital platforms",
+            "Optimize budget allocation and reduce costs"
         ],
         "key_result_area": [
             "Customer Satisfaction Score",
@@ -622,13 +697,12 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     
     for idx, row in df.iterrows():
         try:
-            # Skip empty rows
             if pd.isna(row.get("planned_activity")) or str(row.get("planned_activity")).strip() == "":
                 continue
                 
             work_plan_data = {
                 "strategic_pillar": str(row.get("strategic_pillar", "")),
-                "strategy": None,
+                "strategy": str(row.get("strategy", "")) if pd.notna(row.get("strategy")) else None,
                 "key_result_area": str(row.get("key_result_area", "")),
                 "planned_activity": str(row.get("planned_activity", "")),
                 "performance_indicator": str(row.get("performance_indicator", "")),
@@ -657,6 +731,181 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
             errors.append(f"Row {idx+2}: {str(e)}")
     
     return success_count, error_count, errors
+
+# ============================================
+# PDF REPORT GENERATION FUNCTIONS
+# ============================================
+def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
+    """Generate PDF report for work plan data"""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # Title
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN[1:]))
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary statistics
+    total = len(df)
+    completed = len(df[df['calculated_progress'] >= 100]) if 'calculated_progress' in df.columns else 0
+    in_progress = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)]) if 'calculated_progress' in df.columns else 0
+    not_started = len(df[df['calculated_progress'] == 0]) if 'calculated_progress' in df.columns else 0
+    
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Activities", str(total)],
+        ["Completed", str(completed)],
+        ["In Progress", str(in_progress)],
+        ["Not Started", str(not_started)]
+    ]
+    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN[1:])),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+        ('BACKGROUND', (0, 1), (1, -1), colors.beige),
+        ('GRID', (0, 0), (1, -1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Work plan data table
+    display_df = df[['planned_activity', 'department_name', 'status', 'progress_percent', 'due_date']].head(50)
+    table_data = [display_df.columns.tolist()] + display_df.values.tolist()
+    
+    work_table = Table(table_data, repeatRows=1)
+    work_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN[1:])),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+    ]))
+    elements.append(work_table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
+    """Generate PDF report for contracts data"""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN[1:]))
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary statistics
+    total_value = df['contract_value'].sum() if 'contract_value' in df.columns else 0
+    total_spent = df['amount_spent_to_date'].sum() if 'amount_spent_to_date' in df.columns else 0
+    active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
+    
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Contract Value", f"KES {total_value:,.0f}"],
+        ["Total Spent", f"KES {total_spent:,.0f}"],
+        ["Active Contracts", str(active)],
+        ["Total Contracts", str(len(df))]
+    ]
+    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN[1:])),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (1, -1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Contracts data table    display_df = df[['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']].head(30)
+    table_data = [display_df.columns.tolist()] + display_df.values.tolist()
+    
+    contract_table = Table(table_data, repeatRows=1)
+    contract_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN[1:])),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+    ]))
+    elements.append(contract_table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def generate_policies_pdf_report(df, title="HELB Policies Report"):
+    """Generate PDF report for policies data"""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN[1:]))
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary statistics
+    active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
+    expiring = len(df[df['status'] == 'expiring_soon']) if 'status' in df.columns else 0
+    expired = len(df[df['status'] == 'expired']) if 'status' in df.columns else 0
+    
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Policies", str(len(df))],
+        ["Active Policies", str(active)],
+        ["Expiring Soon", str(expiring)],
+        ["Expired", str(expired)]
+    ]
+    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN[1:])),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (1, -1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Policies data table
+    display_df = df[['policy_name', 'category', 'policy_owner', 'expiry_date', 'status']].head(30)
+    table_data = [display_df.columns.tolist()] + display_df.values.tolist()
+    
+    policy_table = Table(table_data, repeatRows=1)
+    policy_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN[1:])),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+    ]))
+    elements.append(policy_table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
 
 # ============================================
 # CONTRACT YEAR FUNCTIONS
@@ -964,7 +1213,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS
+# CUSTOM CSS (UPDATED WITH MOBILE RESPONSIVE)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1263,6 +1512,39 @@ if st.session_state.theme == "light":
             padding: 10px !important;
             font-size: 0.9rem !important;
         }}
+        
+        /* PDF Export Button Style */
+        .export-btn {{
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            color: white !important;
+        }}
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {{
+            .kpi-card {{
+                min-height: 80px !important;
+                padding: 0.5rem !important;
+            }}
+            .kpi-card .kpi-value {{
+                font-size: 1rem !important;
+            }}
+            .kpi-card .kpi-label {{
+                font-size: 0.55rem !important;
+            }}
+            .stTabs [data-baseweb="tab-list"] {{
+                flex-wrap: wrap;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                padding: 0.5rem 1rem !important;
+                font-size: 0.8rem !important;
+            }}
+            .dashboard-header h1 {{
+                font-size: 1rem !important;
+            }}
+            .dashboard-header p {{
+                font-size: 0.6rem !important;
+            }}
+        }}
     </style>
     """
 else:
@@ -1544,6 +1826,33 @@ else:
             padding: 10px !important;
             font-size: 0.9rem !important;
         }}
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {{
+            .kpi-card {{
+                min-height: 80px !important;
+                padding: 0.5rem !important;
+            }}
+            .kpi-card .kpi-value {{
+                font-size: 1rem !important;
+            }}
+            .kpi-card .kpi-label {{
+                font-size: 0.55rem !important;
+            }}
+            .stTabs [data-baseweb="tab-list"] {{
+                flex-wrap: wrap;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                padding: 0.5rem 1rem !important;
+                font-size: 0.8rem !important;
+            }}
+            .dashboard-header h1 {{
+                font-size: 1rem !important;
+            }}
+            .dashboard-header p {{
+                font-size: 0.6rem !important;
+            }}
+        }}
     </style>
     """
 
@@ -1595,15 +1904,24 @@ if not st.session_state.authenticated:
                         if password == user["password_hash"]:
                             dept_name = get_department_name(user["department_id"])
                             
+                            # Check if user is from Strategy department - give management rights
+                            is_strategy_dept = dept_name == "Strategy"
+                            
                             st.session_state.authenticated = True
                             st.session_state.user = user
-                            st.session_state.user_role = user["role"]
+                            
+                            # Give Strategy department users management rights
+                            if is_strategy_dept and user["role"] != "admin":
+                                st.session_state.user_role = "management"
+                            else:
+                                st.session_state.user_role = user["role"]
+                                
                             st.session_state.user_dept = user["department_id"]
                             st.session_state.user_name = user["username"]
                             st.session_state.user_fullname = user["full_name"]
                             st.session_state.user_id = user["id"]
                             st.session_state.user_dept_name = dept_name
-                            add_audit_log("LOGIN", "session", None, f"User logged in")
+                            add_audit_log("LOGIN", "session", None, f"User logged in (Strategy Dept: {is_strategy_dept})")
                             st.rerun()
                         else:
                             st.error("❌ Invalid password")
@@ -1629,7 +1947,7 @@ if not st.session_state.authenticated:
 # ============================================
 # MAIN APPLICATION HEADER
 # ============================================
-col_header, col_theme, col_refresh = st.columns([5, 1, 1])
+col_header, col_theme, col_refresh = st.columns([4, 1, 1])
 with col_header:
     if LOGO_BASE64:
         st.image(f"data:image/png;base64,{LOGO_BASE64}", width=40)
@@ -1736,7 +2054,7 @@ if choice == "📋 Work Plans":
     else:
         filtered_plans = work_plans
     
-    # Updated tabs to include Gantt Chart and Bulk Upload
+    # Updated tabs to include Gantt Chart, Bulk Upload, and PDF Export
     tab_add, tab_view, tab_gantt, tab_expiring, tab_bulk, tab_dashboard = st.tabs([
         "➕ Add Work Plan Activity", 
         "📊 View All Activities", 
@@ -1745,6 +2063,22 @@ if choice == "📋 Work Plans":
         "📤 Bulk Upload",
         "📈 Performance Dashboard"
     ])
+    
+    # PDF Export button in the header
+    col_export1, col_export2 = st.columns([6, 1])
+    with col_export2:
+        if filtered_plans:
+            df_export = pd.DataFrame(filtered_plans)
+            if 'calculated_progress' not in df_export.columns:
+                df_export['calculated_progress'] = df_export.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
+            pdf_buffer = generate_work_plan_pdf_report(df_export, f"HELB Work Plan Report - {datetime.now().strftime('%Y-%m-%d')}")
+            st.download_button(
+                label="📄 Export PDF",
+                data=pdf_buffer,
+                file_name=f"work_plan_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                key="export_work_plan_pdf"
+            )
     
     with tab_add:
         st.markdown("### Add New Work Plan Activity")
@@ -2650,6 +2984,16 @@ elif choice == "📊 Dashboard":
                         st.warning(f"⚠️ **Breach Notes:** {contract['breach_notes']}")
                     if contract.get('budget_alert'):
                         st.error("⚠️ **Budget Alert:** Utilization has exceeded 80%!")
+            
+            # PDF Export for Contracts
+            pdf_buffer_contracts = generate_contracts_pdf_report(filtered_contracts_df, f"HELB Contracts Report - {datetime.now().strftime('%Y-%m-%d')}")
+            st.download_button(
+                label="📄 Export Contracts to PDF",
+                data=pdf_buffer_contracts,
+                file_name=f"contracts_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                key="export_contracts_pdf"
+            )
         else:
             st.info("No contracts found for the selected filters.")
     
@@ -2738,6 +3082,16 @@ elif choice == "📊 Dashboard":
                         st.markdown(f"📄 **Policy Document:** [View Document]({policy['policy_url']})", unsafe_allow_html=True)
                     if policy.get('change_log'):
                         st.markdown(f"**Change Log:** {policy['change_log']}")
+            
+            # PDF Export for Policies
+            pdf_buffer_policies = generate_policies_pdf_report(filtered_policies_df, f"HELB Policies Report - {datetime.now().strftime('%Y-%m-%d')}")
+            st.download_button(
+                label="📄 Export Policies to PDF",
+                data=pdf_buffer_policies,
+                file_name=f"policies_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                key="export_policies_pdf"
+            )
         else:
             st.info("No policies found for the selected filters.")
     
