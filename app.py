@@ -571,19 +571,47 @@ def update_work_plan_admin(plan_id, data):
         return False
 
 # ============================================
-# BULK UPLOAD FUNCTIONS
+# BULK UPLOAD FUNCTIONS - FIXED
 # ============================================
 def generate_work_plan_template():
+    """Generate Excel template for bulk upload"""
     template_df = pd.DataFrame({
-        "strategic_pillar": ["1. Customer Excellence", "2. Financial Sustainability and Stewardship", "3. Innovation & Digital Transformation", "4. Our People Centricity and Compliance", "5. Strategy"],
-        "key_result_area": ["Example KRA", "Another KRA"],
-        "planned_activity": ["Example activity description", "Another activity"],
-        "performance_indicator": ["% complete", "Number of reports"],
-        "annual_target": ["90%", "5 reports"],
-        "start_date": ["2025-01-01", "2025-02-01"],
-        "end_date": ["2025-12-31", "2025-06-30"],
-        "budget_allocation": ["100000", "50000"],
-        "activity_category": ["SP Deliverable", "PC Deliverable"]
+        "strategic_pillar": [
+            "1. Customer Excellence",
+            "2. Financial Sustainability and Stewardship"
+        ],
+        "key_result_area": [
+            "Customer Satisfaction Score",
+            "Budget Utilization"
+        ],
+        "planned_activity": [
+            "Implement new customer feedback system",
+            "Quarterly budget review process"
+        ],
+        "performance_indicator": [
+            "Customer satisfaction rating",
+            "Utilization rate"
+        ],
+        "annual_target": [
+            "85%",
+            "95%"
+        ],
+        "start_date": [
+            "2025-01-01",
+            "2025-01-01"
+        ],
+        "end_date": [
+            "2025-12-31",
+            "2025-12-31"
+        ],
+        "budget_allocation": [
+            "100000",
+            "50000"
+        ],
+        "activity_category": [
+            "SP Deliverable",
+            "PC Deliverable"
+        ]
     })
     return template_df
 
@@ -594,19 +622,23 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     
     for idx, row in df.iterrows():
         try:
+            # Skip empty rows
+            if pd.isna(row.get("planned_activity")) or str(row.get("planned_activity")).strip() == "":
+                continue
+                
             work_plan_data = {
-                "strategic_pillar": row.get("strategic_pillar", ""),
+                "strategic_pillar": str(row.get("strategic_pillar", "")),
                 "strategy": None,
-                "key_result_area": row.get("key_result_area", ""),
-                "planned_activity": row.get("planned_activity", ""),
-                "performance_indicator": row.get("performance_indicator", ""),
+                "key_result_area": str(row.get("key_result_area", "")),
+                "planned_activity": str(row.get("planned_activity", "")),
+                "performance_indicator": str(row.get("performance_indicator", "")),
                 "budget_allocation": float(row.get("budget_allocation", 0)) if pd.notna(row.get("budget_allocation")) else None,
                 "annual_target": str(row.get("annual_target", "")),
                 "actual_achievement": 0,
                 "start_date": pd.to_datetime(row.get("start_date")).date().isoformat() if pd.notna(row.get("start_date")) else None,
                 "end_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
                 "due_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
-                "activity_category": row.get("activity_category", "SP Deliverable"),
+                "activity_category": str(row.get("activity_category", "SP Deliverable")),
                 "status": "Pending",
                 "progress_percent": 0,
                 "department_id": department_id,
@@ -1928,7 +1960,7 @@ if choice == "📋 Work Plans":
             for plan in filtered_plans:
                 if plan.get('start_date') and plan.get('end_date'):
                     gantt_data.append({
-                        "Activity": plan['planned_activity'][:50] + "...",
+                        "Activity": plan['planned_activity'][:50] + "..." if len(plan['planned_activity']) > 50 else plan['planned_activity'],
                         "Start": plan['start_date'],
                         "Finish": plan['end_date'],
                         "Department": plan.get('department_name', 'Unknown'),
@@ -1939,7 +1971,6 @@ if choice == "📋 Work Plans":
             if gantt_data:
                 df_gantt = pd.DataFrame(gantt_data)
                 
-                # Month filter for Gantt chart
                 col_month_filter, col_dept_filter_gantt = st.columns(2)
                 with col_month_filter:
                     selected_month = st.selectbox("Filter by Month", ["All"] + ALL_MONTHS)
@@ -1961,7 +1992,6 @@ if choice == "📋 Work Plans":
                     filtered_gantt = filtered_gantt[filtered_gantt['Department'] == selected_dept_gantt]
                 
                 if not filtered_gantt.empty:
-                    # Create Gantt chart using plotly
                     fig = px.timeline(
                         filtered_gantt, 
                         x_start="Start", 
@@ -1976,11 +2006,11 @@ if choice == "📋 Work Plans":
                     fig.update_layout(height=500, margin=dict(l=0, r=0, t=40, b=0))
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    # Summary by quarter
                     st.markdown("#### Quarterly Activity Summary")
                     filtered_gantt['Quarter'] = pd.to_datetime(filtered_gantt['Start']).dt.quarter
                     quarter_summary = filtered_gantt.groupby('Quarter').size().reset_index(name='Count')
-                    quarter_summary['Quarter Name'] = quarter_summary['Quarter'].map({1: "Q3 (Jan-Mar)", 2: "Q4 (Apr-Jun)", 3: "Q1 (Jul-Sep)", 4: "Q2 (Oct-Dec)"})
+                    quarter_names = {1: "Q3 (Jan-Mar)", 2: "Q4 (Apr-Jun)", 3: "Q1 (Jul-Sep)", 4: "Q2 (Oct-Dec)"}
+                    quarter_summary['Quarter Name'] = quarter_summary['Quarter'].map(quarter_names)
                     fig2 = px.bar(quarter_summary, x='Quarter Name', y='Count', title="Activities by Quarter", color='Count', color_continuous_scale='Greens')
                     st.plotly_chart(fig2, use_container_width=True)
                 else:
@@ -2013,7 +2043,6 @@ if choice == "📋 Work Plans":
                 df_expiring = pd.DataFrame(expiring_activities)
                 df_expiring = df_expiring.sort_values('Days Left')
                 
-                # Color code based on urgency
                 for _, row in df_expiring.iterrows():
                     if row['Days Left'] <= 14:
                         st.markdown(f"""
@@ -2079,7 +2108,6 @@ if choice == "📋 Work Plans":
                 df_upload = pd.read_excel(uploaded_file)
                 st.success(f"✅ File loaded successfully! Found {len(df_upload)} rows.")
                 
-                # Preview
                 st.markdown("**Preview of uploaded data:**")
                 st.dataframe(df_upload.head(10), use_container_width=True)
                 
@@ -2112,7 +2140,6 @@ if choice == "📋 Work Plans":
             df['calculated_progress'] = df.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
             df['exceeded'] = df.apply(lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1)
             
-            # Enhanced KPI Cards
             total_activities = len(df)
             completed_count = len(df[df['calculated_progress'] >= 100])
             in_progress_count = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)])
@@ -2364,7 +2391,6 @@ elif choice == "📊 Dashboard":
     
     with tab_work:
         if not filtered_work_df.empty:
-            # Enhanced KPI Cards for Dashboard
             total_activities = len(filtered_work_df)
             completed_count = len(filtered_work_df[filtered_work_df['calculated_progress'] >= 100])
             in_progress_count = len(filtered_work_df[(filtered_work_df['calculated_progress'] > 0) & (filtered_work_df['calculated_progress'] < 100)])
