@@ -730,7 +730,7 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     return success_count, error_count, errors
 
 # ============================================
-# PDF REPORT GENERATION FUNCTIONS
+# PDF REPORT GENERATION FUNCTIONS - FIXED
 # ============================================
 def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
     """Generate PDF report for work plan data"""
@@ -739,8 +739,12 @@ def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
     styles = getSampleStyleSheet()
     elements = []
     
-    # Title
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN[1:]))
+    # Title - Fixed color handling
+    try:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
+    except:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
+    
     elements.append(Paragraph(title, title_style))
     elements.append(Spacer(1, 0.2*inch))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
@@ -760,35 +764,65 @@ def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
         ["Not Started", str(not_started)]
     ]
     summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-    summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN[1:])),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (1, 0), 12),
-        ('BACKGROUND', (0, 1), (1, -1), colors.beige),
-        ('GRID', (0, 0), (1, -1), 1, colors.black)
-    ]))
+    
+    try:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+            ('BACKGROUND', (0, 1), (1, -1), colors.beige),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    except:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+            ('BACKGROUND', (0, 1), (1, -1), colors.beige),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
     # Work plan data table
-    display_df = df[['planned_activity', 'department_name', 'status', 'progress_percent', 'due_date']].head(50)
-    table_data = [display_df.columns.tolist()] + display_df.values.tolist()
+    display_cols = ['planned_activity', 'department_name', 'status', 'progress_percent', 'due_date']
+    available_cols = [col for col in display_cols if col in df.columns]
+    display_df = df[available_cols].head(50)
+    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
     
     work_table = Table(table_data, repeatRows=1)
-    work_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN[1:])),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-    ]))
+    try:
+        work_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+    except:
+        work_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+    
     elements.append(work_table)
     
     doc.build(elements)
@@ -802,7 +836,11 @@ def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
     styles = getSampleStyleSheet()
     elements = []
     
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN[1:]))
+    try:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
+    except:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
+    
     elements.append(Paragraph(title, title_style))
     elements.append(Spacer(1, 0.2*inch))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
@@ -821,29 +859,53 @@ def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
         ["Total Contracts", str(len(df))]
     ]
     summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-    summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN[1:])),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (1, -1), 1, colors.black)
-    ]))
+    
+    try:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    except:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
     # Contracts data table
-    display_df = df[['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']].head(30)
-    table_data = [display_df.columns.tolist()] + display_df.values.tolist()
+    display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
+    available_cols = [col for col in display_cols if col in df.columns]
+    display_df = df[available_cols].head(30)
+    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
     
     contract_table = Table(table_data, repeatRows=1)
-    contract_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN[1:])),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('FONTSIZE', (0, 1), (-1, -1), 7),
-    ]))
+    try:
+        contract_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    except:
+        contract_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    
     elements.append(contract_table)
     
     doc.build(elements)
@@ -857,7 +919,11 @@ def generate_policies_pdf_report(df, title="HELB Policies Report"):
     styles = getSampleStyleSheet()
     elements = []
     
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN[1:]))
+    try:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
+    except:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
+    
     elements.append(Paragraph(title, title_style))
     elements.append(Spacer(1, 0.2*inch))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
@@ -876,35 +942,58 @@ def generate_policies_pdf_report(df, title="HELB Policies Report"):
         ["Expired", str(expired)]
     ]
     summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-    summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN[1:])),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (1, -1), 1, colors.black)
-    ]))
+    
+    try:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    except:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
     # Policies data table
-    display_df = df[['policy_name', 'category', 'policy_owner', 'expiry_date', 'status']].head(30)
-    table_data = [display_df.columns.tolist()] + display_df.values.tolist()
+    display_cols = ['policy_name', 'category', 'policy_owner', 'expiry_date', 'status']
+    available_cols = [col for col in display_cols if col in df.columns]
+    display_df = df[available_cols].head(30)
+    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
     
     policy_table = Table(table_data, repeatRows=1)
-    policy_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN[1:])),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('FONTSIZE', (0, 1), (-1, -1), 7),
-    ]))
+    try:
+        policy_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    except:
+        policy_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    
     elements.append(policy_table)
     
     doc.build(elements)
     buffer.seek(0)
     return buffer
-
 # ============================================
 # CONTRACT YEAR FUNCTIONS
 # ============================================
