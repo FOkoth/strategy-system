@@ -7,3 +7,5 @@ requests
 python-dateutil
 openpyxl
 reportlab
+scikit-learn
+numpy
