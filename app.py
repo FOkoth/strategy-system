@@ -14,12 +14,9 @@ from dateutil.relativedelta import relativedelta
 import io
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -834,7 +831,8 @@ def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Contracts data table    display_df = df[['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']].head(30)
+    # Contracts data table
+    display_df = df[['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']].head(30)
     table_data = [display_df.columns.tolist()] + display_df.values.tolist()
     
     contract_table = Table(table_data, repeatRows=1)
@@ -1213,7 +1211,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (UPDATED WITH MOBILE RESPONSIVE)
+# CUSTOM CSS (WITH MOBILE RESPONSIVE)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1511,12 +1509,6 @@ if st.session_state.theme == "light":
             border-radius: 8px !important;
             padding: 10px !important;
             font-size: 0.9rem !important;
-        }}
-        
-        /* PDF Export Button Style */
-        .export-btn {{
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-            color: white !important;
         }}
         
         /* Mobile Responsive */
