@@ -2,7 +2,7 @@ streamlit
 supabase
 pandas
 plotly
-Pillow
+pillow
 requests
 python-dateutil
-numpy
+openpyxl
