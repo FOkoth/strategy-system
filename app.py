@@ -88,7 +88,6 @@ st.set_page_config(
 # Mobile responsive CSS
 mobile_css = """
 <style>
-    /* Mobile responsive adjustments */
     @media (max-width: 768px) {
         .stApp {
             padding: 0.5rem;
@@ -126,8 +125,6 @@ mobile_css = """
             margin-bottom: 0.5rem;
         }
     }
-    
-    /* Better touch targets on mobile */
     @media (max-width: 768px) {
         button, .stButton > button {
             padding: 0.5rem 1rem !important;
@@ -137,8 +134,6 @@ mobile_css = """
             font-size: 16px !important;
         }
     }
-    
-    /* Hide sidebar on mobile by default with toggle */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 80% !important;
@@ -730,7 +725,7 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     return success_count, error_count, errors
 
 # ============================================
-# PDF REPORT GENERATION FUNCTIONS - FIXED
+# PDF REPORT GENERATION FUNCTIONS
 # ============================================
 def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
     """Generate PDF report for work plan data"""
@@ -739,7 +734,6 @@ def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
     styles = getSampleStyleSheet()
     elements = []
     
-    # Title - Fixed color handling
     try:
         title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
     except:
@@ -750,7 +744,6 @@ def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 0.3*inch))
     
-    # Summary statistics
     total = len(df)
     completed = len(df[df['calculated_progress'] >= 100]) if 'calculated_progress' in df.columns else 0
     in_progress = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)]) if 'calculated_progress' in df.columns else 0
@@ -791,7 +784,6 @@ def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Work plan data table
     display_cols = ['planned_activity', 'department_name', 'status', 'progress_percent', 'due_date']
     available_cols = [col for col in display_cols if col in df.columns]
     display_df = df[available_cols].head(50)
@@ -846,7 +838,6 @@ def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 0.3*inch))
     
-    # Summary statistics
     total_value = df['contract_value'].sum() if 'contract_value' in df.columns else 0
     total_spent = df['amount_spent_to_date'].sum() if 'amount_spent_to_date' in df.columns else 0
     active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
@@ -880,7 +871,6 @@ def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Contracts data table
     display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
     available_cols = [col for col in display_cols if col in df.columns]
     display_df = df[available_cols].head(30)
@@ -929,7 +919,6 @@ def generate_policies_pdf_report(df, title="HELB Policies Report"):
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
     elements.append(Spacer(1, 0.3*inch))
     
-    # Summary statistics
     active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
     expiring = len(df[df['status'] == 'expiring_soon']) if 'status' in df.columns else 0
     expired = len(df[df['status'] == 'expired']) if 'status' in df.columns else 0
@@ -963,7 +952,6 @@ def generate_policies_pdf_report(df, title="HELB Policies Report"):
     elements.append(summary_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Policies data table
     display_cols = ['policy_name', 'category', 'policy_owner', 'expiry_date', 'status']
     available_cols = [col for col in display_cols if col in df.columns]
     display_df = df[available_cols].head(30)
@@ -994,6 +982,7 @@ def generate_policies_pdf_report(df, title="HELB Policies Report"):
     doc.build(elements)
     buffer.seek(0)
     return buffer
+
 # ============================================
 # CONTRACT YEAR FUNCTIONS
 # ============================================
@@ -1600,7 +1589,6 @@ if st.session_state.theme == "light":
             font-size: 0.9rem !important;
         }}
         
-        /* Mobile Responsive */
         @media (max-width: 768px) {{
             .kpi-card {{
                 min-height: 80px !important;
@@ -1908,7 +1896,6 @@ else:
             font-size: 0.9rem !important;
         }}
         
-        /* Mobile Responsive */
         @media (max-width: 768px) {{
             .kpi-card {{
                 min-height: 80px !important;
@@ -1985,13 +1972,11 @@ if not st.session_state.authenticated:
                         if password == user["password_hash"]:
                             dept_name = get_department_name(user["department_id"])
                             
-                            # Check if user is from Strategy department - give management rights
                             is_strategy_dept = dept_name == "Strategy"
                             
                             st.session_state.authenticated = True
                             st.session_state.user = user
                             
-                            # Give Strategy department users management rights
                             if is_strategy_dept and user["role"] != "admin":
                                 st.session_state.user_role = "management"
                             else:
@@ -2499,6 +2484,8 @@ if choice == "📋 Work Plans":
             2. Fill in your work plan activities (do not change column names)
             3. Save as Excel file (.xlsx)
             4. Upload the file using the upload button below
+            
+            **Note for Strategy/Admin users:** You can select which department to assign these activities to.
             """)
         with col_download:
             template_df = generate_work_plan_template()
@@ -2516,6 +2503,51 @@ if choice == "📋 Work Plans":
         st.markdown("---")
         st.markdown("#### Upload Filled Template")
         
+        # Department selection for Strategy/Admin users
+        selected_upload_dept = None
+        selected_dept_name = None
+        
+        if st.session_state.user_role in ["admin", "management"]:
+            # Strategy and Admin users can select any department
+            departments_list = get_cached_departments()
+            dept_options = {d["name"]: d["id"] for d in departments_list}
+            dept_names = ["Same as my department"] + sorted(list(dept_options.keys()))
+            
+            selected_dept_option = st.selectbox(
+                "📋 Select Department for these activities", 
+                dept_names,
+                help="Choose which department these work plan activities belong to"
+            )
+            
+            if selected_dept_option != "Same as my department":
+                selected_dept_name = selected_dept_option
+                selected_upload_dept = dept_options.get(selected_dept_option)
+                # Show directorate mapping
+                dept_details = get_department_by_id(selected_upload_dept)
+                if dept_details:
+                    directorate_name = dept_details.get("directorate_name", "Unknown")
+                    st.success(f"✅ Activities will be assigned to: **{selected_dept_name}**")
+                    st.caption(f"🏛️ This maps to directorate: **{directorate_name}**")
+            else:
+                selected_upload_dept = st.session_state.user_dept
+                selected_dept_name = st.session_state.user_dept_name
+                dept_details = get_department_by_id(selected_upload_dept)
+                if dept_details:
+                    directorate_name = dept_details.get("directorate_name", "Unknown")
+                    st.info(f"📌 Activities will be assigned to your department: **{selected_dept_name}**")
+                    st.caption(f"🏛️ This maps to directorate: **{directorate_name}**")
+        else:
+            # Regular users can only upload to their own department
+            selected_upload_dept = st.session_state.user_dept
+            selected_dept_name = st.session_state.user_dept_name
+            dept_details = get_department_by_id(selected_upload_dept)
+            if dept_details:
+                directorate_name = dept_details.get("directorate_name", "Unknown")
+                st.info(f"📌 Activities will be assigned to: **{selected_dept_name}**")
+                st.caption(f"🏛️ This maps to directorate: **{directorate_name}**")
+        
+        st.markdown("---")
+        
         uploaded_file = st.file_uploader("Choose Excel file", type=["xlsx", "xls"], key="bulk_upload")
         
         if uploaded_file is not None:
@@ -2526,26 +2558,29 @@ if choice == "📋 Work Plans":
                 st.markdown("**Preview of uploaded data:**")
                 st.dataframe(df_upload.head(10), use_container_width=True)
                 
-                if st.button("🚀 Start Bulk Upload", use_container_width=True):
-                    with st.spinner("Uploading work plan activities..."):
-                        success_count, error_count, errors = bulk_upload_work_plans(
-                            df_upload, 
-                            st.session_state.user_dept, 
-                            st.session_state.user_dept_name, 
-                            st.session_state.user_id
-                        )
-                        
-                        if success_count > 0:
-                            st.success(f"✅ Successfully uploaded {success_count} activities!")
-                            st.balloons()
-                        if error_count > 0:
-                            st.error(f"❌ Failed to upload {error_count} activities")
-                            with st.expander("View Errors"):
-                                for err in errors[:20]:
-                                    st.write(f"- {err}")
-                        
-                        st.cache_data.clear()
-                        st.rerun()
+                col_confirm1, col_confirm2 = st.columns([3, 1])
+                with col_confirm2:
+                    if st.button("🚀 Start Bulk Upload", use_container_width=True, type="primary"):
+                        with st.spinner("Uploading work plan activities..."):
+                            success_count, error_count, errors = bulk_upload_work_plans(
+                                df_upload, 
+                                selected_upload_dept,
+                                selected_dept_name,
+                                st.session_state.user_id
+                            )
+                            
+                            if success_count > 0:
+                                st.success(f"✅ Successfully uploaded {success_count} activities to {selected_dept_name}!")
+                                st.balloons()
+                                add_audit_log("BULK_UPLOAD", "work_plan", None, f"Bulk uploaded {success_count} activities to {selected_dept_name}")
+                            if error_count > 0:
+                                st.error(f"❌ Failed to upload {error_count} activities")
+                                with st.expander("View Errors"):
+                                    for err in errors[:20]:
+                                        st.write(f"- {err}")
+                            
+                            if success_count > 0:
+                                st.rerun()
             except Exception as e:
                 st.error(f"Error reading file: {str(e)}")
     
@@ -3066,7 +3101,6 @@ elif choice == "📊 Dashboard":
                     if contract.get('budget_alert'):
                         st.error("⚠️ **Budget Alert:** Utilization has exceeded 80%!")
             
-            # PDF Export for Contracts
             pdf_buffer_contracts = generate_contracts_pdf_report(filtered_contracts_df, f"HELB Contracts Report - {datetime.now().strftime('%Y-%m-%d')}")
             st.download_button(
                 label="📄 Export Contracts to PDF",
@@ -3164,7 +3198,6 @@ elif choice == "📊 Dashboard":
                     if policy.get('change_log'):
                         st.markdown(f"**Change Log:** {policy['change_log']}")
             
-            # PDF Export for Policies
             pdf_buffer_policies = generate_policies_pdf_report(filtered_policies_df, f"HELB Policies Report - {datetime.now().strftime('%Y-%m-%d')}")
             st.download_button(
                 label="📄 Export Policies to PDF",
