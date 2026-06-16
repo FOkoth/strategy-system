@@ -668,7 +668,7 @@ def get_department_name(dept_id):
 # ============================================
 # WORK PLAN FUNCTIONS
 # ============================================
-@st.cache_data(ttl=120)  # Increased TTL for better performance
+@st.cache_data(ttl=120)
 def get_cached_work_plans(user_role, user_dept):
     try:
         if user_role in ["admin", "management"]:
@@ -1536,7 +1536,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (WITH MOBILE RESPONSIVE & FIXED THEME)
+# CUSTOM CSS (WITH FIXED THEME VISIBILITY)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1549,7 +1549,11 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix for Selectbox and Dropdowns */
+        /* Fix for Selectbox and Dropdowns - LIGHT THEME */
+        .stSelectbox div[data-baseweb="select"] {{
+            background-color: #ffffff !important;
+        }}
+        
         .stSelectbox div[data-baseweb="select"] div {{
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -1562,6 +1566,7 @@ if st.session_state.theme == "light":
         
         .stSelectbox div[data-baseweb="select"] input {{
             color: #000000 !important;
+            background-color: #ffffff !important;
         }}
         
         .stSelectbox div[data-baseweb="select"] div[data-baseweb="popover"] {{
@@ -1578,27 +1583,50 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix for DateInput */
+        .stSelectbox div[data-baseweb="select"] span {{
+            color: #000000 !important;
+        }}
+        
+        /* Fix for DateInput - LIGHT */
         .stDateInput input, .stDateInput div {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for TextInput */
+        /* Fix for TextInput - LIGHT */
         .stTextInput input {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for NumberInput */
+        /* Fix for NumberInput - LIGHT */
         .stNumberInput input {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for TextArea */
+        /* Fix for TextArea - LIGHT */
         .stTextArea textarea {{
             background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Fix for MultiSelect - LIGHT */
+        .stMultiSelect div[data-baseweb="select"] {{
+            background-color: #ffffff !important;
+        }}
+        
+        .stMultiSelect div[data-baseweb="select"] div {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        .stMultiSelect div[data-baseweb="select"] input {{
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }}
+        
+        .stMultiSelect div[data-baseweb="select"] span {{
             color: #000000 !important;
         }}
         
@@ -1695,7 +1723,6 @@ if st.session_state.theme == "light":
             color: #FFFFFF !important;
         }}
         
-        /* Other components */
         .comment-box {{
             background: #f0fdf4;
             border-left: 4px solid {HELB_GREEN};
@@ -1748,13 +1775,6 @@ if st.session_state.theme == "light":
         .stTabs [aria-selected="true"] {{ color: #000000 !important; background-color: {HELB_GOLD} !important; }}
         .streamlit-expanderHeader p {{ color: #000000 !important; }}
         
-        .stTextInput input, .stSelectbox div, .stDateInput input, 
-        .stNumberInput input, .stTextArea textarea {{
-            background-color: white !important;
-            color: #000000 !important;
-            border: 1px solid #D1D5DB !important;
-        }}
-        
         h1, h2, h3, h4, h5, h6 {{ color: {HELB_GREEN} !important; }}
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
@@ -1803,7 +1823,7 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* Login Page Fixes */
+        /* LOGIN PAGE - LIGHT THEME - SAME DESIGN AS SCREENSHOT */
         .login-wrapper {{
             display: flex;
             justify-content: center;
@@ -1814,36 +1834,37 @@ if st.session_state.theme == "light":
         }}
         .login-container {{
             background: #ffffff;
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
             width: 100%;
             overflow: hidden;
-            margin: auto;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
-            padding: 1.5rem;
+            padding: 2rem 1.5rem 1.5rem;
             text-align: center;
         }}
         .login-logo {{
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             display: flex;
             justify-content: center;
         }}
         .login-title {{
             color: white !important;
-            font-size: 1.2rem !important;
+            font-size: 1.1rem !important;
             font-weight: 700 !important;
             margin: 0.25rem 0 0.1rem 0 !important;
             text-align: center !important;
+            letter-spacing: 0.5px;
         }}
         .login-subtitle {{
             color: {HELB_GOLD} !important;
             font-size: 0.7rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
+            font-weight: 500;
         }}
         .login-divider {{
             height: 2px;
@@ -1853,18 +1874,21 @@ if st.session_state.theme == "light":
             border-radius: 2px;
         }}
         .login-body {{
-            padding: 1.5rem;
+            padding: 1.5rem 1.5rem 1rem;
         }}
         .login-footer {{
             text-align: center;
             padding: 0.75rem;
             border-top: 1px solid #e5e7eb;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: #9ca3af;
             background: #f9fafb;
         }}
+        .login-footer p {{
+            margin: 2px 0;
+        }}
         .login-container .stTextInput input {{
-            background-color: white !important;
+            background-color: #f9fafb !important;
             color: #1F2937 !important;
             border: 1px solid #e5e7eb !important;
             border-radius: 8px !important;
@@ -1873,7 +1897,7 @@ if st.session_state.theme == "light":
         }}
         .login-container .stTextInput input:focus {{
             border-color: {HELB_GREEN} !important;
-            box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
+            box-shadow: 0 0 0 3px rgba(0,132,61,0.1) !important;
         }}
         .login-container .stTextInput label {{
             color: #374151 !important;
@@ -1881,13 +1905,18 @@ if st.session_state.theme == "light":
             font-size: 0.8rem !important;
         }}
         .login-container .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%) !important;
             color: white !important;
             font-weight: 600 !important;
             border: none !important;
             border-radius: 8px !important;
             padding: 10px !important;
             font-size: 0.9rem !important;
+            margin-top: 0.5rem;
+        }}
+        .login-container .stButton > button:hover {{
+            opacity: 0.95;
+            transform: translateY(-1px);
         }}
         
         @media (max-width: 768px) {{
@@ -1920,6 +1949,10 @@ if st.session_state.theme == "light":
             }}
             .login-container {{
                 margin: 0.5rem !important;
+                max-width: 95% !important;
+            }}
+            .login-title {{
+                font-size: 0.9rem !important;
             }}
         }}
     </style>
@@ -1935,7 +1968,11 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix for Selectbox and Dropdowns - Dark */
+        /* Fix for Selectbox and Dropdowns - DARK THEME */
+        .stSelectbox div[data-baseweb="select"] {{
+            background-color: #2d2d44 !important;
+        }}
+        
         .stSelectbox div[data-baseweb="select"] div {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
@@ -1948,6 +1985,7 @@ else:
         
         .stSelectbox div[data-baseweb="select"] input {{
             color: #FFFFFF !important;
+            background-color: #2d2d44 !important;
         }}
         
         .stSelectbox div[data-baseweb="select"] div[data-baseweb="popover"] {{
@@ -1964,27 +2002,50 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix for DateInput - Dark */
+        .stSelectbox div[data-baseweb="select"] span {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix for DateInput - DARK */
         .stDateInput input, .stDateInput div {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for TextInput - Dark */
+        /* Fix for TextInput - DARK */
         .stTextInput input {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for NumberInput - Dark */
+        /* Fix for NumberInput - DARK */
         .stNumberInput input {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for TextArea - Dark */
+        /* Fix for TextArea - DARK */
         .stTextArea textarea {{
             background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix for MultiSelect - DARK */
+        .stMultiSelect div[data-baseweb="select"] {{
+            background-color: #2d2d44 !important;
+        }}
+        
+        .stMultiSelect div[data-baseweb="select"] div {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .stMultiSelect div[data-baseweb="select"] input {{
+            color: #FFFFFF !important;
+            background-color: #2d2d44 !important;
+        }}
+        
+        .stMultiSelect div[data-baseweb="select"] span {{
             color: #FFFFFF !important;
         }}
         
@@ -2072,7 +2133,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Comment box - Dark */
         .comment-box {{
             background: #1e3a2f;
             border-left: 4px solid {HELB_GOLD};
@@ -2164,7 +2224,7 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* Login Page Fixes - Dark */
+        /* LOGIN PAGE - DARK THEME */
         .login-wrapper {{
             display: flex;
             justify-content: center;
@@ -2175,36 +2235,37 @@ else:
         }}
         .login-container {{
             background: #1e293b;
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 400px;
             width: 100%;
             overflow: hidden;
-            margin: auto;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
-            padding: 1.5rem;
+            padding: 2rem 1.5rem 1.5rem;
             text-align: center;
         }}
         .login-logo {{
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             display: flex;
             justify-content: center;
         }}
         .login-title {{
             color: white !important;
-            font-size: 1.2rem !important;
+            font-size: 1.1rem !important;
             font-weight: 700 !important;
             margin: 0.25rem 0 0.1rem 0 !important;
             text-align: center !important;
+            letter-spacing: 0.5px;
         }}
         .login-subtitle {{
             color: {HELB_GOLD} !important;
             font-size: 0.7rem !important;
             text-align: center !important;
             margin-bottom: 0 !important;
+            font-weight: 500;
         }}
         .login-divider {{
             height: 2px;
@@ -2214,15 +2275,18 @@ else:
             border-radius: 2px;
         }}
         .login-body {{
-            padding: 1.5rem;
+            padding: 1.5rem 1.5rem 1rem;
         }}
         .login-footer {{
             text-align: center;
             padding: 0.75rem;
             border-top: 1px solid #334155;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: #64748b;
             background: #0f172a;
+        }}
+        .login-footer p {{
+            margin: 2px 0;
         }}
         .login-container .stTextInput input {{
             background-color: #334155 !important;
@@ -2234,7 +2298,7 @@ else:
         }}
         .login-container .stTextInput input:focus {{
             border-color: {HELB_GOLD} !important;
-            box-shadow: 0 0 0 2px rgba(255,184,28,0.1) !important;
+            box-shadow: 0 0 0 3px rgba(255,184,28,0.1) !important;
         }}
         .login-container .stTextInput label {{
             color: #cbd5e1 !important;
@@ -2242,13 +2306,18 @@ else:
             font-size: 0.8rem !important;
         }}
         .login-container .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%) !important;
             color: white !important;
             font-weight: 600 !important;
             border: none !important;
             border-radius: 8px !important;
             padding: 10px !important;
             font-size: 0.9rem !important;
+            margin-top: 0.5rem;
+        }}
+        .login-container .stButton > button:hover {{
+            opacity: 0.95;
+            transform: translateY(-1px);
         }}
         
         @media (max-width: 768px) {{
@@ -2281,6 +2350,10 @@ else:
             }}
             .login-container {{
                 margin: 0.5rem !important;
+                max-width: 95% !important;
+            }}
+            .login-title {{
+                font-size: 0.9rem !important;
             }}
         }}
     </style>
@@ -2289,12 +2362,11 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - FIXED CENTERING
+# LOGIN PAGE - FIXED CENTERING WITH SCREENSHOT DESIGN
 # ============================================
 if not st.session_state.authenticated:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
     
-    # Simplified layout - no columns needed
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
     st.markdown('<div class="login-header">', unsafe_allow_html=True)
@@ -2302,11 +2374,11 @@ if not st.session_state.authenticated:
     if LOGO_BASE64:
         st.markdown(f'''
         <div class="login-logo">
-            <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 60px; height: auto; background: transparent;">
+            <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 65px; height: auto; background: transparent;">
         </div>
         ''', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="login-logo" style="font-size: 2rem;">🏦</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-logo" style="font-size: 2.5rem;">🏦</div>', unsafe_allow_html=True)
     
     st.markdown(f"""
     <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
@@ -2329,12 +2401,10 @@ if not st.session_state.authenticated:
                 result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                 if result.data:
                     user = result.data[0]
-                    # Check both plain text and hashed passwords
                     if (password == user["password_hash"] or 
                         hash_password(password) == user["password_hash"] or
-                        user["password_hash"] == "password123"):  # Default fallback
+                        user["password_hash"] == "password123"):
                         dept_name = get_department_name(user["department_id"])
-                        
                         is_strategy_dept = dept_name == "Strategy"
                         
                         st.session_state.authenticated = True
@@ -2435,7 +2505,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Account Settings
     with st.expander("🔐 Account Settings", expanded=False):
         st.markdown("#### Change Password")
         with st.form("change_password_form"):
@@ -2455,14 +2524,12 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Navigation Menu - Using session state to persist selection
     menu_options = ["📊 Dashboard", "📋 Work Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
         menu_options.append("⚙️ Admin Panel")
     if st.session_state.user_role in ["admin", "management"]:
         menu_options.append("🏢 Enterprise View")
     
-    # Create radio button with session state persistence
     selected_menu = st.radio(
         "📋 Navigation", 
         menu_options, 
@@ -2471,7 +2538,6 @@ with st.sidebar:
         index=menu_options.index(st.session_state.active_menu) if st.session_state.active_menu in menu_options else 0
     )
     
-    # Update session state when menu changes
     if selected_menu != st.session_state.active_menu:
         st.session_state.active_menu = selected_menu
         st.rerun()
@@ -2485,10 +2551,8 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# CONDITIONAL RENDERING BASED ON SELECTED MENU
-# ============================================
-
 # WORK PLANS MODULE
+# ============================================
 if st.session_state.active_menu == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
         st.markdown("<h2>📋 Institution-Wide Work Plan</h2>", unsafe_allow_html=True)
@@ -2518,7 +2582,6 @@ if st.session_state.active_menu == "📋 Work Plans":
     else:
         filtered_plans = work_plans
     
-    # Tabs with session state persistence
     tab_labels = [
         "➕ Add Work Plan Activity", 
         "📊 View All Activities", 
@@ -2532,7 +2595,6 @@ if st.session_state.active_menu == "📋 Work Plans":
     
     tab_add, tab_view, tab_calendar, tab_gantt, tab_predictive, tab_expiring, tab_bulk, tab_dashboard = st.tabs(tab_labels)
     
-    # PDF Export button
     col_export1, col_export2 = st.columns([6, 1])
     with col_export2:
         if filtered_plans:
@@ -2777,7 +2839,6 @@ if st.session_state.active_menu == "📋 Work Plans":
             st.markdown("- 🔴 Pending | 🟡 In Progress | ✅ Done")
             st.markdown("- Colored dates have activities scheduled")
             
-            # Show count of activities in selected period
             if selected_quarter != "All":
                 quarter_months = {
                     "Q1 (Jul-Sep)": [7, 8, 9],
@@ -3726,7 +3787,9 @@ elif st.session_state.active_menu == "📊 Dashboard":
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
-# CONTRACTS SECTION
+# ============================================
+# CONTRACTS SECTION - WITH MULTI-YEAR FIX
+# ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
     
@@ -3793,6 +3856,24 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
                     if contract.get('breach_notes'):
                         st.warning(f"⚠️ **Breach Notes:** {contract['breach_notes']}")
+                    
+                    # Show multi-year details if applicable
+                    if contract.get('is_multi_year'):
+                        st.markdown("#### 📅 Multi-Year Breakdown")
+                        years = get_contract_years(contract['id'])
+                        if years:
+                            year_data = []
+                            for y in years:
+                                year_data.append({
+                                    "Year": f"Year {y['year_number']}",
+                                    "Start": y.get('year_start_date', 'N/A'),
+                                    "End": y.get('year_end_date', 'N/A'),
+                                    "Value": f"KES {y.get('annual_value', 0):,.0f}",
+                                    "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
+                                    "Status": y.get('status', 'active')
+                                })
+                            df_years = pd.DataFrame(year_data)
+                            st.dataframe(df_years, use_container_width=True, hide_index=True)
         else:
             st.info("No contracts found.")
     
@@ -3824,6 +3905,21 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown("---")
                         if contract.get('contract_url'):
                             st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
+                        
+                        if contract.get('is_multi_year'):
+                            st.markdown("#### 📅 Multi-Year Breakdown")
+                            years = get_contract_years(contract['id'])
+                            if years:
+                                year_data = []
+                                for y in years:
+                                    year_data.append({
+                                        "Year": f"Year {y['year_number']}",
+                                        "Value": f"KES {y.get('annual_value', 0):,.0f}",
+                                        "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
+                                        "Status": y.get('status', 'active')
+                                    })
+                                df_years = pd.DataFrame(year_data)
+                                st.dataframe(df_years, use_container_width=True, hide_index=True)
             else:
                 st.info("No active contracts.")
         else:
@@ -3892,6 +3988,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                 st.markdown("#### 📅 Contract Years Breakdown")
                 st.info("For multi-year contracts, please specify the value for each year")
                 
+                # Calculate number of years from duration
                 num_years = 1
                 if "2 years" in contract_duration:
                     num_years = 2
@@ -3905,21 +4002,31 @@ elif st.session_state.active_menu == "📄 Contracts":
                 years_data = []
                 total_value = 0
                 
+                # Create a container for all year inputs
                 for year_num in range(1, num_years + 1):
                     st.markdown(f"**Year {year_num}**")
                     col_y1, col_y2, col_y3 = st.columns(3)
                     with col_y1:
-                        year_value = st.number_input(f"Annual Value - Year {year_num} (KES)", 
-                                                      min_value=0.0, step=10000.0, format="%.2f", 
-                                                      key=f"year_value_{year_num}")
+                        year_value = st.number_input(
+                            f"Annual Value - Year {year_num} (KES)", 
+                            min_value=0.0, 
+                            step=10000.0, 
+                            format="%.2f", 
+                            key=f"year_value_{year_num}",
+                            help=f"Enter the budget for Year {year_num}"
+                        )
                     with col_y2:
-                        year_start = st.date_input(f"Year {year_num} Start Date", 
-                                                   value=start_date if year_num == 1 else None,
-                                                   key=f"year_start_{year_num}")
+                        year_start = st.date_input(
+                            f"Year {year_num} Start Date", 
+                            value=start_date if year_num == 1 else None,
+                            key=f"year_start_{year_num}"
+                        )
                     with col_y3:
-                        year_end = st.date_input(f"Year {year_num} End Date", 
-                                                 value=None,
-                                                 key=f"year_end_{year_num}")
+                        year_end = st.date_input(
+                            f"Year {year_num} End Date", 
+                            value=None,
+                            key=f"year_end_{year_num}"
+                        )
                     
                     if year_value > 0:
                         total_value += year_value
@@ -3932,7 +4039,11 @@ elif st.session_state.active_menu == "📄 Contracts":
                             "status": "active"
                         })
                 
-                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
+                if years_data:
+                    st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
+                    st.success(f"✅ {len(years_data)} years configured")
+                else:
+                    st.warning("⚠️ Please add at least one year with a valid value")
             else:
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
@@ -3952,12 +4063,10 @@ elif st.session_state.active_menu == "📄 Contracts":
             
             if st.form_submit_button("Save Contract", use_container_width=True):
                 if contract_title and vendor_name and contract_duration:
-                    if contract_type == "Multi-Year Contract" and not years_data:
-                        st.error("Please add at least one year with valid value")
-                    elif contract_type == "Single Year Contract" and contract_value <= 0:
-                        st.error("Please enter a valid contract value")
-                    else:
-                        if contract_type == "Multi-Year Contract":
+                    if contract_type == "Multi-Year Contract":
+                        if not years_data:
+                            st.error("Please add at least one year with a valid value")
+                        else:
                             total_value = sum(y['annual_value'] for y in years_data)
                             total_spent = sum(y.get('amount_spent_to_date', 0) for y in years_data)
                             utilization = (total_spent / total_value * 100) if total_value > 0 else 0
@@ -3984,6 +4093,15 @@ elif st.session_state.active_menu == "📄 Contracts":
                             }
                             
                             success, message = add_multi_year_contract(contract_data, years_data)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                    else:
+                        if contract_value <= 0:
+                            st.error("Please enter a valid contract value")
                         else:
                             end_date_obj = end_date
                             days_left = (end_date_obj - datetime.now().date()).days
@@ -4014,13 +4132,12 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 "department_id": st.session_state.user_dept
                             }
                             success, message = add_enhanced_contract(contract_data)
-                        
-                        if success:
-                            st.success(f"✅ {message}")
-                            st.balloons()
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {message}")
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
                 else:
                     st.error("Please fill all required fields (*)")
     
@@ -4091,7 +4208,9 @@ elif st.session_state.active_menu == "📄 Contracts":
         else:
             st.info("No contracts found.")
 
+# ============================================
 # POLICIES SECTION
+# ============================================
 elif st.session_state.active_menu == "📋 Policies":
     st.subheader("Policy Management")
     
@@ -4294,7 +4413,9 @@ elif st.session_state.active_menu == "📋 Policies":
         else:
             st.info("No policy data available for analytics.")
 
+# ============================================
 # ADMIN PANEL
+# ============================================
 elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
     st.markdown("Manage users, policies, contracts, work plans, departments, and directorates from one central location.")
@@ -4974,7 +5095,9 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         else:
             st.info("No audit logs found.")
 
+# ============================================
 # ENTERPRISE VIEW
+# ============================================
 elif st.session_state.active_menu == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
     st.markdown("### Cross-Department Performance Overview")
