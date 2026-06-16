@@ -1431,7 +1431,7 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
 # ============================================
 # ENHANCED CALENDAR VIEW FUNCTIONS
 # ============================================
-def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All", view_mode="month"):
+def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All"):
     import calendar
     
     # Filter activities by quarter if specified
@@ -1473,6 +1473,9 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
     activities_by_date = {}
     pillar_counts = {}
     total_activities = 0
+    completed_count = 0
+    in_progress_count = 0
+    pending_count = 0
     
     for activity in filtered_activities:
         if activity.get('start_date') and activity.get('due_date'):
@@ -1484,6 +1487,15 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
             
             # Determine progress
             progress = activity.get('progress_percent', 0)
+            
+            # Track status counts
+            status = activity.get('status', 'Pending')
+            if status == 'Done':
+                completed_count += 1
+            elif status == 'In Progress':
+                in_progress_count += 1
+            else:
+                pending_count += 1
             
             # Calculate days remaining
             today = datetime.now().date()
@@ -1510,20 +1522,25 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
                     
                     # Determine urgency based on days remaining
                     urgency = ""
+                    urgency_color = ""
                     if days_remaining < 0:
                         urgency = "🔴 EXPIRED"
+                        urgency_color = "#EF4444"
                     elif days_remaining <= 7:
                         urgency = "🔴 URGENT"
+                        urgency_color = "#EF4444"
                     elif days_remaining <= 30:
                         urgency = "🟡 SOON"
+                        urgency_color = "#F59E0B"
                     
                     activities_by_date[date_key].append({
                         "activity": activity['planned_activity'],
                         "pillar": pillar,
-                        "status": activity.get('status', 'Pending'),
+                        "status": status,
                         "progress": progress,
                         "marker": marker,
                         "urgency": urgency,
+                        "urgency_color": urgency_color,
                         "days_remaining": days_remaining,
                         "department": activity.get('department_name', 'Unknown'),
                         "duration": duration,
@@ -1537,10 +1554,10 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
     
     html = f"""
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
             <h4 style="color: {theme_text}; margin: 0;">📅 {month_name} {year}</h4>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <span style="color: {theme_text}; font-size: 0.8rem;">Total: {total_activities} activities</span>
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <span style="color: {theme_text}; font-size: 0.8rem;">📋 Total: {total_activities} activities</span>
                 <span style="color: {theme_text}; font-size: 0.8rem;">📆 {len(activities_by_date)} active days</span>
             </div>
         </div>
@@ -1554,10 +1571,11 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
         """
         for pillar, count in pillar_counts.items():
             color = pillar_colors.get(pillar, "#6B7280")
+            pillar_short = pillar.split('. ')[-1][:20] if '. ' in pillar else pillar[:20]
             html += f"""
             <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: {color}20; padding: 0.2rem 0.6rem; border-radius: 12px; border-left: 3px solid {color};">
                 <span style="color: {color}; font-size: 0.6rem;">●</span>
-                <span style="color: {theme_text}; font-size: 0.65rem;">{pillar.split('. ')[-1][:20]}</span>
+                <span style="color: {theme_text}; font-size: 0.65rem;">{pillar_short}</span>
                 <span style="color: {theme_text}; font-size: 0.55rem; background: {color}; padding: 0.1rem 0.4rem; border-radius: 8px; color: white;">{count}</span>
             </span>
             """
@@ -1622,7 +1640,7 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
                             <span style="color: {theme_text};">
                                 {status_icon} {act['activity'][:22]}{'...' if len(act['activity']) > 22 else ''}{marker_text}
                             </span>
-                            <span style="font-size: 0.5rem; color: {theme_text}60;">
+                            <span style="font-size: 0.5rem; color: {act['urgency_color'] if act['urgency'] else theme_text}60; font-weight: bold;">
                                 {act['urgency'] if act['urgency'] else ''}
                             </span>
                         </div>
@@ -1636,7 +1654,7 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
                 if len(day_activities) > 4:
                     html += f'''
                     <div style="font-size: 0.55rem; margin-top: 2px; color: {theme_text}60; text-align: center; background: {theme_bg}; padding: 1px; border-radius: 3px;">
-                        +{len(day_activities) - 4} more activities
+                        +{len(day_activities) - 4} more
                     </div>
                     '''
                 
@@ -1645,15 +1663,15 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
     
     html += '</tbody></table>'
     
-    # Summary section
+    # Summary section with counts
     html += f'''
-    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; padding: 0.5rem; background: {theme_card_bg}; border-radius: 8px; border: 1px solid {theme_border};">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; padding: 0.5rem 1rem; background: {theme_card_bg}; border-radius: 8px; border: 1px solid {theme_border}; align-items: center;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="color: {theme_text}; font-size: 0.7rem;">📊 Summary:</span>
+            <span style="color: {theme_text}; font-size: 0.7rem; font-weight: bold;">📊 Summary:</span>
             <span style="color: {theme_text}; font-size: 0.65rem;">Total: {total_activities}</span>
-            <span style="color: #10B981; font-size: 0.65rem;">✅ Done: {len([a for acts in activities_by_date.values() for a in acts if a['status'] == 'Done'])}</span>
-            <span style="color: #F59E0B; font-size: 0.65rem;">🟡 In Progress: {len([a for acts in activities_by_date.values() for a in acts if a['status'] == 'In Progress'])}</span>
-            <span style="color: #EF4444; font-size: 0.65rem;">⏳ Pending: {len([a for acts in activities_by_date.values() for a in acts if a['status'] == 'Pending'])}</span>
+            <span style="color: #10B981; font-size: 0.65rem;">✅ {completed_count} Done</span>
+            <span style="color: #F59E0B; font-size: 0.65rem;">🟡 {in_progress_count} In Progress</span>
+            <span style="color: #EF4444; font-size: 0.65rem;">⏳ {pending_count} Pending</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span style="color: {theme_text}; font-size: 0.7rem;">📌 Legend:</span>
@@ -1662,23 +1680,92 @@ def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All
             <span style="color: #EF4444; font-size: 0.6rem;">🔴 URGENT</span>
             <span style="color: #F59E0B; font-size: 0.6rem;">🟡 SOON</span>
         </div>
-    </div>
-    '''
-    
-    # Quick filter buttons
-    html += f'''
-    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-        <button onclick="location.reload()" style="background: {theme_header_bg}; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.6rem; cursor: pointer;">
-            🔄 Refresh
-        </button>
-        <span style="color: {theme_text}60; font-size: 0.6rem; display: flex; align-items: center;">
-            💡 Click on activity cards for details
-        </span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+            <span style="color: {theme_text}60; font-size: 0.6rem;">💡 Hover for details</span>
+        </div>
     </div>
     </div>
     '''
     
     return html
+
+
+# ============================================
+# UPDATED CALENDAR TAB - Replace the existing tab_calendar section with this
+# ============================================
+with tab_calendar:
+    st.markdown("### 📅 Enhanced Calendar View")
+    st.markdown("Visualize all activities by month and quarter with detailed information")
+    
+    if filtered_plans:
+        col_year, col_quarter, col_month = st.columns(3)
+        with col_year:
+            current_year = datetime.now().year
+            selected_year = st.selectbox("Select Year", [current_year - 1, current_year, current_year + 1], index=1)
+        with col_quarter:
+            quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
+            selected_quarter = st.selectbox("Select Quarter", quarters, key="calendar_quarter_select")
+        with col_month:
+            selected_month = st.selectbox("Select Month", list(range(1, 13)), format_func=lambda x: datetime(2000, x, 1).strftime('%B'), index=datetime.now().month - 1)
+        
+        # Use enhanced calendar
+        calendar_html = generate_enhanced_calendar_html(filtered_plans, selected_year, selected_month, selected_quarter)
+        st.components.v1.html(calendar_html, height=750, scrolling=True)
+        
+        # Quick stats below calendar
+        st.markdown("---")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        # Calculate stats for the selected period
+        period_activities = []
+        if selected_quarter != "All":
+            quarter_months = {
+                "Q1 (Jul-Sep)": [7, 8, 9],
+                "Q2 (Oct-Dec)": [10, 11, 12],
+                "Q3 (Jan-Mar)": [1, 2, 3],
+                "Q4 (Apr-Jun)": [4, 5, 6]
+            }
+            allowed_months = quarter_months.get(selected_quarter, [])
+            for activity in filtered_plans:
+                if activity.get('due_date'):
+                    due_date = pd.to_datetime(activity['due_date']).date()
+                    if due_date.month in allowed_months and due_date.year == selected_year:
+                        period_activities.append(activity)
+        else:
+            period_activities = filtered_plans
+        
+        total_in_period = len(period_activities)
+        completed_in_period = len([a for a in period_activities if a.get('status') == 'Done'])
+        in_progress_in_period = len([a for a in period_activities if a.get('status') == 'In Progress'])
+        pending_in_period = len([a for a in period_activities if a.get('status') == 'Pending'])
+        
+        with col1:
+            st.metric("📋 Total Activities", total_in_period)
+        with col2:
+            st.metric("✅ Completed", completed_in_period, delta=f"{completed_in_period/total_in_period*100:.0f}%" if total_in_period > 0 else "0%")
+        with col3:
+            st.metric("🟡 In Progress", in_progress_in_period)
+        with col4:
+            st.metric("⏳ Pending", pending_in_period)
+        
+        # Show warning if there are urgent activities
+        urgent_activities = []
+        for activity in period_activities:
+            if activity.get('due_date'):
+                due_date = pd.to_datetime(activity['due_date']).date()
+                days_left = (due_date - datetime.now().date()).days
+                if 0 <= days_left <= 7:
+                    urgent_activities.append(activity)
+        
+        if urgent_activities:
+            st.warning(f"⚠️ **{len(urgent_activities)} activities are due within the next 7 days!**")
+            for act in urgent_activities[:5]:
+                st.markdown(f"- 🔴 {act.get('planned_activity', 'N/A')} (Due: {act.get('due_date', 'N/A')})")
+            if len(urgent_activities) > 5:
+                st.markdown(f"- ... and {len(urgent_activities) - 5} more")
+        
+    else:
+        st.info("No activities to display. Please add work plan activities with start and end dates.")
 
 # ============================================
 # SESSION STATE INITIALIZATION
