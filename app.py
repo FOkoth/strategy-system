@@ -20,7 +20,6 @@ from reportlab.lib.units import inch
 from sklearn.linear_model import LinearRegression
 import numpy as np
 import hashlib
-import calendar
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -95,440 +94,91 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============================================
-# ENHANCED CSS - Fixed visibility issues
-# ============================================
-if st.session_state.theme == "light":
-    THEME_CSS = f"""
-    <style>
-        /* Fix login page centering */
-        .stApp {{
-            min-height: 100vh !important;
-        }}
-        .login-wrapper {{
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            min-height: 100vh !important;
-            padding: 1rem !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: {HELB_WHITE} !important;
-            z-index: 9999 !important;
-        }}
-        .login-container {{
-            background: #ffffff !important;
-            border-radius: 20px !important;
-            padding: 0 !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
-            max-width: 420px !important;
-            width: 100% !important;
-            overflow: hidden !important;
-            position: relative !important;
-            z-index: 10000 !important;
-        }}
-        
-        /* Fix dropdown visibility */
-        .stSelectbox div[data-baseweb="select"] div {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        .stSelectbox ul, .stSelectbox li {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        div[role="listbox"], div[role="option"] {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        div[role="listbox"] * {{
-            color: #000000 !important;
-        }}
-        
-        /* Fix calendar visibility */
-        .calendar-container {{
-            background: #ffffff !important;
-            padding: 1rem !important;
-            border-radius: 12px !important;
-        }}
-        .calendar-container table {{
-            background: #ffffff !important;
-        }}
-        .calendar-container th {{
-            color: #000000 !important;
-            background: #f3f4f6 !important;
-        }}
-        .calendar-container td {{
-            color: #000000 !important;
-        }}
-        .calendar-container strong {{
-            color: #000000 !important;
-        }}
-        
-        /* Fix text visibility */
-        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
-        .stTextInput label, .stSelectbox label, .stDateInput label,
-        .stNumberInput label, .stTextArea label, .stCheckbox label,
-        div, span, p, label, .stMetric label, .stMetric div {{
-            color: #000000 !important;
-        }}
-        
-        /* Fix input fields */
-        .stTextInput input, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            border: 1px solid #D1D5DB !important;
-        }}
-        
-        /* Fix select box */
-        .stSelectbox select {{
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }}
-        
-        /* Sidebar */
-        [data-testid="stSidebar"] {{
-            background-color: {HELB_GREEN} !important;
-            padding-top: 1rem !important;
-        }}
-        [data-testid="stSidebar"] * {{
-            color: white !important;
-        }}
-        
-        /* Rest of existing CSS */
-        .kpi-card {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            border-radius: 12px !important;
-            padding: 0.8rem !important;
-            text-align: center !important;
-            min-height: 110px;
-            display: flex;
+# Mobile responsive CSS
+mobile_css = """
+<style>
+    @media (max-width: 768px) {
+        .stApp {
+            padding: 0.5rem;
+        }
+        .stColumns {
             flex-direction: column;
-            justify-content: center;
-        }}
-        .kpi-card .kpi-label {{
-            font-size: 0.65rem !important;
-            text-transform: uppercase !important;
-            color: {HELB_GOLD} !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
-            margin-bottom: 0.25rem;
-        }}
-        .kpi-card .kpi-value {{
-            font-size: 1.3rem !important;
-            font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
-            color: #FFFFFF !important;
-        }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.5rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 3px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-            width: 100%;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
-        }}
-        
-        .dashboard-header {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
-            padding: 0.8rem 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
-        .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
-        
-        .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            color: white !important;
-            border-radius: 8px !important;
-            padding: 8px 16px !important;
-            font-weight: 600 !important;
-        }}
-        
-        .comment-box {{
-            background: #f0fdf4;
-            border-left: 4px solid {HELB_GREEN};
-            padding: 0.5rem 0.8rem;
-            margin-top: 0.5rem;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            color: #166534;
-        }}
-        
-        .status-badge {{
-            display: inline-block !important;
-            padding: 0.2rem 0.6rem !important;
-            border-radius: 20px !important;
-            font-size: 0.7rem !important;
-            font-weight: 600 !important;
-        }}
-        .status-active {{ background-color: #10b981 !important; color: white !important; }}
-        .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
-        .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
-        
-        .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
-        
-        @media (max-width: 768px) {{
-            .kpi-card {{
-                min-height: 80px !important;
-                padding: 0.5rem !important;
-            }}
-            .kpi-card .kpi-value {{
-                font-size: 1rem !important;
-            }}
-            .kpi-card .kpi-label {{
-                font-size: 0.55rem !important;
-            }}
-            .stTabs [data-baseweb="tab-list"] {{
-                flex-wrap: wrap;
-            }}
-            .stTabs [data-baseweb="tab"] {{
-                padding: 0.5rem 1rem !important;
-                font-size: 0.8rem !important;
-            }}
-            .dashboard-header h1 {{
-                font-size: 1rem !important;
-            }}
-            .dashboard-header p {{
-                font-size: 0.6rem !important;
-            }}
-        }}
-    </style>
-    """
-else:
-    THEME_CSS = f"""
-    <style>
-        /* Fix login page centering */
-        .stApp {{
-            min-height: 100vh !important;
-        }}
-        .login-wrapper {{
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            min-height: 100vh !important;
-            padding: 1rem !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: #1a1a2e !important;
-            z-index: 9999 !important;
-        }}
-        .login-container {{
-            background: #1e293b !important;
-            border-radius: 20px !important;
-            padding: 0 !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
-            max-width: 420px !important;
-            width: 100% !important;
-            overflow: hidden !important;
-            position: relative !important;
-            z-index: 10000 !important;
-        }}
-        
-        /* Fix dropdown visibility - DARK THEME */
-        .stSelectbox div[data-baseweb="select"] div {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
-        .stSelectbox ul, .stSelectbox li {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
-        div[role="listbox"], div[role="option"] {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
-        div[role="listbox"] * {{
-            color: #FFFFFF !important;
-        }}
-        
-        /* Fix calendar visibility - DARK THEME */
-        .calendar-container {{
-            background: #1e293b !important;
-            padding: 1rem !important;
-            border-radius: 12px !important;
-        }}
-        .calendar-container table {{
-            background: #1e293b !important;
-        }}
-        .calendar-container th {{
-            color: #FFFFFF !important;
-            background: #334155 !important;
-        }}
-        .calendar-container td {{
-            color: #FFFFFF !important;
-        }}
-        .calendar-container strong {{
-            color: #FFFFFF !important;
-        }}
-        
-        /* Fix text visibility - DARK THEME */
-        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
-        .stTextInput label, .stSelectbox label, .stDateInput label,
-        .stNumberInput label, .stTextArea label, .stCheckbox label,
-        div, span, p, label, .stMetric label, .stMetric div {{
-            color: #FFFFFF !important;
-        }}
-        
-        /* Fix input fields - DARK THEME */
-        .stTextInput input, .stDateInput input, .stNumberInput input, .stTextArea textarea {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-            border: 1px solid #4a4a6a !important;
-        }}
-        
-        /* Fix select box - DARK THEME */
-        .stSelectbox select {{
-            background-color: #2d2d44 !important;
-            color: #FFFFFF !important;
-        }}
-        
-        /* Sidebar - DARK THEME */
-        [data-testid="stSidebar"] {{
-            background-color: #0f3460 !important;
-            padding-top: 1rem !important;
-        }}
-        [data-testid="stSidebar"] * {{
-            color: white !important;
-        }}
-        
-        /* KPI Cards - DARK THEME */
-        .kpi-card {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
-            border-radius: 12px !important;
-            padding: 0.8rem !important;
-            text-align: center !important;
-            min-height: 110px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }}
-        .kpi-card .kpi-label {{
-            font-size: 0.65rem !important;
-            text-transform: uppercase !important;
-            color: {HELB_GOLD} !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.5px !important;
-            margin-bottom: 0.25rem;
-        }}
-        .kpi-card .kpi-value {{
-            font-size: 1.3rem !important;
-            font-weight: 700 !important;
-            margin: 0.2rem 0 !important;
-            color: #FFFFFF !important;
-        }}
-        .kpi-card .kpi-sub {{
-            font-size: 0.5rem !important;
-            color: #FFFFFF !important;
-            margin-top: 0.2rem !important;
-            opacity: 0.9 !important;
-        }}
-        .kpi-card .progress-bar {{
-            height: 3px !important;
-            background: rgba(255,255,255,0.3) !important;
-            border-radius: 2px !important;
-            margin-top: 0.5rem !important;
-            width: 100%;
-        }}
-        .kpi-card .progress-fill {{
-            height: 100% !important;
-            background: {HELB_GOLD} !important;
-            border-radius: 2px !important;
-        }}
-        
-        .dashboard-header {{
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-            padding: 0.8rem 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        .dashboard-header h1 {{ color: white !important; font-size: 1.2rem; }}
-        .dashboard-header p {{ color: {HELB_GOLD} !important; }}
-        
-        .stButton > button {{
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
-            color: white !important;
-            border-radius: 8px !important;
-            padding: 8px 16px !important;
-            font-weight: 600 !important;
-        }}
-        
-        .comment-box {{
-            background: #1e3a2f;
-            border-left: 4px solid {HELB_GOLD};
-            padding: 0.5rem 0.8rem;
-            margin-top: 0.5rem;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            color: #d1fae5;
-        }}
-        
-        .status-badge {{
-            display: inline-block !important;
-            padding: 0.2rem 0.6rem !important;
-            border-radius: 20px !important;
-            font-size: 0.7rem !important;
-            font-weight: 600 !important;
-        }}
-        .status-active {{ background-color: #10b981 !important; color: white !important; }}
-        .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
-        .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
-        
-        .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
-        
-        @media (max-width: 768px) {{
-            .kpi-card {{
-                min-height: 80px !important;
-                padding: 0.5rem !important;
-            }}
-            .kpi-card .kpi-value {{
-                font-size: 1rem !important;
-            }}
-            .kpi-card .kpi-label {{
-                font-size: 0.55rem !important;
-            }}
-            .stTabs [data-baseweb="tab-list"] {{
-                flex-wrap: wrap;
-            }}
-            .stTabs [data-baseweb="tab"] {{
-                padding: 0.5rem 1rem !important;
-                font-size: 0.8rem !important;
-            }}
-            .dashboard-header h1 {{
-                font-size: 1rem !important;
-            }}
-            .dashboard-header p {{
-                font-size: 0.6rem !important;
-            }}
-        }}
-    </style>
-    """
+        }
+        .kpi-card {
+            min-height: 80px !important;
+            padding: 0.5rem !important;
+        }
+        .kpi-card .kpi-value {
+            font-size: 1rem !important;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.55rem !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            flex-wrap: wrap;
+        }
+        .stTabs [data-baseweb="tab"] {
+            padding: 0.5rem 1rem !important;
+            font-size: 0.8rem !important;
+        }
+        .dashboard-header h1 {
+            font-size: 1rem !important;
+        }
+        .dashboard-header p {
+            font-size: 0.6rem !important;
+        }
+        .sidebar-user-info strong {
+            font-size: 0.75rem !important;
+        }
+        .stExpander {
+            margin-bottom: 0.5rem;
+        }
+    }
+    @media (max-width: 768px) {
+        button, .stButton > button {
+            padding: 0.5rem 1rem !important;
+            min-height: 44px;
+        }
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+    }
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            width: 80% !important;
+        }
+    }
+    .calendar-day {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 0.5rem;
+        min-height: 100px;
+        background-color: white;
+    }
+    .calendar-day-header {
+        font-weight: bold;
+        text-align: center;
+        padding: 0.5rem;
+        background-color: #f3f4f6;
+        border-radius: 6px;
+    }
+    .calendar-event {
+        background-color: #00843D;
+        color: white;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
+        cursor: pointer;
+    }
+    .calendar-event:hover {
+        background-color: #00529B;
+    }
+</style>
+"""
 
 st.markdown(f'<head>{favicon_html}</head>', unsafe_allow_html=True)
-st.markdown(THEME_CSS, unsafe_allow_html=True)
+st.markdown(mobile_css, unsafe_allow_html=True)
 
 # ============================================
 # CONSTANTS
@@ -563,13 +213,6 @@ QUARTER_MONTHS = {
 ALL_MONTHS = ["January", "February", "March", "April", "May", "June", 
               "July", "August", "September", "October", "November", "December"]
 
-QUARTER_MONTH_MAP = {
-    "Q1 (Jul-Sep)": [7, 8, 9],
-    "Q2 (Oct-Dec)": [10, 11, 12],
-    "Q3 (Jan-Mar)": [1, 2, 3],
-    "Q4 (Apr-Jun)": [4, 5, 6]
-}
-
 def get_financial_years():
     current_year = datetime.now().year
     years = []
@@ -593,22 +236,6 @@ def get_months_for_quarter(quarter):
         return ALL_MONTHS
     return QUARTER_MONTHS.get(quarter, ALL_MONTHS)
 
-def get_quarter_from_month_name(month_name):
-    month_num = ALL_MONTHS.index(month_name) + 1
-    return get_quarter_from_month(month_num)
-
-def get_months_for_quarter_num(quarter):
-    months = []
-    if quarter == "Q1 (Jul-Sep)":
-        months = [7, 8, 9]
-    elif quarter == "Q2 (Oct-Dec)":
-        months = [10, 11, 12]
-    elif quarter == "Q3 (Jan-Mar)":
-        months = [1, 2, 3]
-    elif quarter == "Q4 (Apr-Jun)":
-        months = [4, 5, 6]
-    return months
-
 # ============================================
 # SESSION STATE FOR FILTERS & NAVIGATION
 # ============================================
@@ -626,12 +253,6 @@ if "active_contracts_tab" not in st.session_state:
     st.session_state.active_contracts_tab = 0
 if "active_policies_tab" not in st.session_state:
     st.session_state.active_policies_tab = 0
-if "calendar_selected_quarter" not in st.session_state:
-    st.session_state.calendar_selected_quarter = "All"
-if "calendar_selected_month" not in st.session_state:
-    st.session_state.calendar_selected_month = datetime.now().strftime("%B")
-if "calendar_selected_year" not in st.session_state:
-    st.session_state.calendar_selected_year = datetime.now().year
 
 # ============================================
 # HELPER FUNCTIONS
@@ -777,148 +398,6 @@ def filter_policies_by_date(df, financial_year, quarter, month):
     return df
 
 # ============================================
-# ENHANCED CALENDAR VIEW FUNCTION
-# ============================================
-def generate_calendar_html(activities, year, month, quarter_filter="All"):
-    """Generate HTML for month calendar view with quarter filtering"""
-    cal = calendar.monthcalendar(year, month)
-    month_name = calendar.month_name[month]
-    
-    # Filter activities by quarter if specified
-    filtered_activities = activities
-    if quarter_filter != "All":
-        quarter_months = get_months_for_quarter_num(quarter_filter)
-        filtered_activities = []
-        for activity in activities:
-            if activity.get('due_date'):
-                due_date = pd.to_datetime(activity['due_date']).date()
-                if due_date.year == year and due_date.month in quarter_months:
-                    filtered_activities.append(activity)
-    
-    # Group activities by date with start/end markers
-    activities_by_date = {}
-    start_dates = {}
-    end_dates = {}
-    
-    for activity in filtered_activities:
-        if activity.get('due_date'):
-            due_date = pd.to_datetime(activity['due_date']).date()
-            if due_date.year == year and due_date.month == month:
-                date_key = due_date.day
-                if date_key not in activities_by_date:
-                    activities_by_date[date_key] = []
-                activities_by_date[date_key].append({
-                    'activity': activity,
-                    'is_start': False,
-                    'is_end': False
-                })
-        
-        # Track start and end dates
-        if activity.get('start_date'):
-            start_date = pd.to_datetime(activity['start_date']).date()
-            if start_date.year == year and start_date.month == month:
-                start_dates[start_date.day] = True
-        if activity.get('end_date'):
-            end_date = pd.to_datetime(activity['end_date']).date()
-            if end_date.year == year and end_date.month == month:
-                end_dates[end_date.day] = True
-    
-    # Build HTML with enhanced styling
-    html = f"""
-    <div class="calendar-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 0.5rem;">
-            <h4 style="margin: 0; color: {'#000000' if st.session_state.theme == 'light' else '#FFFFFF'};">{month_name} {year}</h4>
-            <span style="font-size: 0.8rem; color: {'#6b7280' if st.session_state.theme == 'light' else '#94a3b8'};">
-                {len(filtered_activities)} activities
-            </span>
-        </div>
-        <table style="width:100%; border-collapse: collapse; background: {'#ffffff' if st.session_state.theme == 'light' else '#1e293b'};">
-            <tr>
-    """
-    
-    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        html += f'<th style="padding: 8px; text-align: center; background-color: {"#f3f4f6" if st.session_state.theme == "light" else "#334155"}; border: 1px solid {"#e5e7eb" if st.session_state.theme == "light" else "#475569"}; color: {"#000000" if st.session_state.theme == "light" else "#FFFFFF"};">{day}</th>'
-    html += '</tr>'
-    
-    for week in cal:
-        html += '<tr>'
-        for day in week:
-            if day == 0:
-                html += f'<td style="padding: 8px; border: 1px solid {"#e5e7eb" if st.session_state.theme == "light" else "#475569"}; vertical-align: top; height: 80px; background-color: {"#f9fafb" if st.session_state.theme == "light" else "#0f172a"};"></td>'
-            else:
-                day_activities = activities_by_date.get(day, [])
-                is_start = day in start_dates
-                is_end = day in end_dates
-                
-                # Determine background color based on activity status
-                if day_activities:
-                    bg_color = '#fef3c7' if st.session_state.theme == 'light' else '#1e293b'
-                else:
-                    bg_color = 'white' if st.session_state.theme == 'light' else '#0f172a'
-                
-                # Add border styling for start/end dates
-                border_style = ""
-                if is_start and is_end:
-                    border_style = "border: 2px solid #00843D; border-radius: 8px;"
-                    bg_color = '#d1fae5' if st.session_state.theme == 'light' else '#064e3b'
-                elif is_start:
-                    border_style = "border-left: 3px solid #00843D; border-top: 2px solid #00843D; border-bottom: 2px solid #00843D; border-radius: 8px 0 0 8px;"
-                    bg_color = '#d1fae5' if st.session_state.theme == 'light' else '#064e3b'
-                elif is_end:
-                    border_style = "border-right: 3px solid #00843D; border-top: 2px solid #00843D; border-bottom: 2px solid #00843D; border-radius: 0 8px 8px 0;"
-                    bg_color = '#d1fae5' if st.session_state.theme == 'light' else '#064e3b'
-                
-                html += f'<td style="padding: 8px; border: 1px solid {"#e5e7eb" if st.session_state.theme == "light" else "#475569"}; vertical-align: top; height: 80px; background-color: {bg_color}; {border_style}">'
-                html += f'<div style="display: flex; justify-content: space-between; align-items: center;">'
-                html += f'<strong style="color: {"#000000" if st.session_state.theme == "light" else "#FFFFFF"};">{day}</strong>'
-                
-                # Add markers for start/end
-                if is_start:
-                    html += f'<span style="font-size: 0.5rem; background: #00843D; color: white; padding: 1px 4px; border-radius: 4px;">▶</span>'
-                if is_end:
-                    html += f'<span style="font-size: 0.5rem; background: #00843D; color: white; padding: 1px 4px; border-radius: 4px;">◼</span>'
-                
-                html += '</div>'
-                
-                # Show activities
-                for item in day_activities[:3]:
-                    act = item['activity']
-                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
-                    html += f'<div style="font-size: 0.65rem; margin-top: 4px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
-                    html += f'{status_icon} {act["planned_activity"][:25]}...'
-                    html += '</div>'
-                
-                if len(day_activities) > 3:
-                    html += f'<div style="font-size: 0.55rem; margin-top: 2px; color: {"#6b7280" if st.session_state.theme == "light" else "#94a3b8"}; text-align: center;">+{len(day_activities)-3} more</div>'
-                
-                html += '</td>'
-        html += '</tr>'
-    html += '</table>'
-    
-    # Legend
-    html += f'''
-    <div style="margin-top: 0.5rem; padding: 0.5rem; border-top: 1px solid {"#e5e7eb" if st.session_state.theme == "light" else "#475569"}; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-        <span style="font-size: 0.65rem; color: {"#000000" if st.session_state.theme == "light" else "#FFFFFF"};">
-            <span style="display: inline-block; width: 12px; height: 12px; background: #d1fae5; border: 1px solid #00843D; border-radius: 2px; vertical-align: middle;"></span> 
-            Activity Range
-        </span>
-        <span style="font-size: 0.65rem; color: {"#000000" if st.session_state.theme == "light" else "#FFFFFF"};">
-            <span style="display: inline-block; width: 12px; height: 12px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 2px; vertical-align: middle;"></span> 
-            Has Activity
-        </span>
-        <span style="font-size: 0.65rem; color: {"#000000" if st.session_state.theme == "light" else "#FFFFFF"};">
-            ▶ Start Date
-        </span>
-        <span style="font-size: 0.65rem; color: {"#000000" if st.session_state.theme == "light" else "#FFFFFF"};">
-            ◼ End Date
-        </span>
-    </div>
-    </div>
-    '''
-    
-    return html
-
-# ============================================
 # PREDICTIVE ANALYTICS FUNCTIONS
 # ============================================
 def predict_completion_trend(df):
@@ -971,6 +450,7 @@ def change_user_password(username, old_password, new_password):
             return False, "User not found"
         
         user = result.data[0]
+        # Check both plain text and hashed
         if old_password != user["password_hash"] and hash_password(old_password) != user["password_hash"]:
             return False, "Current password is incorrect"
         
@@ -1034,7 +514,7 @@ def get_audit_logs(limit=500):
         return []
 
 # ============================================
-# DIRECTORATE FUNCTIONS
+# DIRECTORATE FUNCTIONS - FIXED
 # ============================================
 @st.cache_data(ttl=3600)
 def get_cached_directorates():
@@ -1099,7 +579,7 @@ def delete_directorate(directorate_id):
         return False, str(e)
 
 # ============================================
-# DEPARTMENT FUNCTIONS
+# DEPARTMENT FUNCTIONS - FIXED with directorate mapping
 # ============================================
 @st.cache_data(ttl=3600)
 def get_cached_departments():
@@ -1107,6 +587,7 @@ def get_cached_departments():
         result = supabase.table("departments").select("*").order("name").execute()
         depts = result.data
         
+        # Get directorates for mapping
         dir_result = supabase.table("directorates").select("id, name, director_name").execute()
         directorates = {d["id"]: d for d in dir_result.data}
         
@@ -1182,7 +663,7 @@ def get_department_name(dept_id):
 # ============================================
 # WORK PLAN FUNCTIONS
 # ============================================
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=120)  # Increased TTL for better performance
 def get_cached_work_plans(user_role, user_dept):
     try:
         if user_role in ["admin", "management"]:
@@ -1943,6 +1424,55 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     return success_count, error_count, errors
 
 # ============================================
+# CALENDAR VIEW FUNCTIONS
+# ============================================
+def generate_calendar_html(activities, year, month):
+    import calendar
+    
+    cal = calendar.monthcalendar(year, month)
+    month_name = calendar.month_name[month]
+    
+    activities_by_date = {}
+    for activity in activities:
+        if activity.get('due_date'):
+            due_date = pd.to_datetime(activity['due_date']).date()
+            if due_date.year == year and due_date.month == month:
+                date_key = due_date.day
+                if date_key not in activities_by_date:
+                    activities_by_date[date_key] = []
+                activities_by_date[date_key].append(activity)
+    
+    html = f'<h4>{month_name} {year}</h4>'
+    html += '<table style="width:100%; border-collapse: collapse;">'
+    html += '<tr>'
+    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+        html += f'<th style="padding: 8px; text-align: center; background-color: #f3f4f6; border: 1px solid #e5e7eb;">{day}</th>'
+    html += '</tr>'
+    
+    for week in cal:
+        html += '<tr>'
+        for day in week:
+            if day == 0:
+                html += '<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: #f9fafb;"></td>'
+            else:
+                day_activities = activities_by_date.get(day, [])
+                bg_color = '#fef3c7' if day_activities else 'white'
+                html += f'<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: {bg_color};">'
+                html += f'<strong>{day}</strong>'
+                for act in day_activities[:3]:
+                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
+                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px;">'
+                    html += f'{status_icon} {act["planned_activity"][:30]}...'
+                    html += '</div>'
+                if len(day_activities) > 3:
+                    html += f'<div style="font-size: 0.6rem; margin-top: 2px; color: #6b7280;">+{len(day_activities)-3} more</div>'
+                html += '</td>'
+        html += '</tr>'
+    html += '</table>'
+    
+    return html
+
+# ============================================
 # SESSION STATE INITIALIZATION
 # ============================================
 if "authenticated" not in st.session_state:
@@ -1954,6 +1484,647 @@ if "authenticated" not in st.session_state:
     st.session_state.user_fullname = None
     st.session_state.user_id = None
     st.session_state.user_dept_name = ""
+
+# ============================================
+# CUSTOM CSS (WITH MOBILE RESPONSIVE)
+# ============================================
+if st.session_state.theme == "light":
+    THEME_CSS = f"""
+    <style>
+        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
+        .stTextInput label, .stSelectbox label, .stDateInput label,
+        .stNumberInput label, .stTextArea label, .stCheckbox label,
+        div, span, p, label, .stMetric label, .stMetric div {{
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div,
+        .stSelectbox ul, .stSelectbox li,
+        div[role="listbox"], div[role="option"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div:hover,
+        div[role="option"]:hover {{
+            background-color: #f0f0f0 !important;
+            color: #000000 !important;
+        }}
+        
+        .stButton > button {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: 600 !important;
+        }}
+        
+        .stButton > button[key*="delete"] {{
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            color: white !important;
+        }}
+        
+        [data-testid="stSidebar"] * {{
+            color: white !important;
+        }}
+        
+        .kpi-card {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            border-radius: 12px !important;
+            padding: 0.8rem !important;
+            text-align: center !important;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+        .kpi-card .kpi-label {{
+            font-size: 0.65rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+            margin-bottom: 0.25rem;
+        }}
+        .kpi-card .kpi-value {{
+            font-size: 1.3rem !important;
+            font-weight: 700 !important;
+            margin: 0.2rem 0 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card .kpi-sub {{
+            font-size: 0.5rem !important;
+            color: #FFFFFF !important;
+            margin-top: 0.2rem !important;
+            opacity: 0.9 !important;
+        }}
+        .kpi-card .progress-bar {{
+            height: 3px !important;
+            background: rgba(255,255,255,0.3) !important;
+            border-radius: 2px !important;
+            margin-top: 0.5rem !important;
+            width: 100%;
+        }}
+        .kpi-card .progress-fill {{
+            height: 100% !important;
+            background: {HELB_GOLD} !important;
+            border-radius: 2px !important;
+        }}
+        
+        .kpi-card-small {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            border-radius: 10px !important;
+            padding: 0.6rem !important;
+            text-align: center !important;
+            min-height: 85px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+        .kpi-card-small .kpi-label {{
+            font-size: 0.6rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+        }}
+        .kpi-card-small .kpi-value {{
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card-small .kpi-sub {{
+            font-size: 0.45rem !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .comment-box {{
+            background: #f0fdf4;
+            border-left: 4px solid {HELB_GREEN};
+            padding: 0.5rem 0.8rem;
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #166534;
+        }}
+        
+        .contract-card, .policy-card {{
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            margin-bottom: 0.75rem !important;
+            transition: all 0.2s ease !important;
+        }}
+        .contract-card:hover, .policy-card:hover {{
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        }}
+        .contract-title, .policy-title {{
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            color: {HELB_GREEN} !important;
+            margin-bottom: 0.5rem !important;
+        }}
+        .contract-detail, .policy-detail {{
+            font-size: 0.75rem !important;
+            color: #4b5563 !important;
+            margin: 0.25rem 0 !important;
+        }}
+        .status-badge {{
+            display: inline-block !important;
+            padding: 0.2rem 0.6rem !important;
+            border-radius: 20px !important;
+            font-size: 0.7rem !important;
+            font-weight: 600 !important;
+        }}
+        .status-active {{ background-color: #10b981 !important; color: white !important; }}
+        .status-expiring {{ background-color: #f59e0b !important; color: white !important; }}
+        .status-expired {{ background-color: #ef4444 !important; color: white !important; }}
+        .status-urgent {{ background-color: #dc2626 !important; color: white !important; }}
+        .status-risk-high {{ background-color: #dc2626 !important; color: white !important; }}
+        .status-risk-medium {{ background-color: #f59e0b !important; color: white !important; }}
+        .status-risk-low {{ background-color: #10b981 !important; color: white !important; }}
+        
+        .metric-card, .metric-card * {{ color: #000000 !important; }}
+        .stTabs [data-baseweb="tab"] {{ color: #000000 !important; }}
+        .stTabs [aria-selected="true"] {{ color: #000000 !important; background-color: {HELB_GOLD} !important; }}
+        .streamlit-expanderHeader p {{ color: #000000 !important; }}
+        
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: white !important;
+            color: #000000 !important;
+            border: 1px solid #D1D5DB !important;
+        }}
+        
+        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GREEN} !important; }}
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        .stAppDeployButton {{display: none;}}
+        .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
+        [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
+        
+        .sidebar-user-info {{
+            background: rgba(255,255,255,0.15);
+            padding: 0.8rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            text-align: center;
+        }}
+        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
+        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
+        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
+            margin: 4px 0 !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
+            background-color: {HELB_BLUE} !important;
+            color: white !important;
+        }}
+        
+        .dashboard-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        .dashboard-header h1 {{ color: white !important; margin: 0; font-size: 1.2rem; border-bottom: none; }}
+        .dashboard-header p {{ color: {HELB_GOLD} !important; margin: 0; font-size: 0.7rem; font-weight: 500; }}
+        
+        .footer {{ text-align: center; padding: 1rem; color: #6B7280; font-size: 0.6rem; border-top: 1px solid #E5E7EB; margin-top: 1.5rem; }}
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
+        .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
+        
+        .login-wrapper {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            padding: 1rem;
+        }}
+        .login-container {{
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 420px;
+            width: 100%;
+            overflow: hidden;
+        }}
+        .login-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
+            padding: 1.5rem;
+            text-align: center;
+        }}
+        .login-logo {{
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: center;
+        }}
+        .login-title {{
+            color: white !important;
+            font-size: 1.2rem !important;
+            font-weight: 700 !important;
+            margin: 0.25rem 0 0.1rem 0 !important;
+            text-align: center !important;
+        }}
+        .login-subtitle {{
+            color: {HELB_GOLD} !important;
+            font-size: 0.7rem !important;
+            text-align: center !important;
+            margin-bottom: 0 !important;
+        }}
+        .login-divider {{
+            height: 2px;
+            background: {HELB_GOLD};
+            width: 40px;
+            margin: 0.5rem auto 0;
+            border-radius: 2px;
+        }}
+        .login-body {{
+            padding: 1.5rem;
+        }}
+        .login-footer {{
+            text-align: center;
+            padding: 0.75rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.6rem;
+            color: #9ca3af;
+            background: #f9fafb;
+        }}
+        .login-container .stTextInput input {{
+            background-color: white !important;
+            color: #1F2937 !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
+        }}
+        .login-container .stTextInput input:focus {{
+            border-color: {HELB_GREEN} !important;
+            box-shadow: 0 0 0 2px rgba(0,132,61,0.1) !important;
+        }}
+        .login-container .stTextInput label {{
+            color: #374151 !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+        }}
+        .login-container .stButton > button {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
+            font-weight: 600 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
+        }}
+        
+        @media (max-width: 768px) {{
+            .kpi-card {{
+                min-height: 80px !important;
+                padding: 0.5rem !important;
+            }}
+            .kpi-card .kpi-value {{
+                font-size: 1rem !important;
+            }}
+            .kpi-card .kpi-label {{
+                font-size: 0.55rem !important;
+            }}
+            .stTabs [data-baseweb="tab-list"] {{
+                flex-wrap: wrap;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                padding: 0.5rem 1rem !important;
+                font-size: 0.8rem !important;
+            }}
+            .dashboard-header h1 {{
+                font-size: 1rem !important;
+            }}
+            .dashboard-header p {{
+                font-size: 0.6rem !important;
+            }}
+        }}
+    </style>
+    """
+else:
+    THEME_CSS = f"""
+    <style>
+        .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
+        .stTextInput label, .stSelectbox label, .stDateInput label,
+        .stNumberInput label, .stTextArea label, .stCheckbox label,
+        div, span, p, label, .stMetric label, .stMetric div {{
+            color: #FFFFFF !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div,
+        .stSelectbox ul, .stSelectbox li,
+        div[role="listbox"], div[role="option"] {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div:hover,
+        div[role="option"]:hover {{
+            background-color: #3d3d5c !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .stButton > button {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: 600 !important;
+        }}
+        
+        .stButton > button[key*="delete"] {{
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+            color: white !important;
+        }}
+        
+        .kpi-card {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            border-radius: 12px !important;
+            padding: 0.8rem !important;
+            text-align: center !important;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+        .kpi-card .kpi-label {{
+            font-size: 0.65rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+            margin-bottom: 0.25rem;
+        }}
+        .kpi-card .kpi-value {{
+            font-size: 1.3rem !important;
+            font-weight: 700 !important;
+            margin: 0.2rem 0 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card .kpi-sub {{
+            font-size: 0.5rem !important;
+            color: #FFFFFF !important;
+            margin-top: 0.2rem !important;
+            opacity: 0.9 !important;
+        }}
+        .kpi-card .progress-bar {{
+            height: 3px !important;
+            background: rgba(255,255,255,0.3) !important;
+            border-radius: 2px !important;
+            margin-top: 0.5rem !important;
+            width: 100%;
+        }}
+        .kpi-card .progress-fill {{
+            height: 100% !important;
+            background: {HELB_GOLD} !important;
+            border-radius: 2px !important;
+        }}
+        
+        .kpi-card-small {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+            border-radius: 10px !important;
+            padding: 0.6rem !important;
+            text-align: center !important;
+            min-height: 85px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+        .kpi-card-small .kpi-label {{
+            font-size: 0.6rem !important;
+            text-transform: uppercase !important;
+            color: {HELB_GOLD} !important;
+            font-weight: 600 !important;
+        }}
+        .kpi-card-small .kpi-value {{
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #FFFFFF !important;
+        }}
+        .kpi-card-small .kpi-sub {{
+            font-size: 0.45rem !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .comment-box {{
+            background: #1e3a2f;
+            border-left: 4px solid {HELB_GOLD};
+            padding: 0.5rem 0.8rem;
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #d1fae5;
+        }}
+        
+        .contract-card, .policy-card {{
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            margin-bottom: 0.75rem !important;
+        }}
+        .contract-title, .policy-title {{
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            color: {HELB_GOLD} !important;
+            margin-bottom: 0.5rem !important;
+        }}
+        .contract-detail, .policy-detail {{
+            font-size: 0.75rem !important;
+            color: #cbd5e1 !important;
+            margin: 0.25rem 0 !important;
+        }}
+        
+        .metric-card, .metric-card * {{ color: #FFFFFF !important; }}
+        .stTabs [data-baseweb="tab"] {{ color: #FFFFFF !important; }}
+        .stTabs [aria-selected="true"] {{ background-color: {HELB_GOLD} !important; color: #1F2937 !important; }}
+        .streamlit-expanderHeader p {{ color: {HELB_GOLD} !important; }}
+        
+        .stTextInput input, .stSelectbox div, .stDateInput input, 
+        .stNumberInput input, .stTextArea textarea {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #4a4a6a !important;
+        }}
+        
+        h1, h2, h3, h4, h5, h6 {{ color: {HELB_GOLD} !important; }}
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        .stAppDeployButton {{display: none;}}
+        .main, .stApp {{ background-color: #1a1a2e !important; }}
+        [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
+        [data-testid="stSidebar"] * {{ color: white !important; }}
+        
+        .sidebar-user-info {{
+            background: rgba(255,255,255,0.15);
+            padding: 0.8rem;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            text-align: center;
+        }}
+        .sidebar-user-info strong {{ font-size: 0.85rem; display: block; margin-bottom: 5px; }}
+        .sidebar-user-info .dept {{ font-size: 0.7rem; display: block; margin-bottom: 3px; }}
+        .sidebar-user-info .role {{ font-size: 0.65rem; display: block; }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label {{
+            background-color: {HELB_GOLD} !important;
+            color: {HELB_DARK} !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
+            margin: 4px 0 !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+        }}
+        
+        [data-testid="stSidebar"] div[role="radiogroup"] label[data-baseweb="radio"]:has(input:checked) {{
+            background-color: {HELB_GREEN} !important;
+            color: white !important;
+        }}
+        
+        .dashboard-header {{
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        .dashboard-header h1 {{ color: white !important; font-size: 1.2rem; }}
+        .dashboard-header p {{ color: {HELB_GOLD} !important; }}
+        
+        .footer {{ text-align: center; padding: 1rem; color: #6B7280; border-top: 1px solid #2d2d44; margin-top: 1.5rem; }}
+        .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
+        .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
+        
+        .login-wrapper {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            padding: 1rem;
+        }}
+        .login-container {{
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 420px;
+            width: 100%;
+            overflow: hidden;
+        }}
+        .login-header {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
+            padding: 1.5rem;
+            text-align: center;
+        }}
+        .login-logo {{
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: center;
+        }}
+        .login-title {{
+            color: white !important;
+            font-size: 1.2rem !important;
+            font-weight: 700 !important;
+            margin: 0.25rem 0 0.1rem 0 !important;
+            text-align: center !important;
+        }}
+        .login-subtitle {{
+            color: {HELB_GOLD} !important;
+            font-size: 0.7rem !important;
+            text-align: center !important;
+            margin-bottom: 0 !important;
+        }}
+        .login-divider {{
+            height: 2px;
+            background: {HELB_GOLD};
+            width: 40px;
+            margin: 0.5rem auto 0;
+            border-radius: 2px;
+        }}
+        .login-body {{
+            padding: 1.5rem;
+        }}
+        .login-footer {{
+            text-align: center;
+            padding: 0.75rem;
+            border-top: 1px solid #334155;
+            font-size: 0.6rem;
+            color: #64748b;
+            background: #0f172a;
+        }}
+        .login-container .stTextInput input {{
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+            border: 1px solid #475569 !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
+        }}
+        .login-container .stTextInput input:focus {{
+            border-color: {HELB_GOLD} !important;
+            box-shadow: 0 0 0 2px rgba(255,184,28,0.1) !important;
+        }}
+        .login-container .stTextInput label {{
+            color: #cbd5e1 !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+        }}
+        .login-container .stButton > button {{
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
+            color: white !important;
+            font-weight: 600 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
+        }}
+        
+        @media (max-width: 768px) {{
+            .kpi-card {{
+                min-height: 80px !important;
+                padding: 0.5rem !important;
+            }}
+            .kpi-card .kpi-value {{
+                font-size: 1rem !important;
+            }}
+            .kpi-card .kpi-label {{
+                font-size: 0.55rem !important;
+            }}
+            .stTabs [data-baseweb="tab-list"] {{
+                flex-wrap: wrap;
+            }}
+            .stTabs [data-baseweb="tab"] {{
+                padding: 0.5rem 1rem !important;
+                font-size: 0.8rem !important;
+            }}
+            .dashboard-header h1 {{
+                font-size: 1rem !important;
+            }}
+            .dashboard-header p {{
+                font-size: 0.6rem !important;
+            }}
+        }}
+    </style>
+    """
+
+st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
 # LOGIN PAGE
@@ -1998,9 +2169,10 @@ if not st.session_state.authenticated:
                     result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                     if result.data:
                         user = result.data[0]
+                        # Check both plain text and hashed passwords
                         if (password == user["password_hash"] or 
                             hash_password(password) == user["password_hash"] or
-                            user["password_hash"] == "password123"):
+                            user["password_hash"] == "password123"):  # Default fallback
                             dept_name = get_department_name(user["department_id"])
                             
                             is_strategy_dept = dept_name == "Strategy"
@@ -2104,6 +2276,7 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Account Settings
     with st.expander("🔐 Account Settings", expanded=False):
         st.markdown("#### Change Password")
         with st.form("change_password_form"):
@@ -2123,12 +2296,14 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Navigation Menu - Using session state to persist selection
     menu_options = ["📊 Dashboard", "📋 Work Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
         menu_options.append("⚙️ Admin Panel")
     if st.session_state.user_role in ["admin", "management"]:
         menu_options.append("🏢 Enterprise View")
     
+    # Create radio button with session state persistence
     selected_menu = st.radio(
         "📋 Navigation", 
         menu_options, 
@@ -2137,6 +2312,7 @@ with st.sidebar:
         index=menu_options.index(st.session_state.active_menu) if st.session_state.active_menu in menu_options else 0
     )
     
+    # Update session state when menu changes
     if selected_menu != st.session_state.active_menu:
         st.session_state.active_menu = selected_menu
         st.rerun()
@@ -2183,6 +2359,7 @@ if st.session_state.active_menu == "📋 Work Plans":
     else:
         filtered_plans = work_plans
     
+    # Tabs with session state persistence
     tab_labels = [
         "➕ Add Work Plan Activity", 
         "📊 View All Activities", 
@@ -2196,6 +2373,7 @@ if st.session_state.active_menu == "📋 Work Plans":
     
     tab_add, tab_view, tab_calendar, tab_gantt, tab_predictive, tab_expiring, tab_bulk, tab_dashboard = st.tabs(tab_labels)
     
+    # PDF Export button
     col_export1, col_export2 = st.columns([6, 1])
     with col_export2:
         if filtered_plans:
@@ -2418,89 +2596,23 @@ if st.session_state.active_menu == "📋 Work Plans":
     
     with tab_calendar:
         st.markdown("### 📅 Calendar View")
-        st.markdown("Visualize all activities by month with quarter filtering and start/end date markers")
+        st.markdown("Visualize all activities by month")
         
         if filtered_plans:
-            col_quarter, col_year, col_month = st.columns(3)
-            with col_quarter:
-                quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
-                selected_quarter = st.selectbox(
-                    "Select Quarter", 
-                    quarters,
-                    index=quarters.index(st.session_state.calendar_selected_quarter) if st.session_state.calendar_selected_quarter in quarters else 0,
-                    key="calendar_quarter"
-                )
-                st.session_state.calendar_selected_quarter = selected_quarter
+            col_year, col_month = st.columns(2)
             with col_year:
                 current_year = datetime.now().year
-                selected_year = st.selectbox(
-                    "Select Year", 
-                    [current_year - 1, current_year, current_year + 1],
-                    index=1 if st.session_state.calendar_selected_year == current_year else 0,
-                    key="calendar_year"
-                )
-                st.session_state.calendar_selected_year = selected_year
+                selected_year = st.selectbox("Select Year", [current_year - 1, current_year, current_year + 1], index=1)
             with col_month:
-                # Get months based on selected quarter
-                if selected_quarter != "All":
-                    quarter_months = get_months_for_quarter(selected_quarter)
-                else:
-                    quarter_months = ALL_MONTHS
-                
-                # Ensure selected month is in the quarter
-                if st.session_state.calendar_selected_month not in quarter_months:
-                    st.session_state.calendar_selected_month = quarter_months[0] if quarter_months else datetime.now().strftime("%B")
-                
-                selected_month_index = quarter_months.index(st.session_state.calendar_selected_month) if st.session_state.calendar_selected_month in quarter_months else 0
-                selected_month_name = st.selectbox(
-                    "Select Month",
-                    quarter_months,
-                    index=selected_month_index,
-                    key="calendar_month"
-                )
-                st.session_state.calendar_selected_month = selected_month_name
+                selected_month = st.selectbox("Select Month", list(range(1, 13)), format_func=lambda x: datetime(2000, x, 1).strftime('%B'), index=datetime.now().month - 1)
             
-            # Convert month name to number
-            month_num = ALL_MONTHS.index(selected_month_name) + 1
+            calendar_html = generate_calendar_html(filtered_plans, selected_year, selected_month)
+            st.components.v1.html(calendar_html, height=600)
             
-            # Generate enhanced calendar
-            calendar_html = generate_calendar_html(
-                filtered_plans, 
-                selected_year, 
-                month_num, 
-                selected_quarter
-            )
-            
-            st.markdown('<div class="calendar-container">', unsafe_allow_html=True)
-            st.components.v1.html(calendar_html, height=650)
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Show activity count summary
             st.markdown("---")
-            col_count1, col_count2, col_count3 = st.columns(3)
-            with col_count1:
-                # Count activities in selected month
-                month_activities = []
-                for activity in filtered_plans:
-                    if activity.get('due_date'):
-                        due_date = pd.to_datetime(activity['due_date']).date()
-                        if due_date.year == selected_year and due_date.month == month_num:
-                            month_activities.append(activity)
-                st.metric(f"📅 Activities in {selected_month_name}", len(month_activities))
-            with col_count2:
-                # Count activities in selected quarter
-                if selected_quarter != "All":
-                    quarter_months_nums = get_months_for_quarter_num(selected_quarter)
-                    quarter_activities = []
-                    for activity in filtered_plans:
-                        if activity.get('due_date'):
-                            due_date = pd.to_datetime(activity['due_date']).date()
-                            if due_date.year == selected_year and due_date.month in quarter_months_nums:
-                                quarter_activities.append(activity)
-                    st.metric(f"📊 Activities in {selected_quarter}", len(quarter_activities))
-            with col_count3:
-                total_activities = len(filtered_plans)
-                st.metric("📋 Total Activities", total_activities)
+            st.markdown("**Legend:**")
+            st.markdown("- 🔴 Pending | 🟡 In Progress | ✅ Done")
+            st.markdown("- Colored dates have activities scheduled")
         else:
             st.info("No activities to display")
     
@@ -4017,6 +4129,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         "📋 Audit Log"
     ])
     
+    # USER MANAGEMENT TAB
     with admin_tabs[0]:
         st.markdown("### 👥 User Management")
         
@@ -4123,6 +4236,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             df_users = pd.DataFrame(user_display)
             st.dataframe(df_users, use_container_width=True, hide_index=True)
     
+    # POLICY MANAGEMENT TAB (Admin)
     with admin_tabs[1]:
         st.markdown("### 📜 Policy Management")
         
@@ -4255,6 +4369,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             display_cols = ['policy_name', 'category', 'version', 'policy_scope', 'policy_owner', 'status', 'expiry_date']
             st.dataframe(df_policies_admin[display_cols], use_container_width=True, hide_index=True)
     
+    # CONTRACT MANAGEMENT TAB (Admin)
     with admin_tabs[2]:
         st.markdown("### 📄 Contract Management")
         
@@ -4372,6 +4487,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date', 'compliance_status', 'vendor_performance', 'is_multi_year']
             st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
     
+    # WORK PLAN MANAGEMENT TAB (Admin)
     with admin_tabs[3]:
         st.markdown("### 📋 Work Plan Management")
         
@@ -4483,6 +4599,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'start_date', 'end_date', 'due_date']
             st.dataframe(df_wp_admin[display_cols], use_container_width=True, hide_index=True)
     
+    # DEPARTMENT MANAGEMENT TAB
     with admin_tabs[4]:
         st.markdown("### 🏢 Department Management")
         
@@ -4565,6 +4682,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         else:
             st.info("No departments found")
     
+    # DIRECTORATE MANAGEMENT TAB
     with admin_tabs[5]:
         st.markdown("### 🏛️ Directorate Management")
         
@@ -4633,6 +4751,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         else:
             st.info("No directorates found")
     
+    # AUDIT LOG TAB
     with admin_tabs[6]:
         st.markdown("### 📋 Audit Log")
         st.markdown("Track all user activities and system changes")
