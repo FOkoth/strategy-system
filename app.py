@@ -1823,23 +1823,24 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* LOGIN PAGE - LIGHT THEME - SAME DESIGN AS SCREENSHOT */
+        /* LOGIN PAGE - CLEAN, CENTERED, NO SCROLLING */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            min-height: 80vh;
             padding: 1rem;
-            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
+            background: transparent;
         }}
         .login-container {{
             background: #ffffff;
             border-radius: 16px;
             padding: 0;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
             max-width: 400px;
             width: 100%;
             overflow: hidden;
+            margin: 0 auto;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
@@ -1944,7 +1945,7 @@ if st.session_state.theme == "light":
                 font-size: 0.6rem !important;
             }}
             .login-wrapper {{
-                min-height: 100vh !important;
+                min-height: 60vh !important;
                 padding: 0.5rem !important;
             }}
             .login-container {{
@@ -2224,23 +2225,24 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* LOGIN PAGE - DARK THEME */
+        /* LOGIN PAGE - CLEAN, CENTERED, NO SCROLLING - DARK THEME */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            min-height: 80vh;
             padding: 1rem;
-            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            background: transparent;
         }}
         .login-container {{
             background: #1e293b;
             border-radius: 16px;
             padding: 0;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             max-width: 400px;
             width: 100%;
             overflow: hidden;
+            margin: 0 auto;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
@@ -2345,7 +2347,7 @@ else:
                 font-size: 0.6rem !important;
             }}
             .login-wrapper {{
-                min-height: 100vh !important;
+                min-height: 60vh !important;
                 padding: 0.5rem !important;
             }}
             .login-container {{
@@ -2362,7 +2364,7 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - FIXED CENTERING WITH SCREENSHOT DESIGN
+# LOGIN PAGE - CLEAN, CENTERED, NO SCROLLING
 # ============================================
 if not st.session_state.authenticated:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
