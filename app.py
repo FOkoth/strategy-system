@@ -262,6 +262,8 @@ if "selected_calendar_date" not in st.session_state:
     st.session_state.selected_calendar_date = None
 if "show_date_activities" not in st.session_state:
     st.session_state.show_date_activities = False
+if "selected_date_activities" not in st.session_state:
+    st.session_state.selected_date_activities = []
 
 # ============================================
 # HELPER FUNCTIONS
@@ -1446,7 +1448,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# ENHANCED CALENDAR VIEW FUNCTIONS
+# ENHANCED CALENDAR VIEW FUNCTIONS (with click to view details)
 # ============================================
 def generate_calendar_html(activities, year, month, quarter_filter="All"):
     import calendar
@@ -1485,8 +1487,9 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
         "5. Strategy": "#EC4899"
     }
     
-    # Build activity lookup
+    # Build activity lookup with full details for click to view
     activities_by_date = {}
+    all_activities_list = []
     pillar_counts = {}
     total_activities = 0
     completed_count = 0
@@ -1546,7 +1549,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                         urgency = "🟡 SOON"
                         urgency_color = "#F59E0B"
                     
-                    activities_by_date[date_key].append({
+                    activity_detail = {
                         "activity": activity['planned_activity'],
                         "activity_id": activity.get('id', ''),
                         "pillar": pillar,
@@ -1560,13 +1563,22 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                         "color": pillar_colors.get(pillar, "#6B7280"),
                         "due_date": activity.get('due_date', ''),
                         "start_date": activity.get('start_date', ''),
-                        "end_date": activity.get('end_date', '')
-                    })
+                        "end_date": activity.get('end_date', ''),
+                        "strategic_pillar": pillar,
+                        "actual_achievement": activity.get('actual_achievement', 0),
+                        "annual_target": activity.get('annual_target', '0')
+                    }
+                    activities_by_date[date_key].append(activity_detail)
+                    all_activities_list.append(activity_detail)
                 current += timedelta(days=1)
     
     # Generate calendar HTML
     cal = calendar.monthcalendar(year, month)
     month_name = calendar.month_name[month]
+    
+    # Store all activities as JSON for the modal
+    all_activities_json = json.dumps(all_activities_list)
+    activities_by_date_json = json.dumps({str(k): v for k, v in activities_by_date.items()})
     
     html = f"""
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -1629,13 +1641,12 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                 
                 border_style = "2px solid #3B82F6" if is_today else f"1px solid {theme_border}"
                 
-                # Build click handler for this date
+                # Store activities for this date as JSON
                 date_activities_json = json.dumps(day_activities)
-                click_handler = f"onclick=\"showDateActivities({day}, {month}, {year}, '{date_activities_json}')\""
                 
                 html += f'''
                 <td style="padding: 4px; border: {border_style}; vertical-align: top; background: {bg_color}; height: 100px; min-height: 100px; position: relative; cursor: pointer;" 
-                    {click_handler}
+                    onclick="showDateActivities({day}, {month}, {year}, '{date_activities_json}')"
                     onmouseover="this.style.backgroundColor='{theme_header_bg}30';" 
                     onmouseout="this.style.backgroundColor='{bg_color}';">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -1658,7 +1669,8 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                     <div style="font-size: 0.6rem; margin-top: 2px; padding: 2px 4px; background: {act['color']}15; border-left: 3px solid {act['color']}; border-radius: 3px; cursor: pointer; transition: all 0.2s;" 
                          onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)';" 
                          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';"
-                         title="{act['activity']}\nPillar: {act['pillar']}\nDepartment: {act['department']}\nProgress: {act['progress']}%\nDays Left: {act['days_remaining']}">
+                         title="{act['activity']}\nPillar: {act['pillar']}\nDepartment: {act['department']}\nProgress: {act['progress']}%\nDays Left: {act['days_remaining']}"
+                         onclick="event.stopPropagation(); showDateActivities({day}, {month}, {year}, '{date_activities_json}')">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="color: {theme_text};">
                                 {status_icon} {act['activity'][:22]}{'...' if len(act['activity']) > 22 else ''}{marker_text}
@@ -1677,7 +1689,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                 if len(day_activities) > 4:
                     html += f'''
                     <div style="font-size: 0.55rem; margin-top: 2px; color: #3B82F6; text-align: center; background: {theme_bg}; padding: 1px; border-radius: 3px; cursor: pointer;" 
-                         onclick="showDateActivities({day}, {month}, {year}, '{date_activities_json}')">
+                         onclick="event.stopPropagation(); showDateActivities({day}, {month}, {year}, '{date_activities_json}')">
                         +{len(day_activities) - 4} more (click to view)
                     </div>
                     '''
@@ -1687,23 +1699,70 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
     
     html += '</tbody></table>'
     
-    # Add JavaScript for showing date activities
-    html += '''
+    # JavaScript for showing date activities in a modal
+    html += f'''
     <script>
-        function showDateActivities(day, month, year, activitiesJson) {
-            // This function will be called when a date is clicked
-            // We'll use a Streamlit component to display the activities
-            // For now, we'll store the selected date in a hidden input
-            const event = new CustomEvent('streamlit:dateSelected', {
-                detail: {
-                    day: day,
-                    month: month,
-                    year: year,
-                    activities: JSON.parse(activitiesJson)
-                }
-            });
-            document.dispatchEvent(event);
-        }
+        // Store all activities data
+        var allActivitiesData = {all_activities_json};
+        var activitiesByDate = {activities_by_date_json};
+        
+        function showDateActivities(day, month, year, activitiesJson) {{
+            // Parse the activities
+            var activities = JSON.parse(activitiesJson);
+            
+            if (!activities || activities.length === 0) {{
+                alert('No activities for this date.');
+                return;
+            }}
+            
+            // Build the modal content
+            var modalHtml = '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;">';
+            modalHtml += '<div style="background: {theme_card_bg}; border-radius: 12px; max-width: 800px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">';
+            modalHtml += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">';
+            modalHtml += '<h3 style="color: {theme_text}; margin: 0;">📅 Activities for ' + month + '/' + day + '/' + year + '</h3>';
+            modalHtml += '<button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-weight: 600;">✕ Close</button>';
+            modalHtml += '</div>';
+            modalHtml += '<div style="max-height: 60vh; overflow-y: auto;">';
+            
+            // Add each activity
+            activities.forEach(function(act, index) {{
+                var statusColor = act.status === 'Done' ? '#10B981' : act.status === 'In Progress' ? '#F59E0B' : '#EF4444';
+                var statusIcon = act.status === 'Done' ? '✅' : act.status === 'In Progress' ? '🟡' : '⏳';
+                var progressWidth = Math.min(act.progress, 100);
+                
+                modalHtml += '<div style="background: ' + act.color + '10; border-left: 4px solid ' + act.color + '; padding: 12px; margin-bottom: 8px; border-radius: 6px;">';
+                modalHtml += '<div style="display: flex; justify-content: space-between; align-items: center;">';
+                modalHtml += '<strong style="color: {theme_text};">' + statusIcon + ' ' + act.activity + '</strong>';
+                modalHtml += '<span style="color: ' + act.urgency_color + '; font-weight: bold; font-size: 0.8rem;">' + act.urgency + '</span>';
+                modalHtml += '</div>';
+                modalHtml += '<div style="display: flex; gap: 1rem; margin-top: 4px; flex-wrap: wrap;">';
+                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">📊 Progress: ' + act.progress + '%</span>';
+                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">📌 Pillar: ' + act.pillar + '</span>';
+                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">🏢 Department: ' + act.department + '</span>';
+                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">📅 Due: ' + act.due_date + '</span>';
+                modalHtml += '</div>';
+                modalHtml += '<div style="width: 100%; height: 4px; background: #E5E7EB; border-radius: 2px; margin-top: 6px; overflow: hidden;">';
+                modalHtml += '<div style="width: ' + progressWidth + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px;"></div>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+            }});
+            
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            
+            // Add the modal to the page
+            var modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer.firstElementChild);
+            
+            // Close modal when clicking outside
+            document.querySelector('.modal-overlay').addEventListener('click', function(e) {{
+                if (e.target === this) {{
+                    this.remove();
+                }}
+            }});
+        }}
     </script>
     '''
     
@@ -1725,7 +1784,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
             <span style="color: #F59E0B; font-size: 0.6rem;">🟡 SOON</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
-            <span style="color: {theme_text}60; font-size: 0.6rem;">💡 Click on any date to view all activities</span>
+            <span style="color: {theme_text}60; font-size: 0.6rem;">💡 Click on any date or activity to view details</span>
         </div>
     </div>
     </div>
@@ -1787,7 +1846,23 @@ def generate_pillar_performance_summary(activities):
     return pd.DataFrame(summary)
 
 # ============================================
-# CUSTOM CSS (WITH FIXED THEME VISIBILITY - CROSS-BROWSER COMPATIBLE)
+# WORK PLAN ADMIN EDIT FUNCTIONS - FIXED to edit all columns including Pillar
+# ============================================
+def update_work_plan_full_admin(plan_id, data):
+    """Admin function to update all work plan fields including pillar"""
+    try:
+        # Ensure data has updated_at
+        data['updated_at'] = datetime.now().isoformat()
+        supabase.table("work_plan").update(data).eq("id", plan_id).execute()
+        st.cache_data.clear()
+        add_audit_log("UPDATE", "work_plan", plan_id, "Admin fully updated work plan")
+        return True
+    except Exception as e:
+        print(f"Error updating work plan: {e}")
+        return False
+
+# ============================================
+# CUSTOM CSS (WITH FIXED DROPDOWN VISIBILITY)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -1800,8 +1875,9 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix for Selectbox and Dropdowns - LIGHT THEME - CROSS-BROWSER COMPATIBLE */
-        .stSelectbox div[data-baseweb="select"] {{
+        /* CRITICAL FIX: Dropdown visibility - Light Theme */
+        /* Target all select elements and their containers */
+        .stSelectbox, .stSelectbox div, .stSelectbox div[data-baseweb="select"] {{
             background-color: #ffffff !important;
         }}
         
@@ -1838,7 +1914,7 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix for ALL select elements */
+        /* Native select elements */
         select, .stSelectbox select, .stSelectbox div[data-baseweb="select"] div {{
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -1846,6 +1922,11 @@ if st.session_state.theme == "light":
         
         select option, .stSelectbox select option {{
             background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Fix for ALL dropdowns in Streamlit */
+        .stSelectbox [data-baseweb="select"] * {{
             color: #000000 !important;
         }}
         
@@ -1892,14 +1973,19 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix for ALL dropdowns in Streamlit */
-        .stSelectbox [data-baseweb="select"] * {{
+        /* Sidebar dropdown fixes */
+        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
+            background-color: rgba(255,255,255,0.95) !important;
             color: #000000 !important;
         }}
         
-        /* Override for any dark backgrounds */
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
+        [data-testid="stSidebar"] .stSelectbox div[role="option"] {{
             background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        [data-testid="stSidebar"] .stSelectbox div[role="option"]:hover {{
+            background-color: #f0f0f0 !important;
             color: #000000 !important;
         }}
         
@@ -1927,21 +2013,6 @@ if st.session_state.theme == "light":
             padding-top: 1rem;
         }}
         [data-testid="stSidebar"] * {{
-            color: white !important;
-        }}
-        
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
-            background-color: rgba(255,255,255,0.2) !important;
-            color: white !important;
-        }}
-        
-        [data-testid="stSidebar"] .stSelectbox div[role="option"] {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
-        }}
-        
-        [data-testid="stSidebar"] .stSelectbox div[role="option"]:hover {{
-            background-color: {HELB_BLUE} !important;
             color: white !important;
         }}
         
@@ -2261,8 +2332,8 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix for Selectbox and Dropdowns - DARK THEME - CROSS-BROWSER COMPATIBLE */
-        .stSelectbox div[data-baseweb="select"] {{
+        /* CRITICAL FIX: Dropdown visibility - Dark Theme */
+        .stSelectbox, .stSelectbox div, .stSelectbox div[data-baseweb="select"] {{
             background-color: #2d2d44 !important;
         }}
         
@@ -2299,7 +2370,7 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix for ALL select elements - DARK */
+        /* Native select elements - DARK */
         select, .stSelectbox select, .stSelectbox div[data-baseweb="select"] div {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
@@ -2307,6 +2378,11 @@ else:
         
         select option, .stSelectbox select option {{
             background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix for ALL dropdowns in Streamlit - DARK */
+        .stSelectbox [data-baseweb="select"] * {{
             color: #FFFFFF !important;
         }}
         
@@ -2353,14 +2429,19 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix for ALL dropdowns in Streamlit - DARK */
-        .stSelectbox [data-baseweb="select"] * {{
+        /* Sidebar dropdown fixes - DARK */
+        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
+            background-color: rgba(255,255,255,0.15) !important;
             color: #FFFFFF !important;
         }}
         
-        /* Override for any light backgrounds */
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
-            background-color: rgba(255,255,255,0.15) !important;
+        [data-testid="stSidebar"] .stSelectbox div[role="option"] {{
+            background-color: #0f3460 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        [data-testid="stSidebar"] .stSelectbox div[role="option"]:hover {{
+            background-color: {HELB_GREEN} !important;
             color: #FFFFFF !important;
         }}
         
@@ -2500,21 +2581,6 @@ else:
         .main, .stApp {{ background-color: #1a1a2e !important; }}
         [data-testid="stSidebar"] {{ background-color: #0f3460 !important; padding-top: 1rem; }}
         [data-testid="stSidebar"] * {{ color: white !important; }}
-        
-        [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
-            background-color: rgba(255,255,255,0.15) !important;
-            color: white !important;
-        }}
-        
-        [data-testid="stSidebar"] .stSelectbox div[role="option"] {{
-            background-color: #0f3460 !important;
-            color: white !important;
-        }}
-        
-        [data-testid="stSidebar"] .stSelectbox div[role="option"]:hover {{
-            background-color: {HELB_GREEN} !important;
-            color: white !important;
-        }}
         
         .sidebar-user-info {{
             background: rgba(255,255,255,0.15);
@@ -3108,20 +3174,67 @@ if st.session_state.active_menu == "📋 Work Plans":
                         
                         update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
                         
+                        # ADMIN FULL EDIT SECTION - Allows editing all columns including Pillar
                         if st.session_state.user_role == "admin":
                             st.markdown("---")
-                            st.markdown("**📅 Admin: Edit Dates**")
-                            new_start_date = st.date_input("New Start Date", value=datetime.strptime(plan.get('start_date', plan['due_date']), "%Y-%m-%d").date() if plan.get('start_date') else due_date, key=f"startdate_{plan['id']}")
-                            new_end_date = st.date_input("New End Date", value=due_date, key=f"enddate_{plan['id']}")
-                            if st.button(f"Update Dates", key=f"updatedates_{plan['id']}"):
-                                update_data = {
-                                    "start_date": new_start_date.isoformat(),
-                                    "end_date": new_end_date.isoformat(),
-                                    "due_date": new_end_date.isoformat()
-                                }
-                                if update_work_plan_admin(plan['id'], update_data):
-                                    st.success("✅ Dates updated!")
-                                    st.rerun()
+                            st.markdown("### 🔧 Admin: Full Edit Mode")
+                            with st.expander("✏️ Edit All Fields (including Pillar)", expanded=False):
+                                st.warning("⚠️ Changes made here will update all fields of this activity.")
+                                
+                                col_admin1, col_admin2 = st.columns(2)
+                                with col_admin1:
+                                    admin_strategic_pillar = st.selectbox(
+                                        "Strategic Pillar", 
+                                        STRATEGIC_PILLARS,
+                                        index=STRATEGIC_PILLARS.index(plan.get('strategic_pillar', STRATEGIC_PILLARS[0])) if plan.get('strategic_pillar') in STRATEGIC_PILLARS else 0,
+                                        key=f"admin_pillar_{plan['id']}"
+                                    )
+                                    admin_key_result = st.text_input("Key Result Area", value=plan.get('key_result_area', ''), key=f"admin_kra_{plan['id']}")
+                                    admin_planned_activity = st.text_area("Planned Activity", value=plan.get('planned_activity', ''), key=f"admin_activity_{plan['id']}")
+                                    admin_performance_indicator = st.text_input("Performance Indicator", value=plan.get('performance_indicator', ''), key=f"admin_pi_{plan['id']}")
+                                
+                                with col_admin2:
+                                    admin_annual_target = st.text_input("Annual Target", value=plan.get('annual_target', ''), key=f"admin_target_{plan['id']}")
+                                    admin_budget = st.number_input("Budget Allocation (KES)", value=float(plan.get('budget_allocation', 0)) if plan.get('budget_allocation') else 0.0, step=10000.0, format="%.2f", key=f"admin_budget_{plan['id']}")
+                                    admin_activity_category = st.selectbox("Activity Category", ACTIVITY_CATEGORIES, 
+                                                                          index=ACTIVITY_CATEGORIES.index(plan.get('activity_category', ACTIVITY_CATEGORIES[0])) if plan.get('activity_category') in ACTIVITY_CATEGORIES else 0,
+                                                                          key=f"admin_cat_{plan['id']}")
+                                    admin_status = st.selectbox("Status", ["Pending", "In Progress", "Done"], 
+                                                               index=["Pending", "In Progress", "Done"].index(plan.get('status', 'Pending')),
+                                                               key=f"admin_status_{plan['id']}")
+                                    admin_progress = st.number_input("Progress %", min_value=0, max_value=100, value=int(plan.get('progress_percent', 0)), key=f"admin_progress_{plan['id']}")
+                                    admin_actual = st.number_input("Actual Achievement", value=float(plan.get('actual_achievement', 0)), key=f"admin_actual_{plan['id']}")
+                                
+                                # Date fields
+                                col_admin3, col_admin4 = st.columns(2)
+                                with col_admin3:
+                                    admin_start_date = st.date_input("Start Date", value=datetime.strptime(plan.get('start_date', plan['due_date']), "%Y-%m-%d").date() if plan.get('start_date') else due_date, key=f"admin_startdate_{plan['id']}")
+                                with col_admin4:
+                                    admin_end_date = st.date_input("End Date", value=due_date, key=f"admin_enddate_{plan['id']}")
+                                
+                                if st.button(f"💾 Save All Changes", key=f"admin_saveall_{plan['id']}", use_container_width=True):
+                                    update_data = {
+                                        "strategic_pillar": admin_strategic_pillar,
+                                        "key_result_area": admin_key_result,
+                                        "planned_activity": admin_planned_activity,
+                                        "performance_indicator": admin_performance_indicator,
+                                        "annual_target": admin_annual_target,
+                                        "budget_allocation": admin_budget if admin_budget > 0 else None,
+                                        "activity_category": admin_activity_category,
+                                        "status": admin_status,
+                                        "progress_percent": admin_progress,
+                                        "actual_achievement": admin_actual,
+                                        "start_date": admin_start_date.isoformat(),
+                                        "end_date": admin_end_date.isoformat(),
+                                        "due_date": admin_end_date.isoformat(),
+                                        "updated_at": datetime.now().isoformat()
+                                    }
+                                    if update_work_plan_full_admin(plan['id'], update_data):
+                                        st.success("✅ All fields updated successfully!")
+                                        st.balloons()
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Failed to update. Please try again.")
                         
                         col_update, col_delete = st.columns(2)
                         with col_update:
@@ -3151,7 +3264,8 @@ if st.session_state.active_menu == "📋 Work Plans":
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
     with tab_calendar:
-        st.markdown("### 📅 Enhanced Calendar View")
+        # Changed from "Enhanced Calendar View" to "Calendar View"
+        st.markdown("### 📅 Calendar View")
         st.markdown("Visualize all activities by month and quarter - **Click on any date to see all activities**")
         
         if filtered_plans:
@@ -3165,7 +3279,7 @@ if st.session_state.active_menu == "📋 Work Plans":
             with col_month:
                 selected_month = st.selectbox("Select Month", list(range(1, 13)), format_func=lambda x: datetime(2000, x, 1).strftime('%B'), index=datetime.now().month - 1)
             
-            # Use enhanced calendar
+            # Use enhanced calendar with click functionality
             calendar_html = generate_calendar_html(filtered_plans, selected_year, selected_month, selected_quarter)
             st.components.v1.html(calendar_html, height=750, scrolling=True)
             
@@ -3219,14 +3333,10 @@ if st.session_state.active_menu == "📋 Work Plans":
             else:
                 st.info("No pillar data available for the selected period.")
             
-            # Date Activity Details (popup)
+            # Date Activity Details (popup info)
             st.markdown("---")
             st.markdown("### 📅 Date Activity Details")
-            st.info("💡 Click on any date in the calendar above to see all activities for that day")
-            
-            # We'll use session state to track selected date
-            # For now, display a message
-            st.caption("Selected date activities will appear here when you click on a date in the calendar")
+            st.info("💡 Click on any date or activity in the calendar above to see all activities for that day in a popup window.")
             
         else:
             st.info("No activities to display. Please add work plan activities with start and end dates.")
