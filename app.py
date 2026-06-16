@@ -20,6 +20,7 @@ from reportlab.lib.units import inch
 from sklearn.linear_model import LinearRegression
 import numpy as np
 import hashlib
+import calendar
 
 # ============================================
 # HELB BRANDING CONFIGURATION
@@ -253,6 +254,10 @@ if "active_contracts_tab" not in st.session_state:
     st.session_state.active_contracts_tab = 0
 if "active_policies_tab" not in st.session_state:
     st.session_state.active_policies_tab = 0
+if "calendar_selected_quarter" not in st.session_state:
+    st.session_state.calendar_selected_quarter = "All"
+if "calendar_selected_year" not in st.session_state:
+    st.session_state.calendar_selected_year = datetime.now().year
 
 # ============================================
 # HELPER FUNCTIONS
@@ -1424,45 +1429,90 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     return success_count, error_count, errors
 
 # ============================================
-# CALENDAR VIEW FUNCTIONS
+# CALENDAR VIEW FUNCTIONS - ENHANCED
 # ============================================
-def generate_calendar_html(activities, year, month):
+def generate_calendar_html(activities, year, month, quarter_filter="All"):
     import calendar
+    
+    # Filter activities by quarter if specified
+    filtered_activities = []
+    if quarter_filter != "All":
+        quarter_months = {
+            "Q1 (Jul-Sep)": [7, 8, 9],
+            "Q2 (Oct-Dec)": [10, 11, 12],
+            "Q3 (Jan-Mar)": [1, 2, 3],
+            "Q4 (Apr-Jun)": [4, 5, 6]
+        }
+        allowed_months = quarter_months.get(quarter_filter, [])
+        for activity in activities:
+            if activity.get('due_date'):
+                due_date = pd.to_datetime(activity['due_date']).date()
+                if due_date.month in allowed_months:
+                    filtered_activities.append(activity)
+    else:
+        filtered_activities = activities
     
     cal = calendar.monthcalendar(year, month)
     month_name = calendar.month_name[month]
     
+    # Group activities by date, including start and end dates
     activities_by_date = {}
-    for activity in activities:
-        if activity.get('due_date'):
-            due_date = pd.to_datetime(activity['due_date']).date()
-            if due_date.year == year and due_date.month == month:
-                date_key = due_date.day
-                if date_key not in activities_by_date:
-                    activities_by_date[date_key] = []
-                activities_by_date[date_key].append(activity)
+    for activity in filtered_activities:
+        if activity.get('start_date') and activity.get('due_date'):
+            start_date = pd.to_datetime(activity['start_date']).date()
+            end_date = pd.to_datetime(activity['due_date']).date()
+            
+            # Mark all days between start and end
+            current = start_date
+            while current <= end_date:
+                if current.year == year and current.month == month:
+                    date_key = current.day
+                    if date_key not in activities_by_date:
+                        activities_by_date[date_key] = []
+                    
+                    # Determine if this is start, end, or middle
+                    marker = ""
+                    if current == start_date:
+                        marker = "📍 Start"
+                    elif current == end_date:
+                        marker = "🏁 End"
+                    
+                    activities_by_date[date_key].append({
+                        "activity": activity['planned_activity'],
+                        "marker": marker,
+                        "status": activity.get('status', 'Pending')
+                    })
+                current += timedelta(days=1)
     
-    html = f'<h4>{month_name} {year}</h4>'
-    html += '<table style="width:100%; border-collapse: collapse;">'
+    # Get theme colors for calendar
+    theme_bg = "#1a1a2e" if st.session_state.theme == "dark" else "white"
+    theme_text = "#FFFFFF" if st.session_state.theme == "dark" else "#000000"
+    theme_header_bg = "#0f3460" if st.session_state.theme == "dark" else "#f3f4f6"
+    theme_border = "#334155" if st.session_state.theme == "dark" else "#e5e7eb"
+    
+    html = f'<h4 style="color: {theme_text};">{month_name} {year}</h4>'
+    html += f'<table style="width:100%; border-collapse: collapse; color: {theme_text};">'
     html += '<tr>'
     for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        html += f'<th style="padding: 8px; text-align: center; background-color: #f3f4f6; border: 1px solid #e5e7eb;">{day}</th>'
+        html += f'<th style="padding: 8px; text-align: center; background-color: {theme_header_bg}; border: 1px solid {theme_border}; color: {theme_text};">{day}</th>'
     html += '</tr>'
     
     for week in cal:
         html += '<tr>'
         for day in week:
             if day == 0:
-                html += '<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: #f9fafb;"></td>'
+                html += f'<td style="padding: 8px; border: 1px solid {theme_border}; vertical-align: top; height: 80px; background-color: {theme_bg};"></td>'
             else:
                 day_activities = activities_by_date.get(day, [])
-                bg_color = '#fef3c7' if day_activities else 'white'
-                html += f'<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: {bg_color};">'
-                html += f'<strong>{day}</strong>'
+                bg_color = '#fef3c7' if day_activities else theme_bg
+                text_color = theme_text if day_activities else theme_text
+                html += f'<td style="padding: 8px; border: 1px solid {theme_border}; vertical-align: top; height: 80px; background-color: {bg_color};">'
+                html += f'<strong style="color: {text_color};">{day}</strong>'
                 for act in day_activities[:3]:
-                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
-                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px;">'
-                    html += f'{status_icon} {act["planned_activity"][:30]}...'
+                    status_color = "#10b981" if act['status'] == 'Done' else "#f59e0b" if act['status'] == 'In Progress' else "#ef4444"
+                    marker_text = f" {act['marker']}" if act['marker'] else ""
+                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px; border-left: 3px solid {status_color};">'
+                    html += f'{act["activity"][:25]}...{marker_text}'
                     html += '</div>'
                 if len(day_activities) > 3:
                     html += f'<div style="font-size: 0.6rem; margin-top: 2px; color: #6b7280;">+{len(day_activities)-3} more</div>'
@@ -1486,11 +1536,12 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (WITH MOBILE RESPONSIVE)
+# CUSTOM CSS (WITH MOBILE RESPONSIVE & FIXED THEME)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
     <style>
+        /* Base styles */
         .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
@@ -1498,19 +1549,60 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
+        /* Fix for Selectbox and Dropdowns */
+        .stSelectbox div[data-baseweb="select"] div {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
+        .stSelectbox div[data-baseweb="select"] div[role="combobox"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] input {{
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div[data-baseweb="popover"] {{
+            background-color: #ffffff !important;
+        }}
+        
+        .stSelectbox ul, .stSelectbox li, div[role="listbox"], div[role="option"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox div[role="option"]:hover {{
             background-color: #f0f0f0 !important;
             color: #000000 !important;
         }}
         
+        /* Fix for DateInput */
+        .stDateInput input, .stDateInput div {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Fix for TextInput */
+        .stTextInput input {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Fix for NumberInput */
+        .stNumberInput input {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Fix for TextArea */
+        .stTextArea textarea {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+        
+        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
@@ -1524,10 +1616,16 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
+        /* Sidebar */
+        [data-testid="stSidebar"] {{
+            background-color: {HELB_GREEN} !important;
+            padding-top: 1rem;
+        }}
         [data-testid="stSidebar"] * {{
             color: white !important;
         }}
         
+        /* KPI Cards */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             border-radius: 12px !important;
@@ -1597,6 +1695,7 @@ if st.session_state.theme == "light":
             color: #FFFFFF !important;
         }}
         
+        /* Other components */
         .comment-box {{
             background: #f0fdf4;
             border-left: 4px solid {HELB_GREEN};
@@ -1661,7 +1760,6 @@ if st.session_state.theme == "light":
         footer {{visibility: hidden;}}
         .stAppDeployButton {{display: none;}}
         .main, .stApp {{ background-color: {HELB_WHITE} !important; }}
-        [data-testid="stSidebar"] {{ background-color: {HELB_GREEN} !important; padding-top: 1rem; }}
         
         .sidebar-user-info {{
             background: rgba(255,255,255,0.15);
@@ -1705,21 +1803,24 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
+        /* Login Page Fixes */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 70vh;
+            min-height: 100vh;
             padding: 1rem;
+            background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
         }}
         .login-container {{
             background: #ffffff;
             border-radius: 20px;
             padding: 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             max-width: 420px;
             width: 100%;
             overflow: hidden;
+            margin: auto;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
@@ -1813,12 +1914,20 @@ if st.session_state.theme == "light":
             .dashboard-header p {{
                 font-size: 0.6rem !important;
             }}
+            .login-wrapper {{
+                min-height: 100vh !important;
+                padding: 0.5rem !important;
+            }}
+            .login-container {{
+                margin: 0.5rem !important;
+            }}
         }}
     </style>
     """
 else:
     THEME_CSS = f"""
     <style>
+        /* Base styles - Dark Theme */
         .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
@@ -1826,19 +1935,60 @@ else:
             color: #FFFFFF !important;
         }}
         
-        .stSelectbox div[data-baseweb="select"] div,
-        .stSelectbox ul, .stSelectbox li,
-        div[role="listbox"], div[role="option"] {{
+        /* Fix for Selectbox and Dropdowns - Dark */
+        .stSelectbox div[data-baseweb="select"] div {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        .stSelectbox div[data-baseweb="select"] div:hover,
-        div[role="option"]:hover {{
+        .stSelectbox div[data-baseweb="select"] div[role="combobox"] {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] input {{
+            color: #FFFFFF !important;
+        }}
+        
+        .stSelectbox div[data-baseweb="select"] div[data-baseweb="popover"] {{
+            background-color: #2d2d44 !important;
+        }}
+        
+        .stSelectbox ul, .stSelectbox li, div[role="listbox"], div[role="option"] {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        .stSelectbox div[role="option"]:hover {{
             background-color: #3d3d5c !important;
             color: #FFFFFF !important;
         }}
         
+        /* Fix for DateInput - Dark */
+        .stDateInput input, .stDateInput div {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix for TextInput - Dark */
+        .stTextInput input {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix for NumberInput - Dark */
+        .stNumberInput input {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Fix for TextArea - Dark */
+        .stTextArea textarea {{
+            background-color: #2d2d44 !important;
+            color: #FFFFFF !important;
+        }}
+        
+        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             color: white !important;
@@ -1852,6 +2002,7 @@ else:
             color: white !important;
         }}
         
+        /* KPI Cards - Dark */
         .kpi-card {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             border-radius: 12px !important;
@@ -1921,6 +2072,7 @@ else:
             color: #FFFFFF !important;
         }}
         
+        /* Comment box - Dark */
         .comment-box {{
             background: #1e3a2f;
             border-left: 4px solid {HELB_GOLD};
@@ -2012,21 +2164,24 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
+        /* Login Page Fixes - Dark */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 70vh;
+            min-height: 100vh;
             padding: 1rem;
+            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
         }}
         .login-container {{
             background: #1e293b;
             border-radius: 20px;
             padding: 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             max-width: 420px;
             width: 100%;
             overflow: hidden;
+            margin: auto;
         }}
         .login-header {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, #004d2a 100%);
@@ -2120,6 +2275,13 @@ else:
             .dashboard-header p {{
                 font-size: 0.6rem !important;
             }}
+            .login-wrapper {{
+                min-height: 100vh !important;
+                padding: 0.5rem !important;
+            }}
+            .login-container {{
+                margin: 0.5rem !important;
+            }}
         }}
     </style>
     """
@@ -2127,90 +2289,87 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE
+# LOGIN PAGE - FIXED CENTERING
 # ============================================
 if not st.session_state.authenticated:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Simplified layout - no columns needed
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    with col2:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        
-        st.markdown('<div class="login-header">', unsafe_allow_html=True)
-        
-        if LOGO_BASE64:
-            st.markdown(f'''
-            <div class="login-logo">
-                <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 60px; height: auto; background: transparent;">
-            </div>
-            ''', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="login-logo" style="font-size: 2rem;">🏦</div>', unsafe_allow_html=True)
-        
-        st.markdown(f"""
-        <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
-        <p class="login-subtitle">Strategy Performance Management System</p>
-        <div class="login-divider"></div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="login-body">', unsafe_allow_html=True)
-        
-        with st.form("login_form"):
-            username = st.text_input("Username", placeholder="Enter your username", key="login_username")
-            password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
-            
-            submitted = st.form_submit_button("Sign In", use_container_width=True)
-            
-            if submitted:
-                if username and password:
-                    result = supabase.table("users").select("*").eq("username", username.lower()).execute()
-                    if result.data:
-                        user = result.data[0]
-                        # Check both plain text and hashed passwords
-                        if (password == user["password_hash"] or 
-                            hash_password(password) == user["password_hash"] or
-                            user["password_hash"] == "password123"):  # Default fallback
-                            dept_name = get_department_name(user["department_id"])
-                            
-                            is_strategy_dept = dept_name == "Strategy"
-                            
-                            st.session_state.authenticated = True
-                            st.session_state.user = user
-                            
-                            if is_strategy_dept and user["role"] != "admin":
-                                st.session_state.user_role = "management"
-                            else:
-                                st.session_state.user_role = user["role"]
-                                
-                            st.session_state.user_dept = user["department_id"]
-                            st.session_state.user_name = user["username"]
-                            st.session_state.user_fullname = user["full_name"]
-                            st.session_state.user_id = user["id"]
-                            st.session_state.user_dept_name = dept_name
-                            
-                            add_audit_log("LOGIN", "session", None, f"User logged in (Strategy Dept: {is_strategy_dept})")
-                            st.rerun()
-                        else:
-                            st.error("❌ Invalid password")
-                    else:
-                        st.error("❌ User not found")
-                else:
-                    st.warning("Please enter both username and password")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown(f"""
-        <div class="login-footer">
-            <p>© 2025 HELB - Higher Education Loans Board</p>
-            <p>Secure System Access</p>
+    st.markdown('<div class="login-header">', unsafe_allow_html=True)
+    
+    if LOGO_BASE64:
+        st.markdown(f'''
+        <div class="login-logo">
+            <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 60px; height: auto; background: transparent;">
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+        ''', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="login-logo" style="font-size: 2rem;">🏦</div>', unsafe_allow_html=True)
     
+    st.markdown(f"""
+    <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
+    <p class="login-subtitle">Strategy Performance Management System</p>
+    <div class="login-divider"></div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="login-body">', unsafe_allow_html=True)
+    
+    with st.form("login_form"):
+        username = st.text_input("Username", placeholder="Enter your username", key="login_username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+        
+        submitted = st.form_submit_button("Sign In", use_container_width=True)
+        
+        if submitted:
+            if username and password:
+                result = supabase.table("users").select("*").eq("username", username.lower()).execute()
+                if result.data:
+                    user = result.data[0]
+                    # Check both plain text and hashed passwords
+                    if (password == user["password_hash"] or 
+                        hash_password(password) == user["password_hash"] or
+                        user["password_hash"] == "password123"):  # Default fallback
+                        dept_name = get_department_name(user["department_id"])
+                        
+                        is_strategy_dept = dept_name == "Strategy"
+                        
+                        st.session_state.authenticated = True
+                        st.session_state.user = user
+                        
+                        if is_strategy_dept and user["role"] != "admin":
+                            st.session_state.user_role = "management"
+                        else:
+                            st.session_state.user_role = user["role"]
+                            
+                        st.session_state.user_dept = user["department_id"]
+                        st.session_state.user_name = user["username"]
+                        st.session_state.user_fullname = user["full_name"]
+                        st.session_state.user_id = user["id"]
+                        st.session_state.user_dept_name = dept_name
+                        
+                        add_audit_log("LOGIN", "session", None, f"User logged in (Strategy Dept: {is_strategy_dept})")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid password")
+                else:
+                    st.error("❌ User not found")
+            else:
+                st.warning("Please enter both username and password")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div class="login-footer">
+        <p>© 2025 HELB - Higher Education Loans Board</p>
+        <p>Secure System Access</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -2596,23 +2755,44 @@ if st.session_state.active_menu == "📋 Work Plans":
     
     with tab_calendar:
         st.markdown("### 📅 Calendar View")
-        st.markdown("Visualize all activities by month")
+        st.markdown("Visualize all activities by month and quarter")
         
         if filtered_plans:
-            col_year, col_month = st.columns(2)
+            col_year, col_quarter, col_month = st.columns(3)
             with col_year:
                 current_year = datetime.now().year
                 selected_year = st.selectbox("Select Year", [current_year - 1, current_year, current_year + 1], index=1)
+            with col_quarter:
+                quarters = ["All", "Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
+                selected_quarter = st.selectbox("Select Quarter", quarters, key="calendar_quarter_select")
             with col_month:
                 selected_month = st.selectbox("Select Month", list(range(1, 13)), format_func=lambda x: datetime(2000, x, 1).strftime('%B'), index=datetime.now().month - 1)
             
-            calendar_html = generate_calendar_html(filtered_plans, selected_year, selected_month)
+            calendar_html = generate_calendar_html(filtered_plans, selected_year, selected_month, selected_quarter)
             st.components.v1.html(calendar_html, height=600)
             
             st.markdown("---")
             st.markdown("**Legend:**")
+            st.markdown("- 📍 Start Date | 🏁 End Date")
             st.markdown("- 🔴 Pending | 🟡 In Progress | ✅ Done")
             st.markdown("- Colored dates have activities scheduled")
+            
+            # Show count of activities in selected period
+            if selected_quarter != "All":
+                quarter_months = {
+                    "Q1 (Jul-Sep)": [7, 8, 9],
+                    "Q2 (Oct-Dec)": [10, 11, 12],
+                    "Q3 (Jan-Mar)": [1, 2, 3],
+                    "Q4 (Apr-Jun)": [4, 5, 6]
+                }
+                allowed_months = quarter_months.get(selected_quarter, [])
+                activity_count = 0
+                for activity in filtered_plans:
+                    if activity.get('due_date'):
+                        due_date = pd.to_datetime(activity['due_date']).date()
+                        if due_date.month in allowed_months and due_date.year == selected_year:
+                            activity_count += 1
+                st.info(f"📊 Found {activity_count} activities in {selected_quarter} {selected_year}")
         else:
             st.info("No activities to display")
     
