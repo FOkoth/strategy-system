@@ -1429,9 +1429,9 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
     return success_count, error_count, errors
 
 # ============================================
-# CALENDAR VIEW FUNCTIONS - ENHANCED
+# ENHANCED CALENDAR VIEW FUNCTIONS
 # ============================================
-def generate_calendar_html(activities, year, month, quarter_filter="All"):
+def generate_enhanced_calendar_html(activities, year, month, quarter_filter="All", view_mode="month"):
     import calendar
     
     # Filter activities by quarter if specified
@@ -1452,17 +1452,48 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
     else:
         filtered_activities = activities
     
-    cal = calendar.monthcalendar(year, month)
-    month_name = calendar.month_name[month]
+    # Get theme colors for calendar
+    theme_bg = "#1a1a2e" if st.session_state.theme == "dark" else "#f8fafc"
+    theme_text = "#FFFFFF" if st.session_state.theme == "dark" else "#1F2937"
+    theme_header_bg = "#0f3460" if st.session_state.theme == "dark" else "#1e3a5f"
+    theme_border = "#334155" if st.session_state.theme == "dark" else "#e2e8f0"
+    theme_card_bg = "#1e293b" if st.session_state.theme == "dark" else "#ffffff"
+    theme_card_text = "#FFFFFF" if st.session_state.theme == "dark" else "#1F2937"
     
-    # Group activities by date, including start and end dates
+    # Color palette for pillars
+    pillar_colors = {
+        "1. Customer Excellence": "#10B981",
+        "2. Financial Sustainability and Stewardship": "#F59E0B",
+        "3. Innovation & Digital Transformation": "#3B82F6",
+        "4. Our People Centricity and Compliance": "#8B5CF6",
+        "5. Strategy": "#EC4899"
+    }
+    
+    # Build activity lookup
     activities_by_date = {}
+    pillar_counts = {}
+    total_activities = 0
+    
     for activity in filtered_activities:
         if activity.get('start_date') and activity.get('due_date'):
             start_date = pd.to_datetime(activity['start_date']).date()
             end_date = pd.to_datetime(activity['due_date']).date()
             
-            # Mark all days between start and end
+            # Calculate activity duration
+            duration = (end_date - start_date).days + 1
+            
+            # Determine progress
+            progress = activity.get('progress_percent', 0)
+            
+            # Calculate days remaining
+            today = datetime.now().date()
+            days_remaining = (end_date - today).days
+            
+            # Track pillar counts for legend
+            pillar = activity.get('strategic_pillar', 'Uncategorized')
+            pillar_counts[pillar] = pillar_counts.get(pillar, 0) + 1
+            total_activities += 1
+            
             current = start_date
             while current <= end_date:
                 if current.year == year and current.month == month:
@@ -1470,55 +1501,182 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                     if date_key not in activities_by_date:
                         activities_by_date[date_key] = []
                     
-                    # Determine if this is start, end, or middle
+                    # Determine marker
                     marker = ""
                     if current == start_date:
-                        marker = "📍 Start"
+                        marker = "📍"
                     elif current == end_date:
-                        marker = "🏁 End"
+                        marker = "🏁"
+                    
+                    # Determine urgency based on days remaining
+                    urgency = ""
+                    if days_remaining < 0:
+                        urgency = "🔴 EXPIRED"
+                    elif days_remaining <= 7:
+                        urgency = "🔴 URGENT"
+                    elif days_remaining <= 30:
+                        urgency = "🟡 SOON"
                     
                     activities_by_date[date_key].append({
                         "activity": activity['planned_activity'],
+                        "pillar": pillar,
+                        "status": activity.get('status', 'Pending'),
+                        "progress": progress,
                         "marker": marker,
-                        "status": activity.get('status', 'Pending')
+                        "urgency": urgency,
+                        "days_remaining": days_remaining,
+                        "department": activity.get('department_name', 'Unknown'),
+                        "duration": duration,
+                        "color": pillar_colors.get(pillar, "#6B7280")
                     })
                 current += timedelta(days=1)
     
-    # Get theme colors for calendar
-    theme_bg = "#1a1a2e" if st.session_state.theme == "dark" else "white"
-    theme_text = "#FFFFFF" if st.session_state.theme == "dark" else "#000000"
-    theme_header_bg = "#0f3460" if st.session_state.theme == "dark" else "#f3f4f6"
-    theme_border = "#334155" if st.session_state.theme == "dark" else "#e5e7eb"
+    # Generate calendar HTML
+    cal = calendar.monthcalendar(year, month)
+    month_name = calendar.month_name[month]
     
-    html = f'<h4 style="color: {theme_text};">{month_name} {year}</h4>'
-    html += f'<table style="width:100%; border-collapse: collapse; color: {theme_text};">'
-    html += '<tr>'
+    html = f"""
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="color: {theme_text}; margin: 0;">📅 {month_name} {year}</h4>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <span style="color: {theme_text}; font-size: 0.8rem;">Total: {total_activities} activities</span>
+                <span style="color: {theme_text}; font-size: 0.8rem;">📆 {len(activities_by_date)} active days</span>
+            </div>
+        </div>
+    """
+    
+    # Pillar Legend
+    if pillar_counts:
+        html += f"""
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; padding: 0.5rem; background: {theme_card_bg}; border-radius: 8px; border: 1px solid {theme_border};">
+            <span style="color: {theme_text}; font-size: 0.75rem; font-weight: bold; margin-right: 0.5rem;">🎯 Pillars:</span>
+        """
+        for pillar, count in pillar_counts.items():
+            color = pillar_colors.get(pillar, "#6B7280")
+            html += f"""
+            <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: {color}20; padding: 0.2rem 0.6rem; border-radius: 12px; border-left: 3px solid {color};">
+                <span style="color: {color}; font-size: 0.6rem;">●</span>
+                <span style="color: {theme_text}; font-size: 0.65rem;">{pillar.split('. ')[-1][:20]}</span>
+                <span style="color: {theme_text}; font-size: 0.55rem; background: {color}; padding: 0.1rem 0.4rem; border-radius: 8px; color: white;">{count}</span>
+            </span>
+            """
+        html += "</div>"
+    
+    # Calendar Table
+    html += f"""
+    <table style="width:100%; border-collapse: collapse; border: 1px solid {theme_border}; border-radius: 8px; overflow: hidden;">
+        <thead>
+            <tr style="background: {theme_header_bg};">
+    """
+    
     for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        html += f'<th style="padding: 8px; text-align: center; background-color: {theme_header_bg}; border: 1px solid {theme_border}; color: {theme_text};">{day}</th>'
-    html += '</tr>'
+        html += f'<th style="padding: 10px 4px; text-align: center; color: white; font-weight: 600; font-size: 0.75rem; border: 1px solid {theme_border};">{day}</th>'
+    html += '</tr></thead><tbody>'
     
     for week in cal:
         html += '<tr>'
         for day in week:
             if day == 0:
-                html += f'<td style="padding: 8px; border: 1px solid {theme_border}; vertical-align: top; height: 80px; background-color: {theme_bg};"></td>'
+                html += f'<td style="padding: 4px; border: 1px solid {theme_border}; background: {theme_bg}; height: 100px; opacity: 0.3;"></td>'
             else:
                 day_activities = activities_by_date.get(day, [])
-                bg_color = '#fef3c7' if day_activities else theme_bg
-                text_color = theme_text if day_activities else theme_text
-                html += f'<td style="padding: 8px; border: 1px solid {theme_border}; vertical-align: top; height: 80px; background-color: {bg_color};">'
-                html += f'<strong style="color: {text_color};">{day}</strong>'
-                for act in day_activities[:3]:
-                    status_color = "#10b981" if act['status'] == 'Done' else "#f59e0b" if act['status'] == 'In Progress' else "#ef4444"
+                is_today = (day == datetime.now().day and month == datetime.now().month and year == datetime.now().year)
+                
+                # Determine background color based on activity count
+                if len(day_activities) >= 5:
+                    bg_color = "#ef444420" if st.session_state.theme == "dark" else "#ef444410"
+                elif len(day_activities) >= 3:
+                    bg_color = "#f59e0b20" if st.session_state.theme == "dark" else "#f59e0b10"
+                elif len(day_activities) >= 1:
+                    bg_color = "#10b98120" if st.session_state.theme == "dark" else "#10b98110"
+                else:
+                    bg_color = theme_bg
+                
+                border_style = "2px solid #3B82F6" if is_today else f"1px solid {theme_border}"
+                
+                html += f'''
+                <td style="padding: 4px; border: {border_style}; vertical-align: top; background: {bg_color}; height: 100px; min-height: 100px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                        <strong style="color: {theme_text}; font-size: 0.8rem;">{day}</strong>
+                        {f'<span style="background: #3B82F6; color: white; font-size: 0.5rem; padding: 0.1rem 0.4rem; border-radius: 8px;">Today</span>' if is_today else ''}
+                        {f'<span style="background: #ef4444; color: white; font-size: 0.5rem; padding: 0.1rem 0.4rem; border-radius: 8px;">{len(day_activities)}</span>' if len(day_activities) > 3 else ''}
+                    </div>
+                '''
+                
+                # Show activities (max 4 per day)
+                for i, act in enumerate(day_activities[:4]):
+                    status_icon = "✅" if act['status'] == 'Done' else "🟡" if act['status'] == 'In Progress' else "⏳"
                     marker_text = f" {act['marker']}" if act['marker'] else ""
-                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px; border-left: 3px solid {status_color};">'
-                    html += f'{act["activity"][:25]}...{marker_text}'
-                    html += '</div>'
-                if len(day_activities) > 3:
-                    html += f'<div style="font-size: 0.6rem; margin-top: 2px; color: #6b7280;">+{len(day_activities)-3} more</div>'
+                    
+                    # Progress bar (small)
+                    progress_width = min(act['progress'], 100)
+                    progress_color = "#10B981" if progress_width >= 100 else "#F59E0B" if progress_width > 0 else "#EF4444"
+                    
+                    html += f'''
+                    <div style="font-size: 0.6rem; margin-top: 2px; padding: 2px 4px; background: {act['color']}15; border-left: 3px solid {act['color']}; border-radius: 3px; cursor: pointer; transition: all 0.2s;" 
+                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)';" 
+                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';"
+                         title="{act['activity']}\nPillar: {act['pillar']}\nDepartment: {act['department']}\nProgress: {act['progress']}%\nDays Left: {act['days_remaining']}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: {theme_text};">
+                                {status_icon} {act['activity'][:22]}{'...' if len(act['activity']) > 22 else ''}{marker_text}
+                            </span>
+                            <span style="font-size: 0.5rem; color: {theme_text}60;">
+                                {act['urgency'] if act['urgency'] else ''}
+                            </span>
+                        </div>
+                        <div style="width: 100%; height: 2px; background: {theme_border}40; border-radius: 2px; margin-top: 2px; overflow: hidden;">
+                            <div style="width: {progress_width}%; height: 100%; background: {progress_color}; border-radius: 2px; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                    '''
+                
+                # Show "+ more" indicator
+                if len(day_activities) > 4:
+                    html += f'''
+                    <div style="font-size: 0.55rem; margin-top: 2px; color: {theme_text}60; text-align: center; background: {theme_bg}; padding: 1px; border-radius: 3px;">
+                        +{len(day_activities) - 4} more activities
+                    </div>
+                    '''
+                
                 html += '</td>'
         html += '</tr>'
-    html += '</table>'
+    
+    html += '</tbody></table>'
+    
+    # Summary section
+    html += f'''
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; padding: 0.5rem; background: {theme_card_bg}; border-radius: 8px; border: 1px solid {theme_border};">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="color: {theme_text}; font-size: 0.7rem;">📊 Summary:</span>
+            <span style="color: {theme_text}; font-size: 0.65rem;">Total: {total_activities}</span>
+            <span style="color: #10B981; font-size: 0.65rem;">✅ Done: {len([a for acts in activities_by_date.values() for a in acts if a['status'] == 'Done'])}</span>
+            <span style="color: #F59E0B; font-size: 0.65rem;">🟡 In Progress: {len([a for acts in activities_by_date.values() for a in acts if a['status'] == 'In Progress'])}</span>
+            <span style="color: #EF4444; font-size: 0.65rem;">⏳ Pending: {len([a for acts in activities_by_date.values() for a in acts if a['status'] == 'Pending'])}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="color: {theme_text}; font-size: 0.7rem;">📌 Legend:</span>
+            <span style="color: {theme_text}; font-size: 0.6rem;">📍 Start</span>
+            <span style="color: {theme_text}; font-size: 0.6rem;">🏁 End</span>
+            <span style="color: #EF4444; font-size: 0.6rem;">🔴 URGENT</span>
+            <span style="color: #F59E0B; font-size: 0.6rem;">🟡 SOON</span>
+        </div>
+    </div>
+    '''
+    
+    # Quick filter buttons
+    html += f'''
+    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+        <button onclick="location.reload()" style="background: {theme_header_bg}; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.6rem; cursor: pointer;">
+            🔄 Refresh
+        </button>
+        <span style="color: {theme_text}60; font-size: 0.6rem; display: flex; align-items: center;">
+            💡 Click on activity cards for details
+        </span>
+    </div>
+    </div>
+    '''
     
     return html
 
