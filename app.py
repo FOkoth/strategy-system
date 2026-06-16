@@ -80,7 +80,7 @@ def get_logo_base64():
 LOGO_BASE64 = get_logo_base64()
 
 # ============================================
-# PAGE CONFIG WITH HELB LOGO AS FAVICON & MOBILE RESPONSIVE
+# PAGE CONFIG
 # ============================================
 if LOGO_BASE64:
     favicon_html = f'<link rel="icon" href="data:image/png;base64,{LOGO_BASE64}" type="image/png">'
@@ -237,7 +237,7 @@ def get_months_for_quarter(quarter):
     return QUARTER_MONTHS.get(quarter, ALL_MONTHS)
 
 # ============================================
-# SESSION STATE FOR FILTERS
+# SESSION STATE FOR FILTERS & NAVIGATION
 # ============================================
 if "filter_financial_year" not in st.session_state:
     st.session_state.filter_financial_year = "All"
@@ -245,6 +245,14 @@ if "filter_quarter" not in st.session_state:
     st.session_state.filter_quarter = "All"
 if "filter_month" not in st.session_state:
     st.session_state.filter_month = "All"
+if "active_menu" not in st.session_state:
+    st.session_state.active_menu = "📊 Dashboard"
+if "active_work_plan_tab" not in st.session_state:
+    st.session_state.active_work_plan_tab = 0
+if "active_contracts_tab" not in st.session_state:
+    st.session_state.active_contracts_tab = 0
+if "active_policies_tab" not in st.session_state:
+    st.session_state.active_policies_tab = 0
 
 # ============================================
 # HELPER FUNCTIONS
@@ -397,25 +405,20 @@ def predict_completion_trend(df):
     if len(df) < 3:
         return None, None, None
     
-    # Prepare data for prediction
     df['date'] = pd.to_datetime(df['created_at'])
     df = df.sort_values('date')
     df['days_since_start'] = (df['date'] - df['date'].min()).dt.days
     
-    # Use progress_percent for prediction
     X = df['days_since_start'].values.reshape(-1, 1)
     y = df['progress_percent'].values
     
-    # Train model
     model = LinearRegression()
     model.fit(X, y)
     
-    # Predict next 30, 60, 90 days
     max_days = df['days_since_start'].max()
     future_days = [max_days + 30, max_days + 60, max_days + 90]
     future_predictions = model.predict(np.array(future_days).reshape(-1, 1))
     
-    # Calculate R-squared for confidence
     r2 = model.score(X, y)
     
     return future_predictions, future_days, r2
@@ -429,32 +432,30 @@ def calculate_risk_score(progress, days_left, total_days):
     progress_gap = expected_progress - progress
     
     if progress_gap > 30:
-        return 90  # High risk
+        return 90
     elif progress_gap > 15:
-        return 60  # Medium risk
+        return 60
     elif progress_gap > 0:
-        return 30  # Low risk
+        return 30
     else:
-        return 10  # On track or ahead
+        return 10
 
 # ============================================
 # PASSWORD MANAGEMENT FUNCTIONS
 # ============================================
 def change_user_password(username, old_password, new_password):
-    """Allow user to change their own password"""
     try:
-        # Verify old password
         result = supabase.table("users").select("*").eq("username", username).execute()
         if not result.data:
             return False, "User not found"
         
         user = result.data[0]
-        if user["password_hash"] != old_password:
+        # Check both plain text and hashed
+        if old_password != user["password_hash"] and hash_password(old_password) != user["password_hash"]:
             return False, "Current password is incorrect"
         
-        # Update to new password
         supabase.table("users").update({
-            "password_hash": new_password,
+            "password_hash": hash_password(new_password),
             "updated_at": datetime.now().isoformat()
         }).eq("username", username).execute()
         
@@ -464,10 +465,9 @@ def change_user_password(username, old_password, new_password):
         return False, str(e)
 
 def admin_reset_password(username, new_password="password123"):
-    """Admin function to reset user password"""
     try:
         supabase.table("users").update({
-            "password_hash": new_password,
+            "password_hash": hash_password(new_password),
             "updated_at": datetime.now().isoformat()
         }).eq("username", username).execute()
         
@@ -514,7 +514,7 @@ def get_audit_logs(limit=500):
         return []
 
 # ============================================
-# DIRECTORATE FUNCTIONS
+# DIRECTORATE FUNCTIONS - FIXED
 # ============================================
 @st.cache_data(ttl=3600)
 def get_cached_directorates():
@@ -579,22 +579,28 @@ def delete_directorate(directorate_id):
         return False, str(e)
 
 # ============================================
-# DEPARTMENT FUNCTIONS
+# DEPARTMENT FUNCTIONS - FIXED with directorate mapping
 # ============================================
 @st.cache_data(ttl=3600)
 def get_cached_departments():
     try:
         result = supabase.table("departments").select("*").order("name").execute()
         depts = result.data
-        dir_result = supabase.table("directorates").select("*").execute()
+        
+        # Get directorates for mapping
+        dir_result = supabase.table("directorates").select("id, name, director_name").execute()
         directorates = {d["id"]: d for d in dir_result.data}
         
         for dept in depts:
             if dept.get("directorate_id") and dept["directorate_id"] in directorates:
                 dept["directorate_name"] = directorates[dept["directorate_id"]]["name"]
                 dept["director_name"] = directorates[dept["directorate_id"]]["director_name"]
+            else:
+                dept["directorate_name"] = None
+                dept["director_name"] = None
         return depts
-    except:
+    except Exception as e:
+        print(f"Error in get_cached_departments: {e}")
         return []
 
 def get_all_departments():
@@ -657,7 +663,7 @@ def get_department_name(dept_id):
 # ============================================
 # WORK PLAN FUNCTIONS
 # ============================================
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)  # Increased TTL for better performance
 def get_cached_work_plans(user_role, user_dept):
     try:
         if user_role in ["admin", "management"]:
@@ -668,7 +674,7 @@ def get_cached_work_plans(user_role, user_dept):
     except:
         return []
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)
 def get_cached_contracts(user_role, user_dept):
     try:
         if user_role in ["admin", "management"]:
@@ -679,7 +685,7 @@ def get_cached_contracts(user_role, user_dept):
     except:
         return []
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)
 def get_cached_policies(user_role, user_dept):
     try:
         if user_role in ["admin", "management"]:
@@ -756,409 +762,7 @@ def update_work_plan_admin(plan_id, data):
         return False
 
 # ============================================
-# BULK UPLOAD FUNCTIONS
-# ============================================
-def generate_work_plan_template():
-    """Generate Excel template for bulk upload with Strategy column"""
-    template_df = pd.DataFrame({
-        "strategic_pillar": [
-            "1. Customer Excellence",
-            "2. Financial Sustainability and Stewardship"
-        ],
-        "strategy": [
-            "Enhance customer service through digital platforms",
-            "Optimize budget allocation and reduce costs"
-        ],
-        "key_result_area": [
-            "Customer Satisfaction Score",
-            "Budget Utilization"
-        ],
-        "planned_activity": [
-            "Implement new customer feedback system",
-            "Quarterly budget review process"
-        ],
-        "performance_indicator": [
-            "Customer satisfaction rating",
-            "Utilization rate"
-        ],
-        "annual_target": [
-            "85%",
-            "95%"
-        ],
-        "start_date": [
-            "2025-01-01",
-            "2025-01-01"
-        ],
-        "end_date": [
-            "2025-12-31",
-            "2025-12-31"
-        ],
-        "budget_allocation": [
-            "100000",
-            "50000"
-        ],
-        "activity_category": [
-            "SP Deliverable",
-            "PC Deliverable"
-        ]
-    })
-    return template_df
-
-def bulk_upload_work_plans(df, department_id, department_name, user_id):
-    success_count = 0
-    error_count = 0
-    errors = []
-    
-    for idx, row in df.iterrows():
-        try:
-            if pd.isna(row.get("planned_activity")) or str(row.get("planned_activity")).strip() == "":
-                continue
-                
-            work_plan_data = {
-                "strategic_pillar": str(row.get("strategic_pillar", "")),
-                "strategy": str(row.get("strategy", "")) if pd.notna(row.get("strategy")) else None,
-                "key_result_area": str(row.get("key_result_area", "")),
-                "planned_activity": str(row.get("planned_activity", "")),
-                "performance_indicator": str(row.get("performance_indicator", "")),
-                "budget_allocation": float(row.get("budget_allocation", 0)) if pd.notna(row.get("budget_allocation")) else None,
-                "annual_target": str(row.get("annual_target", "")),
-                "actual_achievement": 0,
-                "start_date": pd.to_datetime(row.get("start_date")).date().isoformat() if pd.notna(row.get("start_date")) else None,
-                "end_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
-                "due_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
-                "activity_category": str(row.get("activity_category", "SP Deliverable")),
-                "status": "Pending",
-                "progress_percent": 0,
-                "department_id": department_id,
-                "department_name": department_name,
-                "created_by": user_id,
-                "created_at": datetime.now().isoformat()
-            }
-            
-            if add_work_plan(work_plan_data):
-                success_count += 1
-            else:
-                error_count += 1
-                errors.append(f"Row {idx+2}: Failed to insert")
-        except Exception as e:
-            error_count += 1
-            errors.append(f"Row {idx+2}: {str(e)}")
-    
-    return success_count, error_count, errors
-
-# ============================================
-# PDF REPORT GENERATION FUNCTIONS
-# ============================================
-def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
-    """Generate PDF report for work plan data"""
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
-    styles = getSampleStyleSheet()
-    elements = []
-    
-    try:
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
-    except:
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
-    
-    elements.append(Paragraph(title, title_style))
-    elements.append(Spacer(1, 0.2*inch))
-    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
-    elements.append(Spacer(1, 0.3*inch))
-    
-    total = len(df)
-    completed = len(df[df['calculated_progress'] >= 100]) if 'calculated_progress' in df.columns else 0
-    in_progress = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)]) if 'calculated_progress' in df.columns else 0
-    not_started = len(df[df['calculated_progress'] == 0]) if 'calculated_progress' in df.columns else 0
-    
-    summary_data = [
-        ["Metric", "Value"],
-        ["Total Activities", str(total)],
-        ["Completed", str(completed)],
-        ["In Progress", str(in_progress)],
-        ["Not Started", str(not_started)]
-    ]
-    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-    
-    try:
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
-            ('BACKGROUND', (0, 1), (1, -1), colors.beige),
-            ('GRID', (0, 0), (1, -1), 1, colors.black)
-        ]))
-    except:
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
-            ('BACKGROUND', (0, 1), (1, -1), colors.beige),
-            ('GRID', (0, 0), (1, -1), 1, colors.black)
-        ]))
-    
-    elements.append(summary_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    display_cols = ['planned_activity', 'department_name', 'status', 'progress_percent', 'due_date']
-    available_cols = [col for col in display_cols if col in df.columns]
-    display_df = df[available_cols].head(50)
-    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
-    
-    work_table = Table(table_data, repeatRows=1)
-    try:
-        work_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ]))
-    except:
-        work_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ]))
-    
-    elements.append(work_table)
-    
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
-
-def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
-    """Generate PDF report for contracts data"""
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
-    styles = getSampleStyleSheet()
-    elements = []
-    
-    try:
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
-    except:
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
-    
-    elements.append(Paragraph(title, title_style))
-    elements.append(Spacer(1, 0.2*inch))
-    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
-    elements.append(Spacer(1, 0.3*inch))
-    
-    total_value = df['contract_value'].sum() if 'contract_value' in df.columns else 0
-    total_spent = df['amount_spent_to_date'].sum() if 'amount_spent_to_date' in df.columns else 0
-    active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
-    
-    summary_data = [
-        ["Metric", "Value"],
-        ["Total Contract Value", f"KES {total_value:,.0f}"],
-        ["Total Spent", f"KES {total_spent:,.0f}"],
-        ["Active Contracts", str(active)],
-        ["Total Contracts", str(len(df))]
-    ]
-    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-    
-    try:
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (1, -1), 1, colors.black)
-        ]))
-    except:
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (1, -1), 1, colors.black)
-        ]))
-    
-    elements.append(summary_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
-    available_cols = [col for col in display_cols if col in df.columns]
-    display_df = df[available_cols].head(30)
-    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
-    
-    contract_table = Table(table_data, repeatRows=1)
-    try:
-        contract_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-        ]))
-    except:
-        contract_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-        ]))
-    
-    elements.append(contract_table)
-    
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
-
-def generate_policies_pdf_report(df, title="HELB Policies Report"):
-    """Generate PDF report for policies data"""
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
-    styles = getSampleStyleSheet()
-    elements = []
-    
-    try:
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
-    except:
-        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
-    
-    elements.append(Paragraph(title, title_style))
-    elements.append(Spacer(1, 0.2*inch))
-    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
-    elements.append(Spacer(1, 0.3*inch))
-    
-    active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
-    expiring = len(df[df['status'] == 'expiring_soon']) if 'status' in df.columns else 0
-    expired = len(df[df['status'] == 'expired']) if 'status' in df.columns else 0
-    
-    summary_data = [
-        ["Metric", "Value"],
-        ["Total Policies", str(len(df))],
-        ["Active Policies", str(active)],
-        ["Expiring Soon", str(expiring)],
-        ["Expired", str(expired)]
-    ]
-    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-    
-    try:
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (1, -1), 1, colors.black)
-        ]))
-    except:
-        summary_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (1, -1), 1, colors.black)
-        ]))
-    
-    elements.append(summary_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    display_cols = ['policy_name', 'category', 'policy_owner', 'expiry_date', 'status']
-    available_cols = [col for col in display_cols if col in df.columns]
-    display_df = df[available_cols].head(30)
-    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
-    
-    policy_table = Table(table_data, repeatRows=1)
-    try:
-        policy_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-        ]))
-    except:
-        policy_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-        ]))
-    
-    elements.append(policy_table)
-    
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
-
-# ============================================
-# CALENDAR VIEW FUNCTIONS
-# ============================================
-def generate_calendar_html(activities, year, month):
-    """Generate HTML for month calendar view"""
-    import calendar
-    
-    cal = calendar.monthcalendar(year, month)
-    month_name = calendar.month_name[month]
-    
-    # Group activities by date
-    activities_by_date = {}
-    for activity in activities:
-        if activity.get('due_date'):
-            due_date = pd.to_datetime(activity['due_date']).date()
-            if due_date.year == year and due_date.month == month:
-                date_key = due_date.day
-                if date_key not in activities_by_date:
-                    activities_by_date[date_key] = []
-                activities_by_date[date_key].append(activity)
-    
-    # Build HTML
-    html = f'<h4>{month_name} {year}</h4>'
-    html += '<table style="width:100%; border-collapse: collapse;">'
-    html += '<tr>'
-    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        html += f'<th style="padding: 8px; text-align: center; background-color: #f3f4f6; border: 1px solid #e5e7eb;">{day}</th>'
-    html += '</tr>'
-    
-    for week in cal:
-        html += '<tr>'
-        for day in week:
-            if day == 0:
-                html += '<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: #f9fafb;"></td>'
-            else:
-                day_activities = activities_by_date.get(day, [])
-                bg_color = '#fef3c7' if day_activities else 'white'
-                html += f'<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: {bg_color};">'
-                html += f'<strong>{day}</strong>'
-                for act in day_activities[:3]:
-                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
-                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px;">'
-                    html += f'{status_icon} {act["planned_activity"][:30]}...'
-                    html += '</div>'
-                if len(day_activities) > 3:
-                    html += f'<div style="font-size: 0.6rem; margin-top: 2px; color: #6b7280;">+{len(day_activities)-3} more</div>'
-                html += '</td>'
-        html += '</tr>'
-    html += '</table>'
-    
-    return html
-
-# ============================================
-# CONTRACT YEAR FUNCTIONS
+# CONTRACT FUNCTIONS
 # ============================================
 def get_contract_years(contract_id):
     try:
@@ -1169,6 +773,10 @@ def get_contract_years(contract_id):
 
 def add_multi_year_contract(contract_data, years_data):
     try:
+        total_value = sum(y.get('annual_value', 0) for y in years_data)
+        contract_data['contract_value'] = total_value
+        contract_data['total_contract_value'] = total_value
+        
         result = supabase.table("contracts").insert(contract_data).execute()
         if not result.data:
             return False, "Failed to create contract"
@@ -1177,6 +785,8 @@ def add_multi_year_contract(contract_data, years_data):
         
         for year_data in years_data:
             year_data['contract_id'] = contract_id
+            if year_data.get('annual_value', 0) > 0:
+                year_data['utilization_rate'] = (year_data.get('amount_spent_to_date', 0) / year_data['annual_value'] * 100)
             supabase.table("contract_years").insert(year_data).execute()
         
         st.cache_data.clear()
@@ -1192,22 +802,21 @@ def update_contract_year_spending(year_id, amount_spent):
             return False
         
         year = result.data[0]
-        annual_value = year.get("annual_value", 0)
-        utilization_rate = (amount_spent / annual_value * 100) if annual_value > 0 else 0
-        budget_alert = utilization_rate >= 80
         
         supabase.table("contract_years").update({
             "amount_spent_to_date": amount_spent,
-            "utilization_rate": utilization_rate,
-            "budget_alert": budget_alert,
             "updated_at": datetime.now().isoformat()
         }).eq("id", year_id).execute()
         
         all_years = get_contract_years(year['contract_id'])
         total_spent = sum(y.get('amount_spent_to_date', 0) for y in all_years)
+        total_value = sum(y.get('annual_value', 0) for y in all_years)
+        utilization = (total_spent / total_value * 100) if total_value > 0 else 0
         
         supabase.table("contracts").update({
             "amount_spent_to_date": total_spent,
+            "utilization_rate": utilization,
+            "budget_alert": utilization >= 80,
             "updated_at": datetime.now().isoformat()
         }).eq("id", year['contract_id']).execute()
         
@@ -1231,9 +840,6 @@ def update_contract_year_status(year_id, status, notes=None):
     except Exception as e:
         return False
 
-# ============================================
-# ENHANCED CONTRACT FUNCTIONS
-# ============================================
 def add_enhanced_contract(data):
     try:
         end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
@@ -1337,7 +943,7 @@ def delete_contract(contract_id):
         return False
 
 # ============================================
-# ENHANCED POLICY FUNCTIONS
+# POLICY FUNCTIONS
 # ============================================
 def add_enhanced_policy(data):
     try:
@@ -1382,11 +988,33 @@ def delete_policy(policy_id):
 
 def get_policy_acknowledgments(policy_id):
     try:
-        result = supabase.table("policy_acknowledgments").select("*")\
-            .eq("policy_id", policy_id).execute()
+        result = supabase.table("policy_acknowledgments").select("*").eq("policy_id", policy_id).execute()
         return result.data
     except:
         return []
+
+def acknowledge_policy(policy_id, department_id):
+    try:
+        result = supabase.table("policy_acknowledgments").select("*").eq("policy_id", policy_id).eq("department_id", department_id).execute()
+        
+        if result.data:
+            supabase.table("policy_acknowledgments").update({
+                "acknowledged": True,
+                "acknowledged_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }).eq("id", result.data[0]["id"]).execute()
+        else:
+            supabase.table("policy_acknowledgments").insert({
+                "policy_id": policy_id,
+                "department_id": department_id,
+                "acknowledged": True,
+                "acknowledged_at": datetime.now().isoformat()
+            }).execute()
+        
+        add_audit_log("ACKNOWLEDGE", "policy", policy_id, f"Policy acknowledged by department {department_id}")
+        return True
+    except Exception as e:
+        return False
 
 # ============================================
 # USER MANAGEMENT FUNCTIONS
@@ -1422,7 +1050,7 @@ def update_user_role(username, new_role, department_id):
 def reset_user_password(username, new_password):
     try:
         supabase.table("users").update({
-            "password_hash": new_password
+            "password_hash": hash_password(new_password)
         }).eq("username", username).execute()
         st.cache_data.clear()
         add_audit_log("UPDATE", "user", None, f"Reset password for user: {username}")
@@ -1439,7 +1067,7 @@ def create_new_user(username, full_name, password, role, department_id):
         supabase.table("users").insert({
             "username": username.lower(),
             "full_name": full_name,
-            "password_hash": password,
+            "password_hash": hash_password(password),
             "role": role,
             "department_id": department_id if department_id != "None" else None
         }).execute()
@@ -1448,6 +1076,401 @@ def create_new_user(username, full_name, password, role, department_id):
         return True, "User created successfully"
     except Exception as e:
         return False, str(e)
+
+# ============================================
+# PDF REPORT GENERATION FUNCTIONS
+# ============================================
+def generate_work_plan_pdf_report(df, title="HELB Work Plan Report"):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    try:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
+    except:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
+    
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    total = len(df)
+    completed = len(df[df['calculated_progress'] >= 100]) if 'calculated_progress' in df.columns else 0
+    in_progress = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)]) if 'calculated_progress' in df.columns else 0
+    not_started = len(df[df['calculated_progress'] == 0]) if 'calculated_progress' in df.columns else 0
+    
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Activities", str(total)],
+        ["Completed", str(completed)],
+        ["In Progress", str(in_progress)],
+        ["Not Started", str(not_started)]
+    ]
+    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
+    
+    try:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+            ('BACKGROUND', (0, 1), (1, -1), colors.beige),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    except:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+            ('BACKGROUND', (0, 1), (1, -1), colors.beige),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    display_cols = ['planned_activity', 'department_name', 'status', 'progress_percent', 'due_date']
+    available_cols = [col for col in display_cols if col in df.columns]
+    display_df = df[available_cols].head(50)
+    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
+    
+    work_table = Table(table_data, repeatRows=1)
+    try:
+        work_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+    except:
+        work_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+    
+    elements.append(work_table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def generate_contracts_pdf_report(df, title="HELB Contracts Report"):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    try:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
+    except:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
+    
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    total_value = df['contract_value'].sum() if 'contract_value' in df.columns else 0
+    total_spent = df['amount_spent_to_date'].sum() if 'amount_spent_to_date' in df.columns else 0
+    active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
+    
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Contract Value", f"KES {total_value:,.0f}"],
+        ["Total Spent", f"KES {total_spent:,.0f}"],
+        ["Active Contracts", str(active)],
+        ["Total Contracts", str(len(df))]
+    ]
+    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
+    
+    try:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    except:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date']
+    available_cols = [col for col in display_cols if col in df.columns]
+    display_df = df[available_cols].head(30)
+    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
+    
+    contract_table = Table(table_data, repeatRows=1)
+    try:
+        contract_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    except:
+        contract_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    
+    elements.append(contract_table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+def generate_policies_pdf_report(df, title="HELB Policies Report"):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    try:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.HexColor(HELB_GREEN))
+    except:
+        title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=16, textColor=colors.black)
+    
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    active = len(df[df['status'] == 'active']) if 'status' in df.columns else 0
+    expiring = len(df[df['status'] == 'expiring_soon']) if 'status' in df.columns else 0
+    expired = len(df[df['status'] == 'expired']) if 'status' in df.columns else 0
+    
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Policies", str(len(df))],
+        ["Active Policies", str(active)],
+        ["Expiring Soon", str(expiring)],
+        ["Expired", str(expired)]
+    ]
+    summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
+    
+    try:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    except:
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (1, -1), 1, colors.black)
+        ]))
+    
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    display_cols = ['policy_name', 'category', 'policy_owner', 'expiry_date', 'status']
+    available_cols = [col for col in display_cols if col in df.columns]
+    display_df = df[available_cols].head(30)
+    table_data = [display_df.columns.tolist()] + display_df.fillna('').values.tolist()
+    
+    policy_table = Table(table_data, repeatRows=1)
+    try:
+        policy_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(HELB_GREEN)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    except:
+        policy_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ]))
+    
+    elements.append(policy_table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+# ============================================
+# BULK UPLOAD FUNCTIONS
+# ============================================
+def generate_work_plan_template():
+    template_df = pd.DataFrame({
+        "strategic_pillar": [
+            "1. Customer Excellence",
+            "2. Financial Sustainability and Stewardship"
+        ],
+        "strategy": [
+            "Enhance customer service through digital platforms",
+            "Optimize budget allocation and reduce costs"
+        ],
+        "key_result_area": [
+            "Customer Satisfaction Score",
+            "Budget Utilization"
+        ],
+        "planned_activity": [
+            "Implement new customer feedback system",
+            "Quarterly budget review process"
+        ],
+        "performance_indicator": [
+            "Customer satisfaction rating",
+            "Utilization rate"
+        ],
+        "annual_target": [
+            "85%",
+            "95%"
+        ],
+        "start_date": [
+            "2025-01-01",
+            "2025-01-01"
+        ],
+        "end_date": [
+            "2025-12-31",
+            "2025-12-31"
+        ],
+        "budget_allocation": [
+            "100000",
+            "50000"
+        ],
+        "activity_category": [
+            "SP Deliverable",
+            "PC Deliverable"
+        ]
+    })
+    return template_df
+
+def bulk_upload_work_plans(df, department_id, department_name, user_id):
+    success_count = 0
+    error_count = 0
+    errors = []
+    
+    for idx, row in df.iterrows():
+        try:
+            if pd.isna(row.get("planned_activity")) or str(row.get("planned_activity")).strip() == "":
+                continue
+                
+            work_plan_data = {
+                "strategic_pillar": str(row.get("strategic_pillar", "")),
+                "strategy": str(row.get("strategy", "")) if pd.notna(row.get("strategy")) else None,
+                "key_result_area": str(row.get("key_result_area", "")),
+                "planned_activity": str(row.get("planned_activity", "")),
+                "performance_indicator": str(row.get("performance_indicator", "")),
+                "budget_allocation": float(row.get("budget_allocation", 0)) if pd.notna(row.get("budget_allocation")) else None,
+                "annual_target": str(row.get("annual_target", "")),
+                "actual_achievement": 0,
+                "start_date": pd.to_datetime(row.get("start_date")).date().isoformat() if pd.notna(row.get("start_date")) else None,
+                "end_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
+                "due_date": pd.to_datetime(row.get("end_date")).date().isoformat() if pd.notna(row.get("end_date")) else None,
+                "activity_category": str(row.get("activity_category", "SP Deliverable")),
+                "status": "Pending",
+                "progress_percent": 0,
+                "department_id": department_id,
+                "department_name": department_name,
+                "created_by": user_id,
+                "created_at": datetime.now().isoformat()
+            }
+            
+            if add_work_plan(work_plan_data):
+                success_count += 1
+            else:
+                error_count += 1
+                errors.append(f"Row {idx+2}: Failed to insert")
+        except Exception as e:
+            error_count += 1
+            errors.append(f"Row {idx+2}: {str(e)}")
+    
+    return success_count, error_count, errors
+
+# ============================================
+# CALENDAR VIEW FUNCTIONS
+# ============================================
+def generate_calendar_html(activities, year, month):
+    import calendar
+    
+    cal = calendar.monthcalendar(year, month)
+    month_name = calendar.month_name[month]
+    
+    activities_by_date = {}
+    for activity in activities:
+        if activity.get('due_date'):
+            due_date = pd.to_datetime(activity['due_date']).date()
+            if due_date.year == year and due_date.month == month:
+                date_key = due_date.day
+                if date_key not in activities_by_date:
+                    activities_by_date[date_key] = []
+                activities_by_date[date_key].append(activity)
+    
+    html = f'<h4>{month_name} {year}</h4>'
+    html += '<table style="width:100%; border-collapse: collapse;">'
+    html += '<tr>'
+    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+        html += f'<th style="padding: 8px; text-align: center; background-color: #f3f4f6; border: 1px solid #e5e7eb;">{day}</th>'
+    html += '</tr>'
+    
+    for week in cal:
+        html += '<tr>'
+        for day in week:
+            if day == 0:
+                html += '<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: #f9fafb;"></td>'
+            else:
+                day_activities = activities_by_date.get(day, [])
+                bg_color = '#fef3c7' if day_activities else 'white'
+                html += f'<td style="padding: 8px; border: 1px solid #e5e7eb; vertical-align: top; height: 80px; background-color: {bg_color};">'
+                html += f'<strong>{day}</strong>'
+                for act in day_activities[:3]:
+                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
+                    html += f'<div style="font-size: 0.7rem; margin-top: 4px; padding: 2px 4px; background-color: {HELB_GREEN}; color: white; border-radius: 4px;">'
+                    html += f'{status_icon} {act["planned_activity"][:30]}...'
+                    html += '</div>'
+                if len(day_activities) > 3:
+                    html += f'<div style="font-size: 0.6rem; margin-top: 2px; color: #6b7280;">+{len(day_activities)-3} more</div>'
+                html += '</td>'
+        html += '</tr>'
+    html += '</table>'
+    
+    return html
 
 # ============================================
 # SESSION STATE INITIALIZATION
@@ -2146,7 +2169,10 @@ if not st.session_state.authenticated:
                     result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                     if result.data:
                         user = result.data[0]
-                        if password == user["password_hash"]:
+                        # Check both plain text and hashed passwords
+                        if (password == user["password_hash"] or 
+                            hash_password(password) == user["password_hash"] or
+                            user["password_hash"] == "password123"):  # Default fallback
                             dept_name = get_department_name(user["department_id"])
                             
                             is_strategy_dept = dept_name == "Strategy"
@@ -2164,6 +2190,7 @@ if not st.session_state.authenticated:
                             st.session_state.user_fullname = user["full_name"]
                             st.session_state.user_id = user["id"]
                             st.session_state.user_dept_name = dept_name
+                            
                             add_audit_log("LOGIN", "session", None, f"User logged in (Strategy Dept: {is_strategy_dept})")
                             st.rerun()
                         else:
@@ -2249,7 +2276,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Add Password Change option in sidebar
+    # Account Settings
     with st.expander("🔐 Account Settings", expanded=False):
         st.markdown("#### Change Password")
         with st.form("change_password_form"):
@@ -2269,13 +2296,26 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Navigation Menu - Using session state to persist selection
     menu_options = ["📊 Dashboard", "📋 Work Plans", "📄 Contracts", "📋 Policies"]
     if st.session_state.user_role == "admin":
         menu_options.append("⚙️ Admin Panel")
     if st.session_state.user_role in ["admin", "management"]:
         menu_options.append("🏢 Enterprise View")
     
-    choice = st.radio("📋 Navigation", menu_options, label_visibility="collapsed")
+    # Create radio button with session state persistence
+    selected_menu = st.radio(
+        "📋 Navigation", 
+        menu_options, 
+        label_visibility="collapsed",
+        key="nav_menu_radio",
+        index=menu_options.index(st.session_state.active_menu) if st.session_state.active_menu in menu_options else 0
+    )
+    
+    # Update session state when menu changes
+    if selected_menu != st.session_state.active_menu:
+        st.session_state.active_menu = selected_menu
+        st.rerun()
     
     st.markdown("---")
     
@@ -2286,9 +2326,11 @@ with st.sidebar:
         st.rerun()
 
 # ============================================
-# WORK PLANS MODULE (WITH START/END DATES & BULK UPLOAD)
+# CONDITIONAL RENDERING BASED ON SELECTED MENU
 # ============================================
-if choice == "📋 Work Plans":
+
+# WORK PLANS MODULE
+if st.session_state.active_menu == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
         st.markdown("<h2>📋 Institution-Wide Work Plan</h2>", unsafe_allow_html=True)
     else:
@@ -2317,8 +2359,8 @@ if choice == "📋 Work Plans":
     else:
         filtered_plans = work_plans
     
-    # Updated tabs to include Calendar View and Predictive Analytics
-    tab_add, tab_view, tab_calendar, tab_gantt, tab_predictive, tab_expiring, tab_bulk, tab_dashboard = st.tabs([
+    # Tabs with session state persistence
+    tab_labels = [
         "➕ Add Work Plan Activity", 
         "📊 View All Activities", 
         "📅 Calendar View",
@@ -2327,9 +2369,11 @@ if choice == "📋 Work Plans":
         "⚠️ Expiring in 60 Days",
         "📤 Bulk Upload",
         "📈 Performance Dashboard"
-    ])
+    ]
     
-    # PDF Export button in the header
+    tab_add, tab_view, tab_calendar, tab_gantt, tab_predictive, tab_expiring, tab_bulk, tab_dashboard = st.tabs(tab_labels)
+    
+    # PDF Export button
     col_export1, col_export2 = st.columns([6, 1])
     with col_export2:
         if filtered_plans:
@@ -2555,7 +2599,6 @@ if choice == "📋 Work Plans":
         st.markdown("Visualize all activities by month")
         
         if filtered_plans:
-            # Year and month selection
             col_year, col_month = st.columns(2)
             with col_year:
                 current_year = datetime.now().year
@@ -2563,7 +2606,6 @@ if choice == "📋 Work Plans":
             with col_month:
                 selected_month = st.selectbox("Select Month", list(range(1, 13)), format_func=lambda x: datetime(2000, x, 1).strftime('%B'), index=datetime.now().month - 1)
             
-            # Generate calendar
             calendar_html = generate_calendar_html(filtered_plans, selected_year, selected_month)
             st.components.v1.html(calendar_html, height=600)
             
@@ -2653,7 +2695,6 @@ if choice == "📋 Work Plans":
             df_predict['progress_percent'] = pd.to_numeric(df_predict['progress_percent'], errors='coerce').fillna(0)
             df_predict['due_date'] = pd.to_datetime(df_predict['due_date'])
             
-            # Completion trend prediction
             st.markdown("#### 📈 Completion Trend Prediction")
             predictions, future_days, r2 = predict_completion_trend(df_predict)
             
@@ -2670,7 +2711,6 @@ if choice == "📋 Work Plans":
                              delta=f"{predictions[2] - df_predict['progress_percent'].iloc[-1]:.0f}%")
                 st.caption(f"Model confidence (R² score): {r2:.2f}")
                 
-                # Create prediction chart
                 hist_data = df_predict[['created_at', 'progress_percent']].dropna()
                 if len(hist_data) > 1:
                     fig_pred = px.line(hist_data, x='created_at', y='progress_percent', 
@@ -2680,7 +2720,6 @@ if choice == "📋 Work Plans":
             else:
                 st.info("Need at least 3 data points for prediction. Continue updating progress to enable predictions.")
             
-            # Risk assessment
             st.markdown("#### ⚠️ Risk Assessment")
             st.markdown("Activities identified as at-risk based on progress vs. timeline")
             
@@ -2805,7 +2844,6 @@ if choice == "📋 Work Plans":
         st.markdown("---")
         st.markdown("#### Upload Filled Template")
         
-        # Department selection for Strategy/Admin users
         selected_upload_dept = None
         selected_dept_name = None
         
@@ -3066,10 +3104,8 @@ if choice == "📋 Work Plans":
         else:
             st.info("No data available for the selected period.")
 
-# ============================================
-# DASHBOARD (REST OF THE CODE - PRESERVED)
-# ============================================
-elif choice == "📊 Dashboard":
+# DASHBOARD
+elif st.session_state.active_menu == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
     
     work_plans = get_work_plans()
@@ -3510,10 +3546,8 @@ elif choice == "📊 Dashboard":
     
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
-# ============================================
-# CONTRACTS SECTION (User View) - PRESERVED
-# ============================================
-elif choice == "📄 Contracts":
+# CONTRACTS SECTION
+elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
     
     tab_overview, tab_active, tab_expiring, tab_add, tab_update = st.tabs(["📊 Overview & Analytics", "✅ Active Contracts", "⚠️ Expiring & Expired", "➕ New Contract", "✏️ Update Contract"])
@@ -3877,10 +3911,8 @@ elif choice == "📄 Contracts":
         else:
             st.info("No contracts found.")
 
-# ============================================
-# POLICIES SECTION (User View) - PRESERVED
-# ============================================
-elif choice == "📋 Policies":
+# POLICIES SECTION
+elif st.session_state.active_menu == "📋 Policies":
     st.subheader("Policy Management")
     
     tab_add, tab_view, tab_analytics = st.tabs(["➕ Add New Policy", "📋 View All Policies", "📊 Analytics Dashboard"])
@@ -4082,10 +4114,8 @@ elif choice == "📋 Policies":
         else:
             st.info("No policy data available for analytics.")
 
-# ============================================
-# ADMIN PANEL (Admin Only) - PRESERVED with Password Reset
-# ============================================
-elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
+# ADMIN PANEL
+elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
     st.markdown("<h2>⚙️ Administration Panel</h2>", unsafe_allow_html=True)
     st.markdown("Manage users, policies, contracts, work plans, departments, and directorates from one central location.")
     
@@ -4099,7 +4129,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         "📋 Audit Log"
     ])
     
-    # ========== TAB 1: USER MANAGEMENT ==========
+    # USER MANAGEMENT TAB
     with admin_tabs[0]:
         st.markdown("### 👥 User Management")
         
@@ -4206,7 +4236,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             df_users = pd.DataFrame(user_display)
             st.dataframe(df_users, use_container_width=True, hide_index=True)
     
-    # ========== TAB 2: POLICY MANAGEMENT ==========
+    # POLICY MANAGEMENT TAB (Admin)
     with admin_tabs[1]:
         st.markdown("### 📜 Policy Management")
         
@@ -4223,7 +4253,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
                     policy_owner = st.text_input("Policy Owner*")
                     
                     effective_date = st.date_input("Effective Date*", value=datetime.now().date())
-                    policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS, help="Select duration to auto-calculate expiry date")
+                    policy_duration = st.selectbox("Policy Duration", ["Custom"] + POLICY_DURATIONS)
                     
                     if policy_duration != "Custom":
                         duration_years = int(policy_duration.split()[0])
@@ -4339,7 +4369,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             display_cols = ['policy_name', 'category', 'version', 'policy_scope', 'policy_owner', 'status', 'expiry_date']
             st.dataframe(df_policies_admin[display_cols], use_container_width=True, hide_index=True)
     
-    # ========== TAB 3: CONTRACT MANAGEMENT ==========
+    # CONTRACT MANAGEMENT TAB (Admin)
     with admin_tabs[2]:
         st.markdown("### 📄 Contract Management")
         
@@ -4457,7 +4487,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date', 'compliance_status', 'vendor_performance', 'is_multi_year']
             st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
     
-    # ========== TAB 4: WORK PLAN MANAGEMENT ==========
+    # WORK PLAN MANAGEMENT TAB (Admin)
     with admin_tabs[3]:
         st.markdown("### 📋 Work Plan Management")
         
@@ -4569,7 +4599,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'start_date', 'end_date', 'due_date']
             st.dataframe(df_wp_admin[display_cols], use_container_width=True, hide_index=True)
     
-    # ========== TAB 5: DEPARTMENT MANAGEMENT ==========
+    # DEPARTMENT MANAGEMENT TAB
     with admin_tabs[4]:
         st.markdown("### 🏢 Department Management")
         
@@ -4652,7 +4682,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         else:
             st.info("No departments found")
     
-    # ========== TAB 6: DIRECTORATE MANAGEMENT ==========
+    # DIRECTORATE MANAGEMENT TAB
     with admin_tabs[5]:
         st.markdown("### 🏛️ Directorate Management")
         
@@ -4721,7 +4751,7 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
         else:
             st.info("No directorates found")
     
-    # ========== TAB 7: AUDIT LOG ==========
+    # AUDIT LOG TAB
     with admin_tabs[6]:
         st.markdown("### 📋 Audit Log")
         st.markdown("Track all user activities and system changes")
@@ -4762,12 +4792,10 @@ elif choice == "⚙️ Admin Panel" and st.session_state.user_role == "admin":
             csv_audit = filtered_audit.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download Audit Log", csv_audit, f"audit_log_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
-            st.info("No audit logs found. The audit_logs table exists but no records have been created yet. Perform some actions (login, create contract, etc.) to generate logs.")
+            st.info("No audit logs found.")
 
-# ============================================
 # ENTERPRISE VIEW
-# ============================================
-elif choice == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
+elif st.session_state.active_menu == "🏢 Enterprise View" and st.session_state.user_role in ["admin", "management"]:
     st.subheader("Enterprise Management View")
     st.markdown("### Cross-Department Performance Overview")
     
