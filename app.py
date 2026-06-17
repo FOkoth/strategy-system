@@ -4276,7 +4276,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACT MANAGEMENT - FIXED MULTI-YEAR WITH UNIQUE KEYS
+# CONTRACT MANAGEMENT - FIXED MULTI-YEAR WITH SESSION STATE
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -4454,6 +4454,10 @@ elif st.session_state.active_menu == "📄 Contracts":
         
         contract_type = st.radio("Contract Type", ["Single Year Contract", "Multi-Year Contract"], horizontal=True)
         
+        # Use session state to store year values
+        if "contract_year_values" not in st.session_state:
+            st.session_state.contract_year_values = {}
+        
         with st.form("new_contract_enhanced"):
             col1, col2 = st.columns(2)
             
@@ -4473,7 +4477,7 @@ elif st.session_state.active_menu == "📄 Contracts":
             
             st.markdown("---")
             
-            # Multi-Year Contract Section
+            # Multi-Year Contract Section - USING SESSION STATE
             if contract_type == "Multi-Year Contract":
                 st.markdown("#### 📅 Multi-Year Contract Breakdown")
                 st.info("Please enter the annual value for each year of the contract. The total contract value will be calculated automatically.")
@@ -4489,71 +4493,75 @@ elif st.session_state.active_menu == "📄 Contracts":
                 elif "5 years" in contract_duration:
                     num_years = 5
                 
-                # Use a unique session state key for each year's values
-                years_data = []
-                total_value = 0
-                
                 st.markdown(f"**📆 Contract Duration: {num_years} year(s)**")
                 st.markdown("---")
                 
-                # Create dynamic year inputs with UNIQUE KEYS
+                # Initialize session state for this contract
+                contract_key = f"contract_{contract_title}_{start_date}"
+                if contract_key not in st.session_state.contract_year_values:
+                    st.session_state.contract_year_values[contract_key] = {}
+                
+                # Create dynamic year inputs with UNIQUE KEYS using session state
                 for year_num in range(1, num_years + 1):
                     st.markdown(f"**📆 Year {year_num}**")
                     col_y1, col_y2, col_y3 = st.columns(3)
                     
-                    # Use unique keys for each input to prevent overwriting
+                    # Get current value from session state or default to 0
+                    current_value = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
+                    
                     with col_y1:
-                        year_value_key = f"year_value_{year_num}_{int(datetime.now().timestamp())}"
                         year_value = st.number_input(
                             f"Annual Value - Year {year_num} (KES)*", 
                             min_value=0.0, 
                             step=10000.0, 
                             format="%.2f", 
-                            key=f"year_value_{year_num}",
+                            value=current_value,
+                            key=f"year_value_{year_num}_{contract_key}",
                             help=f"Enter the budget for Year {year_num}"
                         )
+                        # Update session state
+                        st.session_state.contract_year_values[contract_key][f"year_{year_num}_value"] = year_value
+                    
                     with col_y2:
                         year_start = st.date_input(
                             f"Year {year_num} Start Date", 
                             value=start_date if year_num == 1 else start_date + relativedelta(years=year_num-1),
-                            key=f"year_start_{year_num}"
+                            key=f"year_start_{year_num}_{contract_key}"
                         )
                     with col_y3:
                         year_end = st.date_input(
                             f"Year {year_num} End Date", 
                             value=end_date if year_num == num_years else start_date + relativedelta(years=year_num),
-                            key=f"year_end_{year_num}"
+                            key=f"year_end_{year_num}_{contract_key}"
                         )
                     
-                    # Store year data
-                    years_data.append({
-                        "year_number": year_num,
-                        "year_start_date": year_start.isoformat() if year_start else None,
-                        "year_end_date": year_end.isoformat() if year_end else None,
-                        "annual_value": year_value if year_value > 0 else 0,
-                        "amount_spent_to_date": 0,
-                        "status": "active"
-                    })
-                    
-                    # Update total
-                    if year_value > 0:
-                        total_value += year_value
-                    
                     st.markdown("---")
+                
+                # Calculate total from session state values
+                total_value = 0
+                years_data = []
+                for year_num in range(1, num_years + 1):
+                    year_val = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
+                    if year_val > 0:
+                        total_value += year_val
+                        years_data.append({
+                            "year_number": year_num,
+                            "annual_value": year_val,
+                            "amount_spent_to_date": 0,
+                            "status": "active"
+                        })
                 
                 # Display total
                 if total_value > 0:
                     st.success(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
-                    st.info(f"📊 {num_years} year(s) configured")
+                    st.info(f"📊 {len(years_data)} year(s) configured")
                     
                     # Show breakdown table
                     if years_data:
                         df_years_preview = pd.DataFrame([
                             {
                                 "Year": f"Year {y['year_number']}",
-                                "Annual Value": f"KES {y['annual_value']:,.2f}",
-                                "Start": y.get('year_start_date', 'N/A'),
-                                "End": y.get('year_end_date', 'N/A')
+                                "Annual Value": f"KES {y['annual_value']:,.2f}"
                             } for y in years_data
                         ])
                         st.dataframe(df_years_preview, use_container_width=True, hide_index=True)
@@ -4623,6 +4631,9 @@ elif st.session_state.active_menu == "📄 Contracts":
                         
                     else:  # One-time
                         st.info(f"💰 One-time payment of KES {total_value:,.2f} due upon contract signing.")
+                
+                # Store years_data in session state for form submission
+                st.session_state.contract_years_data = years_data
                         
             else:
                 # Single Year Contract
@@ -4673,10 +4684,13 @@ elif st.session_state.active_menu == "📄 Contracts":
                     st.error("❌ Please fill all required fields (*)")
                 else:
                     if contract_type == "Multi-Year Contract":
-                        # Check if all years have valid values
+                        # Get years data from session state
+                        years_data = st.session_state.get("contract_years_data", [])
+                        
+                        # Validate that all years have values > 0
                         valid_years = [y for y in years_data if y['annual_value'] > 0]
-                        if not valid_years:
-                            st.error("❌ Please add valid values for each year (greater than 0)")
+                        if not valid_years or len(valid_years) != num_years:
+                            st.error("❌ Please add valid values for all years (greater than 0)")
                         else:
                             # Calculate totals
                             total_value = sum(y['annual_value'] for y in years_data)
@@ -4714,6 +4728,9 @@ elif st.session_state.active_menu == "📄 Contracts":
                             if success:
                                 st.success(f"✅ {message}")
                                 st.balloons()
+                                # Clear session state
+                                st.session_state.contract_year_values = {}
+                                st.session_state.contract_years_data = []
                                 st.rerun()
                             else:
                                 st.error(f"❌ {message}")
@@ -4829,7 +4846,6 @@ elif st.session_state.active_menu == "📄 Contracts":
                 st.info("No updatable contracts found. Only active and expiring soon contracts can be updated.")
         else:
             st.info("No contracts found.")
-
 # ============================================
 # POLICIES SECTION
 # ============================================
