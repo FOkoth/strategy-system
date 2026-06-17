@@ -4276,7 +4276,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACT MANAGEMENT 
+# CONTRACT MANAGEMENT - FIXED MULTI-YEAR WITH SESSION STATE & DATES
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -4297,7 +4297,7 @@ elif st.session_state.active_menu == "📄 Contracts":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric(" Total Contract Value", f"KES {total_value:,.0f}")
+                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
             with col2:
                 st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
             with col3:
@@ -4501,6 +4501,10 @@ elif st.session_state.active_menu == "📄 Contracts":
                 if contract_key not in st.session_state.contract_year_values:
                     st.session_state.contract_year_values[contract_key] = {}
                 
+                # Initialize year start/end dates
+                year_start_dates = {}
+                year_end_dates = {}
+                
                 # Create dynamic year inputs with UNIQUE KEYS using session state
                 for year_num in range(1, num_years + 1):
                     st.markdown(f"**📆 Year {year_num}**")
@@ -4508,6 +4512,17 @@ elif st.session_state.active_menu == "📄 Contracts":
                     
                     # Get current value from session state or default to 0
                     current_value = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
+                    
+                    # Calculate default dates for each year
+                    if year_num == 1:
+                        default_start = start_date
+                    else:
+                        default_start = start_date + relativedelta(years=year_num-1)
+                    
+                    if year_num == num_years:
+                        default_end = end_date
+                    else:
+                        default_end = start_date + relativedelta(years=year_num)
                     
                     with col_y1:
                         year_value = st.number_input(
@@ -4525,15 +4540,18 @@ elif st.session_state.active_menu == "📄 Contracts":
                     with col_y2:
                         year_start = st.date_input(
                             f"Year {year_num} Start Date", 
-                            value=start_date if year_num == 1 else start_date + relativedelta(years=year_num-1),
+                            value=default_start,
                             key=f"year_start_{year_num}_{contract_key}"
                         )
+                        year_start_dates[year_num] = year_start
+                    
                     with col_y3:
                         year_end = st.date_input(
                             f"Year {year_num} End Date", 
-                            value=end_date if year_num == num_years else start_date + relativedelta(years=year_num),
+                            value=default_end,
                             key=f"year_end_{year_num}_{contract_key}"
                         )
+                        year_end_dates[year_num] = year_end
                     
                     st.markdown("---")
                 
@@ -4544,8 +4562,15 @@ elif st.session_state.active_menu == "📄 Contracts":
                     year_val = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
                     if year_val > 0:
                         total_value += year_val
+                        
+                        # Get start and end dates for this year
+                        year_start = year_start_dates.get(year_num, start_date)
+                        year_end = year_end_dates.get(year_num, end_date)
+                        
                         years_data.append({
                             "year_number": year_num,
+                            "year_start_date": year_start.isoformat() if year_start else start_date.isoformat(),
+                            "year_end_date": year_end.isoformat() if year_end else end_date.isoformat(),
                             "annual_value": year_val,
                             "amount_spent_to_date": 0,
                             "status": "active"
@@ -4553,7 +4578,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                 
                 # Display total
                 if total_value > 0:
-                    st.success(f" **Total Contract Value: KES {total_value:,.2f}**")
+                    st.success(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
                     st.info(f"📊 {len(years_data)} year(s) configured")
                     
                     # Show breakdown table
@@ -4561,7 +4586,9 @@ elif st.session_state.active_menu == "📄 Contracts":
                         df_years_preview = pd.DataFrame([
                             {
                                 "Year": f"Year {y['year_number']}",
-                                "Annual Value": f"KES {y['annual_value']:,.2f}"
+                                "Annual Value": f"KES {y['annual_value']:,.2f}",
+                                "Start": y['year_start_date'],
+                                "End": y['year_end_date']
                             } for y in years_data
                         ])
                         st.dataframe(df_years_preview, use_container_width=True, hide_index=True)
@@ -4630,14 +4657,14 @@ elif st.session_state.active_menu == "📄 Contracts":
                         milestone_input = st.text_area("Payment Milestones", placeholder="e.g., 30% upon signing, 40% at mid-term, 30% upon completion", height=80)
                         
                     else:  # One-time
-                        st.info(f" One-time payment of KES {total_value:,.2f} due upon contract signing.")
+                        st.info(f"💰 One-time payment of KES {total_value:,.2f} due upon contract signing.")
                 
                 # Store years_data in session state for form submission
                 st.session_state.contract_years_data = years_data
                         
             else:
                 # Single Year Contract
-                st.markdown("####  Contract Value")
+                st.markdown("#### 💰 Contract Value")
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f", key="single_contract_value")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0, key="single_amount_spent")
                 
@@ -4646,20 +4673,20 @@ elif st.session_state.active_menu == "📄 Contracts":
                     st.markdown("#### 💳 Payment Schedule")
                     if payment_terms == "Monthly":
                         monthly = contract_value / 12
-                        st.info(f" Monthly Payment: KES {monthly:,.2f}")
-                        st.info(f" Total Annual Value: KES {contract_value:,.2f}")
+                        st.info(f"💰 Monthly Payment: KES {monthly:,.2f}")
+                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
                     elif payment_terms == "Quarterly":
                         quarterly = contract_value / 4
-                        st.info(f" Quarterly Payment: KES {quarterly:,.2f}")
-                        st.info(f" Total Annual Value: KES {contract_value:,.2f}")
+                        st.info(f"💰 Quarterly Payment: KES {quarterly:,.2f}")
+                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
                     elif payment_terms == "Bi-annually":
                         bi_annual = contract_value / 2
-                        st.info(f" Bi-Annual Payment: KES {bi_annual:,.2f}")
-                        st.info(f" Total Annual Value: KES {contract_value:,.2f}")
+                        st.info(f"💰 Bi-Annual Payment: KES {bi_annual:,.2f}")
+                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
                     elif payment_terms == "Annually":
-                        st.info(f" Annual Payment: KES {contract_value:,.2f}")
+                        st.info(f"💰 Annual Payment: KES {contract_value:,.2f}")
                     elif payment_terms == "One-time":
-                        st.info(f" One-time Payment: KES {contract_value:,.2f}")
+                        st.info(f"💰 One-time Payment: KES {contract_value:,.2f}")
             
             st.markdown("---")
             
@@ -4694,8 +4721,8 @@ elif st.session_state.active_menu == "📄 Contracts":
                         else:
                             # Calculate totals
                             total_value = sum(y['annual_value'] for y in years_data)
-                            total_spent = 0
-                            utilization = 0
+                            total_spent = sum(y.get('amount_spent_to_date', 0) for y in years_data)
+                            utilization = (total_spent / total_value * 100) if total_value > 0 else 0
                             
                             # Map department name to ID
                             dept_id = st.session_state.user_dept
