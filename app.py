@@ -1840,7 +1840,7 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
                 errors.append(f"Row {idx+2}: Failed to insert")
         except Exception as e:
             error_count += 1
-            errors.append(f"Row {idx+2}: {str(e)}")
+            errors.append(f"Row {idx+2}: {str(e)}") 
     
     return success_count, error_count, errors
 
