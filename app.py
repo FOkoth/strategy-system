@@ -742,8 +742,15 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                 
                 # Show activities (max 3)
                 for act in day_activities[:3]:
-                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
-                    html += f'<div class="calendar-event-item" onclick="event.stopPropagation(); showActivityDetail(\'{act["planned_activity"][:50].replace("'", "\\'")}\', \'{act.get("status", "Pending")}\', \'{act.get("department_name", "Unknown")}\', \'{act.get("progress_percent", 0)}\', \'{act.get("due_date", "")}\')" style="font-size: 0.6rem; margin-top: 3px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
+                    # Escape activity title for JavaScript
+                    escaped_title = act["planned_activity"][:50].replace("'", "\\'").replace('"', '&quot;')
+                    status = act.get("status", "Pending")
+                    department = act.get("department_name", "Unknown")
+                    progress = act.get("progress_percent", 0)
+                    due_date = act.get("due_date", "")
+                    
+                    status_icon = "✅" if status == 'Done' else "🟡" if status == 'In Progress' else "🔴"
+                    html += f'<div class="calendar-event-item" onclick="event.stopPropagation(); showActivityDetail(\'{escaped_title}\', \'{status}\', \'{department}\', \'{progress}\', \'{due_date}\')" style="font-size: 0.6rem; margin-top: 3px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
                     html += f'{status_icon} {act["planned_activity"][:20]}...'
                     html += '</div>'
                 
