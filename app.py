@@ -950,7 +950,6 @@ def change_user_password(username, old_password, new_password):
             return False, "User not found"
         
         user = result.data[0]
-        # Check both plain text and hashed
         if old_password != user["password_hash"] and hash_password(old_password) != user["password_hash"]:
             return False, "Current password is incorrect"
         
@@ -1014,7 +1013,7 @@ def get_audit_logs(limit=500):
         return []
 
 # ============================================
-# DIRECTORATE FUNCTIONS - FIXED
+# DIRECTORATE FUNCTIONS
 # ============================================
 @st.cache_data(ttl=3600)
 def get_cached_directorates():
@@ -1079,7 +1078,7 @@ def delete_directorate(directorate_id):
         return False, str(e)
 
 # ============================================
-# DEPARTMENT FUNCTIONS - FIXED with directorate mapping
+# DEPARTMENT FUNCTIONS
 # ============================================
 @st.cache_data(ttl=3600)
 def get_cached_departments():
@@ -1087,7 +1086,6 @@ def get_cached_departments():
         result = supabase.table("departments").select("*").order("name").execute()
         depts = result.data
         
-        # Get directorates for mapping
         dir_result = supabase.table("directorates").select("id, name, director_name").execute()
         directorates = {d["id"]: d for d in dir_result.data}
         
@@ -2257,12 +2255,6 @@ if st.session_state.theme == "light":
             min-height: 100vh;
             padding: 1rem;
             background: {HELB_WHITE};
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9999;
         }}
         .login-container {{
             background: #ffffff;
@@ -2688,12 +2680,6 @@ else:
             min-height: 100vh;
             padding: 1rem;
             background: #1a1a2e;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9999;
         }}
         .login-container {{
             background: #1e293b;
@@ -2824,7 +2810,7 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - FIXED WITH POSITION FIXED
+# LOGIN PAGE - FIXED
 # ============================================
 if not st.session_state.authenticated:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
