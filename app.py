@@ -1466,15 +1466,6 @@ def update_contract_user(contract_id, data):
     except Exception as e:
         return False
 
-def update_contract_admin(contract_id, data):
-    try:
-        supabase.table("contracts").update(data).eq("id", contract_id).execute()
-        st.cache_data.clear()
-        add_audit_log("UPDATE", "contract", contract_id, "Admin updated contract")
-        return True
-    except Exception as e:
-        return False
-
 def update_contract_admin_full(contract_id, data):
     """Full contract update for admin - all fields editable"""
     try:
@@ -1509,10 +1500,16 @@ def update_contract_admin_full(contract_id, data):
         data["utilization_rate"] = utilization_rate
         data["budget_alert"] = utilization_rate >= 80
         
-        supabase.table("contracts").update(data).eq("id", contract_id).execute()
-        st.cache_data.clear()
-        add_audit_log("FULL_UPDATE", "contract", contract_id, f"Admin full updated contract: {data.get('contract_title', '')}")
-        return True
+        # Update the contract
+        result = supabase.table("contracts").update(data).eq("id", contract_id).execute()
+        
+        # Check if update was successful
+        if result.data:
+            st.cache_data.clear()
+            add_audit_log("FULL_UPDATE", "contract", contract_id, f"Admin full updated contract: {data.get('contract_title', '')}")
+            return True
+        else:
+            return False
     except Exception as e:
         print(f"Error in update_contract_admin_full: {e}")
         return False
