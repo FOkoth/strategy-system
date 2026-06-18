@@ -1205,6 +1205,17 @@ def get_cached_contracts(user_role, user_dept):
             result = supabase.table("contracts").select("*").order("created_at", desc=True).execute()
         else:
             result = supabase.table("contracts").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
+        
+        # Handle missing department_name
+        for contract in result.data:
+            if 'department_name' not in contract or not contract['department_name']:
+                # Try to get department name from department_id
+                if contract.get('department_id'):
+                    dept_name = get_department_name(contract['department_id'])
+                    contract['department_name'] = dept_name if dept_name else 'Unassigned'
+                else:
+                    contract['department_name'] = 'Unassigned'
+        
         return result.data
     except:
         return []
@@ -1366,6 +1377,14 @@ def update_contract_year_status(year_id, status, notes=None):
 
 def add_enhanced_contract(data):
     try:
+        # Ensure department_name is set
+        if 'department_name' not in data or not data['department_name']:
+            if data.get('department_id'):
+                dept_name = get_department_name(data['department_id'])
+                data['department_name'] = dept_name if dept_name else 'Unassigned'
+            else:
+                data['department_name'] = 'Unassigned'
+        
         end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
         days_left = (end_date - datetime.now().date()).days
         
@@ -1462,6 +1481,14 @@ def update_contract_admin_full(contract_id, data):
         # Add updated_at timestamp
         data['updated_at'] = datetime.now().isoformat()
         
+        # Ensure department_name is set
+        if 'department_name' not in data or not data['department_name']:
+            if data.get('department_id'):
+                dept_name = get_department_name(data['department_id'])
+                data['department_name'] = dept_name if dept_name else 'Unassigned'
+            else:
+                data['department_name'] = 'Unassigned'
+        
         # Calculate derived fields
         end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
         days_left = (end_date - datetime.now().date()).days
@@ -1481,11 +1508,6 @@ def update_contract_admin_full(contract_id, data):
         utilization_rate = (amount_spent / contract_value * 100) if contract_value > 0 else 0
         data["utilization_rate"] = utilization_rate
         data["budget_alert"] = utilization_rate >= 80
-        
-        # If multi-year, we keep the total value
-        if data.get("is_multi_year"):
-            # We keep the total contract value as is
-            pass
         
         supabase.table("contracts").update(data).eq("id", contract_id).execute()
         st.cache_data.clear()
@@ -3062,6 +3084,7 @@ with st.sidebar:
         st.session_state.clear()
         st.cache_data.clear()
         st.rerun()
+
 
 # ============================================
 # WORK PLANS MODULE
