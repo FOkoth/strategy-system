@@ -258,12 +258,6 @@ if "calendar_selected_quarter" not in st.session_state:
     st.session_state.calendar_selected_quarter = "All"
 if "calendar_selected_year" not in st.session_state:
     st.session_state.calendar_selected_year = datetime.now().year
-if "selected_calendar_date" not in st.session_state:
-    st.session_state.selected_calendar_date = None
-if "show_date_activities" not in st.session_state:
-    st.session_state.show_date_activities = False
-if "selected_date_activities" not in st.session_state:
-    st.session_state.selected_date_activities = []
 
 # ============================================
 # HELPER FUNCTIONS
@@ -450,6 +444,422 @@ def calculate_risk_score(progress, days_left, total_days):
         return 30
     else:
         return 10
+
+# ============================================
+# ENHANCED CALENDAR VIEW WITH CLICK FUNCTIONALITY
+# ============================================
+def get_months_for_quarter_num(quarter):
+    """Get month numbers for a given quarter"""
+    if quarter == "Q1 (Jul-Sep)":
+        return [7, 8, 9]
+    elif quarter == "Q2 (Oct-Dec)":
+        return [10, 11, 12]
+    elif quarter == "Q3 (Jan-Mar)":
+        return [1, 2, 3]
+    elif quarter == "Q4 (Apr-Jun)":
+        return [4, 5, 6]
+    return []
+
+def generate_calendar_html(activities, year, month, quarter_filter="All"):
+    """Generate HTML for month calendar view with quarter filtering, start/end markers, and clickable activities"""
+    cal = calendar.monthcalendar(year, month)
+    month_name = calendar.month_name[month]
+    
+    # Filter activities by quarter if specified
+    filtered_activities = activities
+    if quarter_filter != "All":
+        quarter_months = get_months_for_quarter_num(quarter_filter)
+        filtered_activities = []
+        for activity in activities:
+            if activity.get('due_date'):
+                due_date = pd.to_datetime(activity['due_date']).date()
+                if due_date.year == year and due_date.month in quarter_months:
+                    filtered_activities.append(activity)
+    
+    # Group activities by date with start/end markers
+    activities_by_date = {}
+    start_dates = {}
+    end_dates = {}
+    
+    for activity in filtered_activities:
+        if activity.get('due_date'):
+            due_date = pd.to_datetime(activity['due_date']).date()
+            if due_date.year == year and due_date.month == month:
+                date_key = due_date.day
+                if date_key not in activities_by_date:
+                    activities_by_date[date_key] = []
+                activities_by_date[date_key].append(activity)
+        
+        # Track start and end dates
+        if activity.get('start_date'):
+            start_date = pd.to_datetime(activity['start_date']).date()
+            if start_date.year == year and start_date.month == month:
+                start_dates[start_date.day] = True
+        if activity.get('end_date'):
+            end_date = pd.to_datetime(activity['end_date']).date()
+            if end_date.year == year and end_date.month == month:
+                end_dates[end_date.day] = True
+    
+    # Determine theme for styling
+    is_dark = st.session_state.theme == "dark"
+    
+    # Build HTML with JavaScript for click functionality
+    html = f"""
+    <style>
+        .calendar-clickable {{
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }}
+        .calendar-clickable:hover {{
+            opacity: 0.85 !important;
+            transform: scale(0.97) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+        }}
+        .calendar-event-item {{
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }}
+        .calendar-event-item:hover {{
+            opacity: 0.8 !important;
+            transform: scale(0.95) !important;
+        }}
+        /* Modal styles */
+        .calendar-modal {{
+            display: none;
+            position: fixed;
+            z-index: 99999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
+        }}
+        .calendar-modal-content {{
+            background-color: {'#ffffff' if not is_dark else '#1e293b'};
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: slideDown 0.3s ease;
+            border: 1px solid {'#e5e7eb' if not is_dark else '#334155'};
+        }}
+        .calendar-modal-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #00843D;
+        }}
+        .calendar-modal-close {{
+            color: {'#6b7280' if not is_dark else '#94a3b8'};
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            line-height: 1;
+            padding: 0 8px;
+        }}
+        .calendar-modal-close:hover {{
+            color: {'#000000' if not is_dark else '#ffffff'};
+            transform: rotate(90deg);
+        }}
+        .calendar-modal-title {{
+            color: {'#000000' if not is_dark else '#ffffff'};
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0;
+        }}
+        .calendar-modal-title span {{
+            color: #00843D;
+        }}
+        .calendar-modal-subtitle {{
+            color: {'#6b7280' if not is_dark else '#94a3b8'};
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }}
+        .calendar-modal-activity {{
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #00843D;
+            background-color: {'#f9fafb' if not is_dark else '#0f172a'};
+            transition: all 0.2s ease;
+        }}
+        .calendar-modal-activity:hover {{
+            background-color: {'#f3f4f6' if not is_dark else '#1e293b'};
+            transform: translateX(4px);
+        }}
+        .calendar-modal-activity-title {{
+            font-weight: 600;
+            color: {'#000000' if not is_dark else '#ffffff'};
+            font-size: 0.95rem;
+        }}
+        .calendar-modal-activity-detail {{
+            font-size: 0.8rem;
+            color: {'#6b7280' if not is_dark else '#94a3b8'};
+            margin-top: 0.25rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }}
+        .calendar-modal-activity-detail span {{
+            background: {'#e5e7eb' if not is_dark else '#334155'};
+            padding: 0.1rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }}
+        .calendar-modal-activity-status {{
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }}
+        .status-done {{ background: #10b981; color: white; }}
+        .status-progress {{ background: #f59e0b; color: white; }}
+        .status-pending {{ background: #ef4444; color: white; }}
+        .no-activities {{
+            color: {'#6b7280' if not is_dark else '#94a3b8'};
+            text-align: center;
+            padding: 2rem;
+            font-size: 1rem;
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; }}
+            to {{ opacity: 1; }}
+        }}
+        @keyframes slideDown {{
+            from {{ transform: translateY(-50px); opacity: 0; }}
+            to {{ transform: translateY(0); opacity: 1; }}
+        }}
+        .calendar-legend {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-top: 1px solid {'#e5e7eb' if not is_dark else '#475569'};
+        }}
+        .calendar-legend-item {{
+            font-size: 0.65rem;
+            color: {'#000000' if not is_dark else '#FFFFFF'};
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }}
+        .calendar-legend-color {{
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid #00843D;
+            vertical-align: middle;
+        }}
+    </style>
+    
+    <div style="background: {'#ffffff' if not is_dark else '#1e293b'}; padding: 1rem; border-radius: 12px; border: 1px solid {'#e5e7eb' if not is_dark else '#334155'};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 0.5rem;">
+            <h4 style="margin: 0; color: {'#000000' if not is_dark else '#FFFFFF'};">📅 {month_name} {year}</h4>
+            <span style="font-size: 0.8rem; color: {'#6b7280' if not is_dark else '#94a3b8'};">
+                📋 {len(filtered_activities)} activities
+            </span>
+        </div>
+        
+        <!-- Modal -->
+        <div id="calendarModal" class="calendar-modal" onclick="if(event.target===this) closeModal()">
+            <div class="calendar-modal-content">
+                <div class="calendar-modal-header">
+                    <div>
+                        <div class="calendar-modal-title">📅 Activities for <span id="modalDate"></span></div>
+                        <div class="calendar-modal-subtitle" id="modalSubtitle"></div>
+                    </div>
+                    <span class="calendar-modal-close" onclick="closeModal()">&times;</span>
+                </div>
+                <div id="modalActivities"></div>
+            </div>
+        </div>
+        
+        <table style="width:100%; border-collapse: collapse; background: {'#ffffff' if not is_dark else '#1e293b'};">
+            <tr>
+    """
+    
+    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+        html += f'<th style="padding: 8px; text-align: center; background-color: {"#f3f4f6" if not is_dark else "#334155"}; border: 1px solid {"#e5e7eb" if not is_dark else "#475569"}; color: {"#000000" if not is_dark else "#FFFFFF"}; font-size: 0.8rem;">{day}</th>'
+    html += '</tr>'
+    
+    for week in cal:
+        html += '<tr>'
+        for day in week:
+            if day == 0:
+                html += f'<td style="padding: 8px; border: 1px solid {"#e5e7eb" if not is_dark else "#475569"}; vertical-align: top; height: 85px; background-color: {"#f9fafb" if not is_dark else "#0f172a"};"></td>'
+            else:
+                day_activities = activities_by_date.get(day, [])
+                is_start = day in start_dates
+                is_end = day in end_dates
+                has_activities = len(day_activities) > 0
+                
+                # Determine background color
+                if is_start and is_end:
+                    bg_color = '#d1fae5' if not is_dark else '#064e3b'
+                    border_style = "border: 2px solid #00843D; border-radius: 8px;"
+                elif is_start:
+                    bg_color = '#d1fae5' if not is_dark else '#064e3b'
+                    border_style = "border-left: 3px solid #00843D; border-top: 2px solid #00843D; border-bottom: 2px solid #00843D; border-radius: 8px 0 0 8px;"
+                elif is_end:
+                    bg_color = '#d1fae5' if not is_dark else '#064e3b'
+                    border_style = "border-right: 3px solid #00843D; border-top: 2px solid #00843D; border-bottom: 2px solid #00843D; border-radius: 0 8px 8px 0;"
+                elif has_activities:
+                    bg_color = '#fef3c7' if not is_dark else '#1e293b'
+                    border_style = ""
+                else:
+                    bg_color = 'white' if not is_dark else '#0f172a'
+                    border_style = ""
+                
+                # Add clickable class if there are activities
+                clickable_class = 'calendar-clickable' if has_activities else ''
+                onclick_attr = f'onclick="openModal({day}, {year}, {month})"' if has_activities else ''
+                
+                html += f'<td class="{clickable_class}" {onclick_attr} style="padding: 8px; border: 1px solid {"#e5e7eb" if not is_dark else "#475569"}; vertical-align: top; height: 85px; background-color: {bg_color}; {border_style}">'
+                html += f'<div style="display: flex; justify-content: space-between; align-items: center;">'
+                html += f'<strong style="color: {"#000000" if not is_dark else "#FFFFFF"};">{day}</strong>'
+                
+                if is_start:
+                    html += f'<span style="font-size: 0.45rem; background: #00843D; color: white; padding: 1px 4px; border-radius: 4px;">▶ Start</span>'
+                elif is_end:
+                    html += f'<span style="font-size: 0.45rem; background: #00843D; color: white; padding: 1px 4px; border-radius: 4px;">◼ End</span>'
+                elif has_activities:
+                    html += f'<span style="font-size: 0.45rem; color: {"#6b7280" if not is_dark else "#94a3b8"};">{len(day_activities)}</span>'
+                
+                html += '</div>'
+                
+                # Show activities (max 3)
+                for act in day_activities[:3]:
+                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
+                    html += f'<div class="calendar-event-item" onclick="event.stopPropagation(); showActivityDetail(\'{act["planned_activity"][:50].replace("'", "\\'")}\', \'{act.get("status", "Pending")}\', \'{act.get("department_name", "Unknown")}\', \'{act.get("progress_percent", 0)}\', \'{act.get("due_date", "")}\')" style="font-size: 0.6rem; margin-top: 3px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
+                    html += f'{status_icon} {act["planned_activity"][:20]}...'
+                    html += '</div>'
+                
+                if len(day_activities) > 3:
+                    html += f'<div style="font-size: 0.5rem; margin-top: 2px; color: {"#6b7280" if not is_dark else "#94a3b8"}; text-align: center;">+{len(day_activities)-3} more</div>'
+                
+                html += '</td>'
+        html += '</tr>'
+    html += '</table>'
+    
+    # Legend
+    html += f'''
+    <div class="calendar-legend">
+        <span class="calendar-legend-item">
+            <span class="calendar-legend-color" style="background: #d1fae5; border-color: #00843D;"></span>
+            Activity Range
+        </span>
+        <span class="calendar-legend-item">
+            <span class="calendar-legend-color" style="background: #fef3c7; border-color: #f59e0b;"></span>
+            Has Activity
+        </span>
+        <span class="calendar-legend-item">
+            <span style="color: #00843D; font-weight: bold;">▶</span> Start Date
+        </span>
+        <span class="calendar-legend-item">
+            <span style="color: #00843D; font-weight: bold;">◼</span> End Date
+        </span>
+        <span class="calendar-legend-item">
+            🔴 Pending
+        </span>
+        <span class="calendar-legend-item">
+            🟡 In Progress
+        </span>
+        <span class="calendar-legend-item">
+            ✅ Done
+        </span>
+        <span class="calendar-legend-item">
+            👆 Click date for details
+        </span>
+    </div>
+    </div>
+    
+    <script>
+        // Store activities data for the modal
+        var activitiesData = {json.dumps({str(k): v for k, v in activities_by_date.items()})};
+        var currentMonth = {month};
+        var currentYear = {year};
+        var monthNames = {json.dumps(calendar.month_name[1:])};
+        
+        function openModal(day, year, month) {{
+            var modal = document.getElementById("calendarModal");
+            var modalActivities = document.getElementById("modalActivities");
+            var modalSubtitle = document.getElementById("modalSubtitle");
+            
+            var dateObj = new Date(year, month - 1, day);
+            var dateStr = dateObj.toLocaleDateString('en-US', {{ weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }});
+            
+            document.getElementById("modalDate").textContent = dateStr;
+            
+            // Get activities for this date
+            var dayKey = day.toString();
+            var activities = activitiesData[dayKey] || [];
+            
+            if (activities.length === 0) {{
+                modalActivities.innerHTML = '<div class="no-activities">No activities for this date</div>';
+                modalSubtitle.textContent = 'No activities scheduled';
+            }} else {{
+                modalSubtitle.textContent = activities.length + ' activity(ies) scheduled';
+                var html = '';
+                activities.forEach(function(act) {{
+                    var statusClass = act.status === 'Done' ? 'status-done' : (act.status === 'In Progress' ? 'status-progress' : 'status-pending');
+                    var statusIcon = act.status === 'Done' ? '✅' : (act.status === 'In Progress' ? '🟡' : '🔴');
+                    html += '<div class="calendar-modal-activity">';
+                    html += '<div class="calendar-modal-activity-title">' + statusIcon + ' ' + act.planned_activity + '</div>';
+                    html += '<div class="calendar-modal-activity-detail">';
+                    html += '<span>🏛️ ' + (act.department_name || 'Unknown') + '</span>';
+                    html += '<span>📊 ' + (act.progress_percent || 0) + '%</span>';
+                    html += '<span>📅 Due: ' + act.due_date + '</span>';
+                    html += '<span class="calendar-modal-activity-status ' + statusClass + '">' + act.status + '</span>';
+                    if (act.strategic_pillar) {{
+                        html += '<span>📌 ' + act.strategic_pillar.substring(0, 30) + '...</span>';
+                    }}
+                    if (act.comment) {{
+                        html += '<span>💬 ' + act.comment.substring(0, 50) + '...</span>';
+                    }}
+                    html += '</div>';
+                    html += '</div>';
+                }});
+                modalActivities.innerHTML = html;
+            }}
+            
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+        }}
+        
+        function closeModal() {{
+            document.getElementById("calendarModal").style.display = "none";
+            document.body.style.overflow = "auto";
+        }}
+        
+        function showActivityDetail(title, status, department, progress, dueDate) {{
+            var statusEmoji = status === 'Done' ? '✅' : (status === 'In Progress' ? '🟡' : '🔴');
+            var msg = statusEmoji + ' ' + title + '\\nDepartment: ' + department + '\\nProgress: ' + progress + '%\\nDue: ' + dueDate;
+            alert(msg);
+        }}
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(event) {{
+            if (event.key === "Escape") {{
+                closeModal();
+            }}
+        }});
+    </script>
+    '''
+    
+    return html
 
 # ============================================
 # PASSWORD MANAGEMENT FUNCTIONS
@@ -1448,420 +1858,6 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# ENHANCED CALENDAR VIEW FUNCTIONS (with click to view details)
-# ============================================
-def generate_calendar_html(activities, year, month, quarter_filter="All"):
-    import calendar
-    
-    # Filter activities by quarter if specified
-    filtered_activities = []
-    if quarter_filter != "All":
-        quarter_months = {
-            "Q1 (Jul-Sep)": [7, 8, 9],
-            "Q2 (Oct-Dec)": [10, 11, 12],
-            "Q3 (Jan-Mar)": [1, 2, 3],
-            "Q4 (Apr-Jun)": [4, 5, 6]
-        }
-        allowed_months = quarter_months.get(quarter_filter, [])
-        for activity in activities:
-            if activity.get('due_date'):
-                due_date = pd.to_datetime(activity['due_date']).date()
-                if due_date.month in allowed_months:
-                    filtered_activities.append(activity)
-    else:
-        filtered_activities = activities
-    
-    # Get theme colors for calendar
-    theme_bg = "#1a1a2e" if st.session_state.theme == "dark" else "#f8fafc"
-    theme_text = "#FFFFFF" if st.session_state.theme == "dark" else "#1F2937"
-    theme_header_bg = "#0f3460" if st.session_state.theme == "dark" else "#1e3a5f"
-    theme_border = "#334155" if st.session_state.theme == "dark" else "#e2e8f0"
-    theme_card_bg = "#1e293b" if st.session_state.theme == "dark" else "#ffffff"
-    
-    # Color palette for pillars
-    pillar_colors = {
-        "1. Customer Excellence": "#10B981",
-        "2. Financial Sustainability and Stewardship": "#F59E0B",
-        "3. Innovation & Digital Transformation": "#3B82F6",
-        "4. Our People Centricity and Compliance": "#8B5CF6",
-        "5. Strategy": "#EC4899"
-    }
-    
-    # Build activity lookup with full details for click to view
-    activities_by_date = {}
-    all_activities_list = []
-    pillar_counts = {}
-    total_activities = 0
-    completed_count = 0
-    in_progress_count = 0
-    pending_count = 0
-    
-    for activity in filtered_activities:
-        if activity.get('start_date') and activity.get('due_date'):
-            start_date = pd.to_datetime(activity['start_date']).date()
-            end_date = pd.to_datetime(activity['due_date']).date()
-            
-            # Determine progress
-            progress = activity.get('progress_percent', 0)
-            
-            # Track status counts
-            status = activity.get('status', 'Pending')
-            if status == 'Done':
-                completed_count += 1
-            elif status == 'In Progress':
-                in_progress_count += 1
-            else:
-                pending_count += 1
-            
-            # Calculate days remaining
-            today = datetime.now().date()
-            days_remaining = (end_date - today).days
-            
-            # Track pillar counts for legend
-            pillar = activity.get('strategic_pillar', 'Uncategorized')
-            pillar_counts[pillar] = pillar_counts.get(pillar, 0) + 1
-            total_activities += 1
-            
-            current = start_date
-            while current <= end_date:
-                if current.year == year and current.month == month:
-                    date_key = current.day
-                    if date_key not in activities_by_date:
-                        activities_by_date[date_key] = []
-                    
-                    # Determine marker
-                    marker = ""
-                    if current == start_date:
-                        marker = "📍"
-                    elif current == end_date:
-                        marker = "🏁"
-                    
-                    # Determine urgency based on days remaining
-                    urgency = ""
-                    urgency_color = ""
-                    if days_remaining < 0:
-                        urgency = "🔴 EXPIRED"
-                        urgency_color = "#EF4444"
-                    elif days_remaining <= 7:
-                        urgency = "🔴 URGENT"
-                        urgency_color = "#EF4444"
-                    elif days_remaining <= 30:
-                        urgency = "🟡 SOON"
-                        urgency_color = "#F59E0B"
-                    
-                    activity_detail = {
-                        "activity": activity['planned_activity'],
-                        "activity_id": activity.get('id', ''),
-                        "pillar": pillar,
-                        "status": status,
-                        "progress": progress,
-                        "marker": marker,
-                        "urgency": urgency,
-                        "urgency_color": urgency_color,
-                        "days_remaining": days_remaining,
-                        "department": activity.get('department_name', 'Unknown'),
-                        "color": pillar_colors.get(pillar, "#6B7280"),
-                        "due_date": activity.get('due_date', ''),
-                        "start_date": activity.get('start_date', ''),
-                        "end_date": activity.get('end_date', ''),
-                        "strategic_pillar": pillar,
-                        "actual_achievement": activity.get('actual_achievement', 0),
-                        "annual_target": activity.get('annual_target', '0')
-                    }
-                    activities_by_date[date_key].append(activity_detail)
-                    all_activities_list.append(activity_detail)
-                current += timedelta(days=1)
-    
-    # Generate calendar HTML
-    cal = calendar.monthcalendar(year, month)
-    month_name = calendar.month_name[month]
-    
-    # Store all activities as JSON for the modal
-    all_activities_json = json.dumps(all_activities_list)
-    activities_by_date_json = json.dumps({str(k): v for k, v in activities_by_date.items()})
-    
-    html = f"""
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-            <h4 style="color: {theme_text}; margin: 0;">📅 {month_name} {year}</h4>
-            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                <span style="color: {theme_text}; font-size: 0.8rem;">📋 Total: {total_activities} activities</span>
-                <span style="color: {theme_text}; font-size: 0.8rem;">📆 {len(activities_by_date)} active days</span>
-            </div>
-        </div>
-    """
-    
-    # Pillar Legend
-    if pillar_counts:
-        html += f"""
-        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; padding: 0.5rem; background: {theme_card_bg}; border-radius: 8px; border: 1px solid {theme_border};">
-            <span style="color: {theme_text}; font-size: 0.75rem; font-weight: bold; margin-right: 0.5rem;">🎯 Pillars:</span>
-        """
-        for pillar, count in pillar_counts.items():
-            color = pillar_colors.get(pillar, "#6B7280")
-            pillar_short = pillar.split('. ')[-1][:20] if '. ' in pillar else pillar[:20]
-            html += f"""
-            <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: {color}20; padding: 0.2rem 0.6rem; border-radius: 12px; border-left: 3px solid {color};">
-                <span style="color: {color}; font-size: 0.6rem;">●</span>
-                <span style="color: {theme_text}; font-size: 0.65rem;">{pillar_short}</span>
-                <span style="color: {theme_text}; font-size: 0.55rem; background: {color}; padding: 0.1rem 0.4rem; border-radius: 8px; color: white;">{count}</span>
-            </span>
-            """
-        html += "</div>"
-    
-    # Calendar Table
-    html += f"""
-    <table style="width:100%; border-collapse: collapse; border: 1px solid {theme_border}; border-radius: 8px; overflow: hidden;">
-        <thead>
-            <tr style="background: {theme_header_bg};">
-    """
-    
-    for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-        html += f'<th style="padding: 10px 4px; text-align: center; color: white; font-weight: 600; font-size: 0.75rem; border: 1px solid {theme_border};">{day}</th>'
-    html += '</tr></thead><tbody>'
-    
-    for week in cal:
-        html += '<tr>'
-        for day in week:
-            if day == 0:
-                html += f'<td style="padding: 4px; border: 1px solid {theme_border}; background: {theme_bg}; height: 100px; opacity: 0.3;"></td>'
-            else:
-                day_activities = activities_by_date.get(day, [])
-                is_today = (day == datetime.now().day and month == datetime.now().month and year == datetime.now().year)
-                
-                # Determine background color based on activity count
-                if len(day_activities) >= 5:
-                    bg_color = "#ef444420" if st.session_state.theme == "dark" else "#ef444410"
-                elif len(day_activities) >= 3:
-                    bg_color = "#f59e0b20" if st.session_state.theme == "dark" else "#f59e0b10"
-                elif len(day_activities) >= 1:
-                    bg_color = "#10b98120" if st.session_state.theme == "dark" else "#10b98110"
-                else:
-                    bg_color = theme_bg
-                
-                border_style = "2px solid #3B82F6" if is_today else f"1px solid {theme_border}"
-                
-                # Store activities for this date as JSON
-                date_activities_json = json.dumps(day_activities)
-                
-                html += f'''
-                <td style="padding: 4px; border: {border_style}; vertical-align: top; background: {bg_color}; height: 100px; min-height: 100px; position: relative; cursor: pointer;" 
-                    onclick="showDateActivities({day}, {month}, {year}, '{date_activities_json}')"
-                    onmouseover="this.style.backgroundColor='{theme_header_bg}30';" 
-                    onmouseout="this.style.backgroundColor='{bg_color}';">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                        <strong style="color: {theme_text}; font-size: 0.8rem;">{day}</strong>
-                        {f'<span style="background: #3B82F6; color: white; font-size: 0.5rem; padding: 0.1rem 0.4rem; border-radius: 8px;">Today</span>' if is_today else ''}
-                        {f'<span style="background: #ef4444; color: white; font-size: 0.5rem; padding: 0.1rem 0.4rem; border-radius: 8px;">{len(day_activities)}</span>' if len(day_activities) > 3 else ''}
-                    </div>
-                '''
-                
-                # Show activities (max 4 per day)
-                for i, act in enumerate(day_activities[:4]):
-                    status_icon = "✅" if act['status'] == 'Done' else "🟡" if act['status'] == 'In Progress' else "⏳"
-                    marker_text = f" {act['marker']}" if act['marker'] else ""
-                    
-                    # Progress bar (small)
-                    progress_width = min(act['progress'], 100)
-                    progress_color = "#10B981" if progress_width >= 100 else "#F59E0B" if progress_width > 0 else "#EF4444"
-                    
-                    html += f'''
-                    <div style="font-size: 0.6rem; margin-top: 2px; padding: 2px 4px; background: {act['color']}15; border-left: 3px solid {act['color']}; border-radius: 3px; cursor: pointer; transition: all 0.2s;" 
-                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)';" 
-                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';"
-                         title="{act['activity']}\nPillar: {act['pillar']}\nDepartment: {act['department']}\nProgress: {act['progress']}%\nDays Left: {act['days_remaining']}"
-                         onclick="event.stopPropagation(); showDateActivities({day}, {month}, {year}, '{date_activities_json}')">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: {theme_text};">
-                                {status_icon} {act['activity'][:22]}{'...' if len(act['activity']) > 22 else ''}{marker_text}
-                            </span>
-                            <span style="font-size: 0.5rem; color: {act['urgency_color'] if act['urgency'] else theme_text}60; font-weight: bold;">
-                                {act['urgency'] if act['urgency'] else ''}
-                            </span>
-                        </div>
-                        <div style="width: 100%; height: 2px; background: {theme_border}40; border-radius: 2px; margin-top: 2px; overflow: hidden;">
-                            <div style="width: {progress_width}%; height: 100%; background: {progress_color}; border-radius: 2px; transition: width 0.3s;"></div>
-                        </div>
-                    </div>
-                    '''
-                
-                # Show "+ more" indicator with click to view all
-                if len(day_activities) > 4:
-                    html += f'''
-                    <div style="font-size: 0.55rem; margin-top: 2px; color: #3B82F6; text-align: center; background: {theme_bg}; padding: 1px; border-radius: 3px; cursor: pointer;" 
-                         onclick="event.stopPropagation(); showDateActivities({day}, {month}, {year}, '{date_activities_json}')">
-                        +{len(day_activities) - 4} more (click to view)
-                    </div>
-                    '''
-                
-                html += '</td>'
-        html += '</tr>'
-    
-    html += '</tbody></table>'
-    
-    # JavaScript for showing date activities in a modal
-    html += f'''
-    <script>
-        // Store all activities data
-        var allActivitiesData = {all_activities_json};
-        var activitiesByDate = {activities_by_date_json};
-        
-        function showDateActivities(day, month, year, activitiesJson) {{
-            // Parse the activities
-            var activities = JSON.parse(activitiesJson);
-            
-            if (!activities || activities.length === 0) {{
-                alert('No activities for this date.');
-                return;
-            }}
-            
-            // Build the modal content
-            var modalHtml = '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;">';
-            modalHtml += '<div style="background: {theme_card_bg}; border-radius: 12px; max-width: 800px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">';
-            modalHtml += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">';
-            modalHtml += '<h3 style="color: {theme_text}; margin: 0;">📅 Activities for ' + month + '/' + day + '/' + year + '</h3>';
-            modalHtml += '<button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-weight: 600;">✕ Close</button>';
-            modalHtml += '</div>';
-            modalHtml += '<div style="max-height: 60vh; overflow-y: auto;">';
-            
-            // Add each activity
-            activities.forEach(function(act, index) {{
-                var statusColor = act.status === 'Done' ? '#10B981' : act.status === 'In Progress' ? '#F59E0B' : '#EF4444';
-                var statusIcon = act.status === 'Done' ? '✅' : act.status === 'In Progress' ? '🟡' : '⏳';
-                var progressWidth = Math.min(act.progress, 100);
-                
-                modalHtml += '<div style="background: ' + act.color + '10; border-left: 4px solid ' + act.color + '; padding: 12px; margin-bottom: 8px; border-radius: 6px;">';
-                modalHtml += '<div style="display: flex; justify-content: space-between; align-items: center;">';
-                modalHtml += '<strong style="color: {theme_text};">' + statusIcon + ' ' + act.activity + '</strong>';
-                modalHtml += '<span style="color: ' + act.urgency_color + '; font-weight: bold; font-size: 0.8rem;">' + act.urgency + '</span>';
-                modalHtml += '</div>';
-                modalHtml += '<div style="display: flex; gap: 1rem; margin-top: 4px; flex-wrap: wrap;">';
-                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">📊 Progress: ' + act.progress + '%</span>';
-                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">📌 Pillar: ' + act.pillar + '</span>';
-                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">🏢 Department: ' + act.department + '</span>';
-                modalHtml += '<span style="color: {theme_text}60; font-size: 0.7rem;">📅 Due: ' + act.due_date + '</span>';
-                modalHtml += '</div>';
-                modalHtml += '<div style="width: 100%; height: 4px; background: #E5E7EB; border-radius: 2px; margin-top: 6px; overflow: hidden;">';
-                modalHtml += '<div style="width: ' + progressWidth + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px;"></div>';
-                modalHtml += '</div>';
-                modalHtml += '</div>';
-            }});
-            
-            modalHtml += '</div>';
-            modalHtml += '</div>';
-            modalHtml += '</div>';
-            
-            // Add the modal to the page
-            var modalContainer = document.createElement('div');
-            modalContainer.innerHTML = modalHtml;
-            document.body.appendChild(modalContainer.firstElementChild);
-            
-            // Close modal when clicking outside
-            document.querySelector('.modal-overlay').addEventListener('click', function(e) {{
-                if (e.target === this) {{
-                    this.remove();
-                }}
-            }});
-        }}
-    </script>
-    '''
-    
-    # Summary section with counts
-    html += f'''
-    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; padding: 0.5rem 1rem; background: {theme_card_bg}; border-radius: 8px; border: 1px solid {theme_border}; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="color: {theme_text}; font-size: 0.7rem; font-weight: bold;">📊 Summary:</span>
-            <span style="color: {theme_text}; font-size: 0.65rem;">Total: {total_activities}</span>
-            <span style="color: #10B981; font-size: 0.65rem;">✅ {completed_count} Done</span>
-            <span style="color: #F59E0B; font-size: 0.65rem;">🟡 {in_progress_count} In Progress</span>
-            <span style="color: #EF4444; font-size: 0.65rem;">⏳ {pending_count} Pending</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="color: {theme_text}; font-size: 0.7rem;">📌 Legend:</span>
-            <span style="color: {theme_text}; font-size: 0.6rem;">📍 Start</span>
-            <span style="color: {theme_text}; font-size: 0.6rem;">🏁 End</span>
-            <span style="color: #EF4444; font-size: 0.6rem;">🔴 URGENT</span>
-            <span style="color: #F59E0B; font-size: 0.6rem;">🟡 SOON</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
-            <span style="color: {theme_text}60; font-size: 0.6rem;">💡 Click on any date or activity to view details</span>
-        </div>
-    </div>
-    </div>
-    '''
-    
-    return html
-
-
-# ============================================
-# PILLAR PERFORMANCE SUMMARY FUNCTION
-# ============================================
-def generate_pillar_performance_summary(activities):
-    """Generate a high-level summary of pillar-wise performance"""
-    
-    pillar_data = {}
-    
-    for activity in activities:
-        pillar = activity.get('strategic_pillar', 'Uncategorized')
-        status = activity.get('status', 'Pending')
-        progress = activity.get('progress_percent', 0)
-        
-        if pillar not in pillar_data:
-            pillar_data[pillar] = {
-                'total': 0,
-                'completed': 0,
-                'in_progress': 0,
-                'pending': 0,
-                'total_progress': 0,
-                'activities': []
-            }
-        
-        pillar_data[pillar]['total'] += 1
-        pillar_data[pillar]['total_progress'] += progress
-        pillar_data[pillar]['activities'].append(activity)
-        
-        if status == 'Done':
-            pillar_data[pillar]['completed'] += 1
-        elif status == 'In Progress':
-            pillar_data[pillar]['in_progress'] += 1
-        else:
-            pillar_data[pillar]['pending'] += 1
-    
-    # Calculate averages and create summary
-    summary = []
-    for pillar, data in pillar_data.items():
-        avg_progress = data['total_progress'] / data['total'] if data['total'] > 0 else 0
-        completion_rate = (data['completed'] / data['total'] * 100) if data['total'] > 0 else 0
-        
-        summary.append({
-            'Pillar': pillar,
-            'Total': data['total'],
-            'Completed': data['completed'],
-            'In Progress': data['in_progress'],
-            'Pending': data['pending'],
-            'Avg Progress': round(avg_progress, 1),
-            'Completion Rate': round(completion_rate, 1)
-        })
-    
-    return pd.DataFrame(summary)
-
-# ============================================
-# WORK PLAN ADMIN EDIT FUNCTIONS - FIXED to edit all columns including Pillar
-# ============================================
-def update_work_plan_full_admin(plan_id, data):
-    """Admin function to update all work plan fields including pillar"""
-    try:
-        # Ensure data has updated_at
-        data['updated_at'] = datetime.now().isoformat()
-        supabase.table("work_plan").update(data).eq("id", plan_id).execute()
-        st.cache_data.clear()
-        add_audit_log("UPDATE", "work_plan", plan_id, "Admin fully updated work plan")
-        return True
-    except Exception as e:
-        print(f"Error updating work plan: {e}")
-        return False
-
-# ============================================
 # CUSTOM CSS (WITH FIXED DROPDOWN VISIBILITY)
 # ============================================
 if st.session_state.theme == "light":
@@ -1876,7 +1872,6 @@ if st.session_state.theme == "light":
         }}
         
         /* CRITICAL FIX: Dropdown visibility - Light Theme */
-        /* Target all select elements and their containers */
         .stSelectbox, .stSelectbox div, .stSelectbox div[data-baseweb="select"] {{
             background-color: #ffffff !important;
         }}
@@ -1914,7 +1909,6 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Native select elements */
         select, .stSelectbox select, .stSelectbox div[data-baseweb="select"] div {{
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -1925,36 +1919,30 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Fix for ALL dropdowns in Streamlit */
         .stSelectbox [data-baseweb="select"] * {{
             color: #000000 !important;
         }}
         
-        /* Fix for DateInput - LIGHT */
         .stDateInput input, .stDateInput div {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for TextInput - LIGHT */
         .stTextInput input {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for NumberInput - LIGHT */
         .stNumberInput input {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for TextArea - LIGHT */
         .stTextArea textarea {{
             background-color: #ffffff !important;
             color: #000000 !important;
         }}
         
-        /* Fix for MultiSelect - LIGHT */
         .stMultiSelect div[data-baseweb="select"] {{
             background-color: #ffffff !important;
         }}
@@ -1973,7 +1961,6 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Sidebar dropdown fixes */
         [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
             background-color: rgba(255,255,255,0.95) !important;
             color: #000000 !important;
@@ -1989,7 +1976,6 @@ if st.session_state.theme == "light":
             color: #000000 !important;
         }}
         
-        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             color: white !important;
@@ -2007,7 +1993,6 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
-        /* Sidebar */
         [data-testid="stSidebar"] {{
             background-color: {HELB_GREEN} !important;
             padding-top: 1rem;
@@ -2016,7 +2001,6 @@ if st.session_state.theme == "light":
             color: white !important;
         }}
         
-        /* KPI Cards */
         .kpi-card {{
             background: linear-gradient(135deg, {HELB_GREEN} 0%, {HELB_BLUE} 100%) !important;
             border-radius: 12px !important;
@@ -2186,7 +2170,7 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* LOGIN PAGE - CLEAN, CENTERED, NO SCROLLING */
+        /* LOGIN PAGE - FIXED CENTERING */
         .login-wrapper {{
             display: flex;
             justify-content: center;
@@ -2324,7 +2308,6 @@ if st.session_state.theme == "light":
 else:
     THEME_CSS = f"""
     <style>
-        /* Base styles - Dark Theme */
         .stApp, .main, .stMarkdown, .stMarkdown p, .stMarkdown div, 
         .stTextInput label, .stSelectbox label, .stDateInput label,
         .stNumberInput label, .stTextArea label, .stCheckbox label,
@@ -2332,7 +2315,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* CRITICAL FIX: Dropdown visibility - Dark Theme */
         .stSelectbox, .stSelectbox div, .stSelectbox div[data-baseweb="select"] {{
             background-color: #2d2d44 !important;
         }}
@@ -2370,7 +2352,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Native select elements - DARK */
         select, .stSelectbox select, .stSelectbox div[data-baseweb="select"] div {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
@@ -2381,36 +2362,30 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Fix for ALL dropdowns in Streamlit - DARK */
         .stSelectbox [data-baseweb="select"] * {{
             color: #FFFFFF !important;
         }}
         
-        /* Fix for DateInput - DARK */
         .stDateInput input, .stDateInput div {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for TextInput - DARK */
         .stTextInput input {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for NumberInput - DARK */
         .stNumberInput input {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for TextArea - DARK */
         .stTextArea textarea {{
             background-color: #2d2d44 !important;
             color: #FFFFFF !important;
         }}
         
-        /* Fix for MultiSelect - DARK */
         .stMultiSelect div[data-baseweb="select"] {{
             background-color: #2d2d44 !important;
         }}
@@ -2429,7 +2404,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Sidebar dropdown fixes - DARK */
         [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] div {{
             background-color: rgba(255,255,255,0.15) !important;
             color: #FFFFFF !important;
@@ -2445,7 +2419,6 @@ else:
             color: #FFFFFF !important;
         }}
         
-        /* Buttons */
         .stButton > button {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             color: white !important;
@@ -2463,7 +2436,6 @@ else:
             color: white !important;
         }}
         
-        /* KPI Cards - Dark */
         .kpi-card {{
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
             border-radius: 12px !important;
@@ -2624,7 +2596,7 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* LOGIN PAGE - CLEAN, CENTERED, NO SCROLLING - DARK THEME */
+        /* LOGIN PAGE - FIXED CENTERING - DARK THEME */
         .login-wrapper {{
             display: flex;
             justify-content: center;
@@ -2763,7 +2735,7 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - CLEAN, CENTERED, NO SCROLLING
+# LOGIN PAGE - FIXED CENTERING
 # ============================================
 if not st.session_state.authenticated:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
@@ -3174,67 +3146,20 @@ if st.session_state.active_menu == "📋 Work Plans":
                         
                         update_comment = st.text_area("Comment (optional)", placeholder="Add any remarks or notes about this update...", key=f"comment_{plan['id']}", height=68)
                         
-                        # ADMIN FULL EDIT SECTION - Allows editing all columns including Pillar
                         if st.session_state.user_role == "admin":
                             st.markdown("---")
-                            st.markdown("### 🔧 Admin: Full Edit Mode")
-                            with st.expander("✏️ Edit All Fields (including Pillar)", expanded=False):
-                                st.warning("⚠️ Changes made here will update all fields of this activity.")
-                                
-                                col_admin1, col_admin2 = st.columns(2)
-                                with col_admin1:
-                                    admin_strategic_pillar = st.selectbox(
-                                        "Strategic Pillar", 
-                                        STRATEGIC_PILLARS,
-                                        index=STRATEGIC_PILLARS.index(plan.get('strategic_pillar', STRATEGIC_PILLARS[0])) if plan.get('strategic_pillar') in STRATEGIC_PILLARS else 0,
-                                        key=f"admin_pillar_{plan['id']}"
-                                    )
-                                    admin_key_result = st.text_input("Key Result Area", value=plan.get('key_result_area', ''), key=f"admin_kra_{plan['id']}")
-                                    admin_planned_activity = st.text_area("Planned Activity", value=plan.get('planned_activity', ''), key=f"admin_activity_{plan['id']}")
-                                    admin_performance_indicator = st.text_input("Performance Indicator", value=plan.get('performance_indicator', ''), key=f"admin_pi_{plan['id']}")
-                                
-                                with col_admin2:
-                                    admin_annual_target = st.text_input("Annual Target", value=plan.get('annual_target', ''), key=f"admin_target_{plan['id']}")
-                                    admin_budget = st.number_input("Budget Allocation (KES)", value=float(plan.get('budget_allocation', 0)) if plan.get('budget_allocation') else 0.0, step=10000.0, format="%.2f", key=f"admin_budget_{plan['id']}")
-                                    admin_activity_category = st.selectbox("Activity Category", ACTIVITY_CATEGORIES, 
-                                                                          index=ACTIVITY_CATEGORIES.index(plan.get('activity_category', ACTIVITY_CATEGORIES[0])) if plan.get('activity_category') in ACTIVITY_CATEGORIES else 0,
-                                                                          key=f"admin_cat_{plan['id']}")
-                                    admin_status = st.selectbox("Status", ["Pending", "In Progress", "Done"], 
-                                                               index=["Pending", "In Progress", "Done"].index(plan.get('status', 'Pending')),
-                                                               key=f"admin_status_{plan['id']}")
-                                    admin_progress = st.number_input("Progress %", min_value=0, max_value=100, value=int(plan.get('progress_percent', 0)), key=f"admin_progress_{plan['id']}")
-                                    admin_actual = st.number_input("Actual Achievement", value=float(plan.get('actual_achievement', 0)), key=f"admin_actual_{plan['id']}")
-                                
-                                # Date fields
-                                col_admin3, col_admin4 = st.columns(2)
-                                with col_admin3:
-                                    admin_start_date = st.date_input("Start Date", value=datetime.strptime(plan.get('start_date', plan['due_date']), "%Y-%m-%d").date() if plan.get('start_date') else due_date, key=f"admin_startdate_{plan['id']}")
-                                with col_admin4:
-                                    admin_end_date = st.date_input("End Date", value=due_date, key=f"admin_enddate_{plan['id']}")
-                                
-                                if st.button(f"💾 Save All Changes", key=f"admin_saveall_{plan['id']}", use_container_width=True):
-                                    update_data = {
-                                        "strategic_pillar": admin_strategic_pillar,
-                                        "key_result_area": admin_key_result,
-                                        "planned_activity": admin_planned_activity,
-                                        "performance_indicator": admin_performance_indicator,
-                                        "annual_target": admin_annual_target,
-                                        "budget_allocation": admin_budget if admin_budget > 0 else None,
-                                        "activity_category": admin_activity_category,
-                                        "status": admin_status,
-                                        "progress_percent": admin_progress,
-                                        "actual_achievement": admin_actual,
-                                        "start_date": admin_start_date.isoformat(),
-                                        "end_date": admin_end_date.isoformat(),
-                                        "due_date": admin_end_date.isoformat(),
-                                        "updated_at": datetime.now().isoformat()
-                                    }
-                                    if update_work_plan_full_admin(plan['id'], update_data):
-                                        st.success("✅ All fields updated successfully!")
-                                        st.balloons()
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ Failed to update. Please try again.")
+                            st.markdown("**📅 Admin: Edit Dates**")
+                            new_start_date = st.date_input("New Start Date", value=datetime.strptime(plan.get('start_date', plan['due_date']), "%Y-%m-%d").date() if plan.get('start_date') else due_date, key=f"startdate_{plan['id']}")
+                            new_end_date = st.date_input("New End Date", value=due_date, key=f"enddate_{plan['id']}")
+                            if st.button(f"Update Dates", key=f"updatedates_{plan['id']}"):
+                                update_data = {
+                                    "start_date": new_start_date.isoformat(),
+                                    "end_date": new_end_date.isoformat(),
+                                    "due_date": new_end_date.isoformat()
+                                }
+                                if update_work_plan_admin(plan['id'], update_data):
+                                    st.success("✅ Dates updated!")
+                                    st.rerun()
                         
                         col_update, col_delete = st.columns(2)
                         with col_update:
@@ -3264,7 +3189,6 @@ if st.session_state.active_menu == "📋 Work Plans":
             st.info("No work plan activities found. Click 'Add Work Plan Activity' to get started.")
     
     with tab_calendar:
-        # Changed from "Enhanced Calendar View" to "Calendar View"
         st.markdown("### 📅 Calendar View")
         st.markdown("Visualize all activities by month and quarter - **Click on any date to see all activities**")
         
@@ -3285,59 +3209,7 @@ if st.session_state.active_menu == "📋 Work Plans":
             
             # Quick stats below calendar
             st.markdown("---")
-            
-            # Pillar Performance Summary for Management
-            st.markdown("### 📊 Pillar Performance Summary")
-            st.markdown("High-level overview of implementation progress by strategic pillar")
-            
-            pillar_df = generate_pillar_performance_summary(filtered_plans)
-            
-            if not pillar_df.empty:
-                # Display pillar performance as cards
-                cols = st.columns(min(len(pillar_df), 5))
-                for idx, (_, row) in enumerate(pillar_df.iterrows()):
-                    col_idx = idx % len(cols)
-                    with cols[col_idx]:
-                        pillar_name = row['Pillar'].split('. ')[-1] if '. ' in row['Pillar'] else row['Pillar']
-                        # Determine progress color
-                        progress_color = "#10B981" if row['Completion Rate'] >= 75 else "#F59E0B" if row['Completion Rate'] >= 40 else "#EF4444"
-                        st.markdown(f"""
-                        <div style="background: {HELB_GREEN}10; border-radius: 10px; padding: 0.8rem; border: 1px solid {HELB_GREEN}30; margin-bottom: 0.5rem;">
-                            <div style="font-size: 0.65rem; font-weight: 600; color: {HELB_GREEN};">{pillar_name[:30]}</div>
-                            <div style="font-size: 1.2rem; font-weight: 700; color: #1F2937;">{row['Completion Rate']}%</div>
-                            <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem; flex-wrap: wrap;">
-                                <span style="font-size: 0.55rem; background: #10B98120; padding: 0.1rem 0.4rem; border-radius: 8px;">✅ {row['Completed']}</span>
-                                <span style="font-size: 0.55rem; background: #F59E0B20; padding: 0.1rem 0.4rem; border-radius: 8px;">🟡 {row['In Progress']}</span>
-                                <span style="font-size: 0.55rem; background: #EF444420; padding: 0.1rem 0.4rem; border-radius: 8px;">⏳ {row['Pending']}</span>
-                            </div>
-                            <div style="margin-top: 0.3rem; height: 4px; background: #E5E7EB; border-radius: 2px; overflow: hidden;">
-                                <div style="width: {row['Completion Rate']}%; height: 100%; background: {progress_color}; border-radius: 2px; transition: width 0.5s;"></div>
-                            </div>
-                            <div style="font-size: 0.5rem; color: #6B7280; margin-top: 0.2rem;">Total: {row['Total']} activities</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                # Display detailed table
-                with st.expander("📋 View Detailed Pillar Performance Table", expanded=False):
-                    st.dataframe(pillar_df, use_container_width=True, hide_index=True)
-                    
-                    # Create a bar chart visualization
-                    fig = px.bar(pillar_df, x='Pillar', y='Completion Rate', 
-                                 color='Completion Rate', 
-                                 color_continuous_scale='Greens',
-                                 text='Completion Rate',
-                                 title="Pillar Completion Rates")
-                    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-                    fig.update_layout(height=300, margin=dict(l=20, r=20, t=40, b=20))
-                    st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No pillar data available for the selected period.")
-            
-            # Date Activity Details (popup info)
-            st.markdown("---")
-            st.markdown("### 📅 Date Activity Details")
             st.info("💡 Click on any date or activity in the calendar above to see all activities for that day in a popup window.")
-            
         else:
             st.info("No activities to display. Please add work plan activities with start and end dates.")
     
@@ -3830,10 +3702,8 @@ if st.session_state.active_menu == "📋 Work Plans":
             st.info("No data available for the selected period.")
 
 # ============================================
-# (Dashboard, Contracts, Policies, Admin Panel, Enterprise View, Footer)
-# ============================================
-
 # DASHBOARD
+# ============================================
 elif st.session_state.active_menu == "📊 Dashboard":
     st.markdown("### Performance Dashboard")
     
@@ -4276,7 +4146,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACT MANAGEMENT - FIXED MULTI-YEAR WITH SESSION STATE & DATES
+# CONTRACTS SECTION
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -4331,11 +4201,11 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown(f"**Start Date:** {contract['start_date']}")
                         st.markdown(f"**End Date:** {contract['end_date']}")
                         st.markdown(f"**Signed Date:** {contract.get('signed_date', 'N/A')}")
-                        st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
                     with col2:
                         st.markdown(f"**Contract Value:** KES {contract.get('contract_value', 0):,.0f}")
                         st.markdown(f"**Amount Spent:** KES {contract.get('amount_spent_to_date', 0):,.0f}")
                         st.markdown(f"**Utilization:** {contract.get('utilization_rate', 0):.1f}%")
+                        st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
                         st.markdown(f"**Compliance:** {contract.get('compliance_status', 'N/A')}")
                         st.markdown(f"**Vendor Rating:** ⭐ {contract.get('vendor_performance', 0)}/5")
                     
@@ -4344,24 +4214,6 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
                     if contract.get('breach_notes'):
                         st.warning(f"⚠️ **Breach Notes:** {contract['breach_notes']}")
-                    
-                    # Show multi-year details if applicable
-                    if contract.get('is_multi_year'):
-                        st.markdown("#### 📅 Multi-Year Breakdown")
-                        years = get_contract_years(contract['id'])
-                        if years:
-                            year_data = []
-                            for y in years:
-                                year_data.append({
-                                    "Year": f"Year {y['year_number']}",
-                                    "Start": y.get('year_start_date', 'N/A'),
-                                    "End": y.get('year_end_date', 'N/A'),
-                                    "Value": f"KES {y.get('annual_value', 0):,.0f}",
-                                    "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
-                                    "Status": y.get('status', 'active')
-                                })
-                            df_years = pd.DataFrame(year_data)
-                            st.dataframe(df_years, use_container_width=True, hide_index=True)
         else:
             st.info("No contracts found.")
     
@@ -4393,21 +4245,6 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown("---")
                         if contract.get('contract_url'):
                             st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
-                        
-                        if contract.get('is_multi_year'):
-                            st.markdown("#### 📅 Multi-Year Breakdown")
-                            years = get_contract_years(contract['id'])
-                            if years:
-                                year_data = []
-                                for y in years:
-                                    year_data.append({
-                                        "Year": f"Year {y['year_number']}",
-                                        "Value": f"KES {y.get('annual_value', 0):,.0f}",
-                                        "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
-                                        "Status": y.get('status', 'active')
-                                    })
-                                df_years = pd.DataFrame(year_data)
-                                st.dataframe(df_years, use_container_width=True, hide_index=True)
             else:
                 st.info("No active contracts.")
         else:
@@ -4454,10 +4291,6 @@ elif st.session_state.active_menu == "📄 Contracts":
         
         contract_type = st.radio("Contract Type", ["Single Year Contract", "Multi-Year Contract"], horizontal=True)
         
-        # Use session state to store year values
-        if "contract_year_values" not in st.session_state:
-            st.session_state.contract_year_values = {}
-        
         with st.form("new_contract_enhanced"):
             col1, col2 = st.columns(2)
             
@@ -4472,17 +4305,14 @@ elif st.session_state.active_menu == "📄 Contracts":
                 start_date = st.date_input("Start Date*", value=datetime.now().date())
                 end_date = st.date_input("End Date*")
                 signed_date = st.date_input("Signed Date", value=datetime.now().date())
-                payment_terms = st.selectbox("Payment Terms*", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
                 auto_renewal = st.checkbox("Auto-renewal")
             
-            st.markdown("---")
-            
-            # Multi-Year Contract Section - USING SESSION STATE
             if contract_type == "Multi-Year Contract":
-                st.markdown("#### 📅 Multi-Year Contract Breakdown")
-                st.info("Please enter the annual value for each year of the contract. The total contract value will be calculated automatically.")
+                st.markdown("---")
+                st.markdown("#### 📅 Contract Years Breakdown")
+                st.info("For multi-year contracts, please specify the value for each year")
                 
-                # Calculate number of years from duration
                 num_years = 1
                 if "2 years" in contract_duration:
                     num_years = 2
@@ -4493,202 +4323,40 @@ elif st.session_state.active_menu == "📄 Contracts":
                 elif "5 years" in contract_duration:
                     num_years = 5
                 
-                st.markdown(f"**📆 Contract Duration: {num_years} year(s)**")
-                st.markdown("---")
-                
-                # Initialize session state for this contract
-                contract_key = f"contract_{contract_title}_{start_date}"
-                if contract_key not in st.session_state.contract_year_values:
-                    st.session_state.contract_year_values[contract_key] = {}
-                
-                # Initialize year start/end dates
-                year_start_dates = {}
-                year_end_dates = {}
-                
-                # Create dynamic year inputs with UNIQUE KEYS using session state
-                for year_num in range(1, num_years + 1):
-                    st.markdown(f"**📆 Year {year_num}**")
-                    col_y1, col_y2, col_y3 = st.columns(3)
-                    
-                    # Get current value from session state or default to 0
-                    current_value = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
-                    
-                    # Calculate default dates for each year
-                    if year_num == 1:
-                        default_start = start_date
-                    else:
-                        default_start = start_date + relativedelta(years=year_num-1)
-                    
-                    if year_num == num_years:
-                        default_end = end_date
-                    else:
-                        default_end = start_date + relativedelta(years=year_num)
-                    
-                    with col_y1:
-                        year_value = st.number_input(
-                            f"Annual Value - Year {year_num} (KES)*", 
-                            min_value=0.0, 
-                            step=10000.0, 
-                            format="%.2f", 
-                            value=current_value,
-                            key=f"year_value_{year_num}_{contract_key}",
-                            help=f"Enter the budget for Year {year_num}"
-                        )
-                        # Update session state
-                        st.session_state.contract_year_values[contract_key][f"year_{year_num}_value"] = year_value
-                    
-                    with col_y2:
-                        year_start = st.date_input(
-                            f"Year {year_num} Start Date", 
-                            value=default_start,
-                            key=f"year_start_{year_num}_{contract_key}"
-                        )
-                        year_start_dates[year_num] = year_start
-                    
-                    with col_y3:
-                        year_end = st.date_input(
-                            f"Year {year_num} End Date", 
-                            value=default_end,
-                            key=f"year_end_{year_num}_{contract_key}"
-                        )
-                        year_end_dates[year_num] = year_end
-                    
-                    st.markdown("---")
-                
-                # Calculate total from session state values
-                total_value = 0
                 years_data = []
+                total_value = 0
+                
                 for year_num in range(1, num_years + 1):
-                    year_val = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
-                    if year_val > 0:
-                        total_value += year_val
-                        
-                        # Get start and end dates for this year
-                        year_start = year_start_dates.get(year_num, start_date)
-                        year_end = year_end_dates.get(year_num, end_date)
-                        
+                    st.markdown(f"**Year {year_num}**")
+                    col_y1, col_y2, col_y3 = st.columns(3)
+                    with col_y1:
+                        year_value = st.number_input(f"Annual Value - Year {year_num} (KES)", 
+                                                      min_value=0.0, step=10000.0, format="%.2f", 
+                                                      key=f"year_value_{year_num}")
+                    with col_y2:
+                        year_start = st.date_input(f"Year {year_num} Start Date", 
+                                                   value=start_date if year_num == 1 else None,
+                                                   key=f"year_start_{year_num}")
+                    with col_y3:
+                        year_end = st.date_input(f"Year {year_num} End Date", 
+                                                 value=None,
+                                                 key=f"year_end_{year_num}")
+                    
+                    if year_value > 0:
+                        total_value += year_value
                         years_data.append({
                             "year_number": year_num,
-                            "year_start_date": year_start.isoformat() if year_start else start_date.isoformat(),
-                            "year_end_date": year_end.isoformat() if year_end else end_date.isoformat(),
-                            "annual_value": year_val,
+                            "year_start_date": year_start.isoformat() if year_start else None,
+                            "year_end_date": year_end.isoformat() if year_end else None,
+                            "annual_value": year_value,
                             "amount_spent_to_date": 0,
                             "status": "active"
                         })
                 
-                # Display total
-                if total_value > 0:
-                    st.success(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
-                    st.info(f"📊 {len(years_data)} year(s) configured")
-                    
-                    # Show breakdown table
-                    if years_data:
-                        df_years_preview = pd.DataFrame([
-                            {
-                                "Year": f"Year {y['year_number']}",
-                                "Annual Value": f"KES {y['annual_value']:,.2f}",
-                                "Start": y['year_start_date'],
-                                "End": y['year_end_date']
-                            } for y in years_data
-                        ])
-                        st.dataframe(df_years_preview, use_container_width=True, hide_index=True)
-                else:
-                    st.warning("⚠️ Please add values for each year (greater than 0)")
-                
-                # Calculate payment schedule based on payment terms
-                if total_value > 0 and payment_terms:
-                    st.markdown("#### 💳 Payment Schedule")
-                    
-                    if payment_terms == "Monthly":
-                        months_per_year = 12
-                        payment_data = []
-                        for y in years_data:
-                            if y['annual_value'] > 0:
-                                monthly = y['annual_value'] / months_per_year
-                                payment_data.append({
-                                    "Year": f"Year {y['year_number']}",
-                                    "Monthly Payment": f"KES {monthly:,.2f}",
-                                    "Annual Total": f"KES {y['annual_value']:,.2f}"
-                                })
-                        df_payment = pd.DataFrame(payment_data)
-                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
-                        
-                    elif payment_terms == "Quarterly":
-                        quarters_per_year = 4
-                        payment_data = []
-                        for y in years_data:
-                            if y['annual_value'] > 0:
-                                quarterly = y['annual_value'] / quarters_per_year
-                                payment_data.append({
-                                    "Year": f"Year {y['year_number']}",
-                                    "Quarterly Payment": f"KES {quarterly:,.2f}",
-                                    "Annual Total": f"KES {y['annual_value']:,.2f}"
-                                })
-                        df_payment = pd.DataFrame(payment_data)
-                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
-                        
-                    elif payment_terms == "Bi-annually":
-                        periods_per_year = 2
-                        payment_data = []
-                        for y in years_data:
-                            if y['annual_value'] > 0:
-                                bi_annual = y['annual_value'] / periods_per_year
-                                payment_data.append({
-                                    "Year": f"Year {y['year_number']}",
-                                    "Bi-Annual Payment": f"KES {bi_annual:,.2f}",
-                                    "Annual Total": f"KES {y['annual_value']:,.2f}"
-                                })
-                        df_payment = pd.DataFrame(payment_data)
-                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
-                        
-                    elif payment_terms == "Annually":
-                        payment_data = []
-                        for y in years_data:
-                            if y['annual_value'] > 0:
-                                payment_data.append({
-                                    "Year": f"Year {y['year_number']}",
-                                    "Annual Payment": f"KES {y['annual_value']:,.2f}"
-                                })
-                        df_payment = pd.DataFrame(payment_data)
-                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
-                        
-                    elif payment_terms == "Milestone-based":
-                        st.info("📌 Milestone-based payment schedule requires manual entry of payment milestones.")
-                        milestone_input = st.text_area("Payment Milestones", placeholder="e.g., 30% upon signing, 40% at mid-term, 30% upon completion", height=80)
-                        
-                    else:  # One-time
-                        st.info(f"💰 One-time payment of KES {total_value:,.2f} due upon contract signing.")
-                
-                # Store years_data in session state for form submission
-                st.session_state.contract_years_data = years_data
-                        
+                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
             else:
-                # Single Year Contract
-                st.markdown("#### 💰 Contract Value")
-                contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f", key="single_contract_value")
-                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0, key="single_amount_spent")
-                
-                # Calculate payment schedule for single year
-                if contract_value > 0 and payment_terms:
-                    st.markdown("#### 💳 Payment Schedule")
-                    if payment_terms == "Monthly":
-                        monthly = contract_value / 12
-                        st.info(f"💰 Monthly Payment: KES {monthly:,.2f}")
-                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
-                    elif payment_terms == "Quarterly":
-                        quarterly = contract_value / 4
-                        st.info(f"💰 Quarterly Payment: KES {quarterly:,.2f}")
-                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
-                    elif payment_terms == "Bi-annually":
-                        bi_annual = contract_value / 2
-                        st.info(f"💰 Bi-Annual Payment: KES {bi_annual:,.2f}")
-                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
-                    elif payment_terms == "Annually":
-                        st.info(f"💰 Annual Payment: KES {contract_value:,.2f}")
-                    elif payment_terms == "One-time":
-                        st.info(f"💰 One-time Payment: KES {contract_value:,.2f}")
-            
-            st.markdown("---")
+                contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
+                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
             
             col3, col4 = st.columns(2)
             
@@ -4703,32 +4371,17 @@ elif st.session_state.active_menu == "📄 Contracts":
                 department_id = st.selectbox("Department", ["None"] + [d["name"] for d in get_cached_departments()])
                 breach_notes = st.text_area("Breach/Compliance Notes", height=80)
             
-            # Submit button
-            submitted = st.form_submit_button("Save Contract", use_container_width=True)
-            
-            if submitted:
-                if not contract_title or not vendor_name or not contract_duration:
-                    st.error("❌ Please fill all required fields (*)")
-                else:
-                    if contract_type == "Multi-Year Contract":
-                        # Get years data from session state
-                        years_data = st.session_state.get("contract_years_data", [])
-                        
-                        # Validate that all years have values > 0
-                        valid_years = [y for y in years_data if y['annual_value'] > 0]
-                        if not valid_years or len(valid_years) != num_years:
-                            st.error("❌ Please add valid values for all years (greater than 0)")
-                        else:
-                            # Calculate totals
+            if st.form_submit_button("Save Contract", use_container_width=True):
+                if contract_title and vendor_name and contract_duration:
+                    if contract_type == "Multi-Year Contract" and not years_data:
+                        st.error("Please add at least one year with valid value")
+                    elif contract_type == "Single Year Contract" and contract_value <= 0:
+                        st.error("Please enter a valid contract value")
+                    else:
+                        if contract_type == "Multi-Year Contract":
                             total_value = sum(y['annual_value'] for y in years_data)
                             total_spent = sum(y.get('amount_spent_to_date', 0) for y in years_data)
                             utilization = (total_spent / total_value * 100) if total_value > 0 else 0
-                            
-                            # Map department name to ID
-                            dept_id = st.session_state.user_dept
-                            if department_id != "None":
-                                dept_map = {d["name"]: d["id"] for d in get_cached_departments()}
-                                dept_id = dept_map.get(department_id, st.session_state.user_dept)
                             
                             contract_data = {
                                 "contract_title": contract_title,
@@ -4748,33 +4401,15 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 "contract_url": contract_url if contract_url else None,
                                 "breach_notes": breach_notes if breach_notes else None,
                                 "is_multi_year": True,
-                                "department_id": dept_id
+                                "department_id": st.session_state.user_dept
                             }
                             
                             success, message = add_multi_year_contract(contract_data, years_data)
-                            if success:
-                                st.success(f"✅ {message}")
-                                st.balloons()
-                                # Clear session state
-                                st.session_state.contract_year_values = {}
-                                st.session_state.contract_years_data = []
-                                st.rerun()
-                            else:
-                                st.error(f"❌ {message}")
-                    else:
-                        if contract_value <= 0:
-                            st.error("❌ Please enter a valid contract value (greater than 0)")
                         else:
                             end_date_obj = end_date
                             days_left = (end_date_obj - datetime.now().date()).days
                             status = "active" if days_left > 30 else ("expiring_soon" if days_left > 0 else "expired")
                             utilization = (amount_spent_to_date / contract_value * 100) if contract_value > 0 else 0
-                            
-                            # Map department name to ID
-                            dept_id = st.session_state.user_dept
-                            if department_id != "None":
-                                dept_map = {d["name"]: d["id"] for d in get_cached_departments()}
-                                dept_id = dept_map.get(department_id, st.session_state.user_dept)
                             
                             contract_data = {
                                 "contract_title": contract_title,
@@ -4797,15 +4432,18 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 "status": status,
                                 "days_remaining": days_left,
                                 "budget_alert": utilization >= 80,
-                                "department_id": dept_id
+                                "department_id": st.session_state.user_dept
                             }
                             success, message = add_enhanced_contract(contract_data)
-                            if success:
-                                st.success(f"✅ {message}")
-                                st.balloons()
-                                st.rerun()
-                            else:
-                                st.error(f"❌ {message}")
+                        
+                        if success:
+                            st.success(f"✅ {message}")
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {message}")
+                else:
+                    st.error("Please fill all required fields (*)")
     
     with tab_update:
         st.markdown("### Update Existing Contract")
@@ -4873,6 +4511,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                 st.info("No updatable contracts found. Only active and expiring soon contracts can be updated.")
         else:
             st.info("No contracts found.")
+
 # ============================================
 # POLICIES SECTION
 # ============================================
@@ -5095,7 +4734,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         "📋 Audit Log"
     ])
     
-    # USER MANAGEMENT TAB
     with admin_tabs[0]:
         st.markdown("### 👥 User Management")
         
@@ -5202,7 +4840,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             df_users = pd.DataFrame(user_display)
             st.dataframe(df_users, use_container_width=True, hide_index=True)
     
-    # POLICY MANAGEMENT TAB (Admin)
     with admin_tabs[1]:
         st.markdown("### 📜 Policy Management")
         
@@ -5335,7 +4972,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             display_cols = ['policy_name', 'category', 'version', 'policy_scope', 'policy_owner', 'status', 'expiry_date']
             st.dataframe(df_policies_admin[display_cols], use_container_width=True, hide_index=True)
     
-    # CONTRACT MANAGEMENT TAB (Admin)
     with admin_tabs[2]:
         st.markdown("### 📄 Contract Management")
         
@@ -5453,7 +5089,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date', 'compliance_status', 'vendor_performance', 'is_multi_year']
             st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
     
-    # WORK PLAN MANAGEMENT TAB (Admin)
     with admin_tabs[3]:
         st.markdown("### 📋 Work Plan Management")
         
@@ -5565,7 +5200,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
             display_cols = ['planned_activity', 'department_name', 'annual_target', 'progress_percent', 'status', 'start_date', 'end_date', 'due_date']
             st.dataframe(df_wp_admin[display_cols], use_container_width=True, hide_index=True)
     
-    # DEPARTMENT MANAGEMENT TAB
     with admin_tabs[4]:
         st.markdown("### 🏢 Department Management")
         
@@ -5648,7 +5282,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         else:
             st.info("No departments found")
     
-    # DIRECTORATE MANAGEMENT TAB
     with admin_tabs[5]:
         st.markdown("### 🏛️ Directorate Management")
         
@@ -5717,7 +5350,6 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         else:
             st.info("No directorates found")
     
-    # AUDIT LOG TAB
     with admin_tabs[6]:
         st.markdown("### 📋 Audit Log")
         st.markdown("Track all user activities and system changes")
