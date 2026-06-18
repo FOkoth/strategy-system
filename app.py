@@ -5013,227 +5013,224 @@ elif st.session_state.active_menu == "📄 Contracts":
     with tab_admin_edit:
         st.markdown("### 🔧 Admin: Full Contract Edit")
         st.warning("⚠️ This section is for **Admin/Management** only. You can edit **ALL** contract fields here.")
-    
-        if st.session_state.user_role in ["admin", "management"]:
-        contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
         
-        if contracts:
-            # Handle missing department_name
-            for c in contracts:
-                if 'department_name' not in c or not c['department_name']:
-                    if c.get('department_id'):
-                        dept_name = get_department_name(c['department_id'])
-                        c['department_name'] = dept_name if dept_name else 'Unassigned'
-                    else:
-                        c['department_name'] = 'Unassigned'
+        if st.session_state.user_role in ["admin", "management"]:
+            contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
             
-            # Filter contracts by department if management
-            if st.session_state.user_role == "management":
-                depts = sorted(set([c.get('department_name', 'Unassigned') for c in contracts]))
-                dept_filter = st.selectbox("Filter by Department", ["All"] + depts)
-                if dept_filter != "All":
-                    contracts = [c for c in contracts if c.get('department_name') == dept_filter]
-            
-            contract_options = {
-                c["id"]: f"{c['contract_title']} - {c['vendor_name']} ({c.get('department_name', 'Unassigned')})" 
-                for c in contracts
-            }
-            
-            selected_contract_id = st.selectbox(
-                "Select Contract to Fully Edit", 
-                list(contract_options.keys()), 
-                format_func=lambda x: contract_options[x]
-            )
-            
-            if selected_contract_id:
-                selected_contract = next((c for c in contracts if c["id"] == selected_contract_id), None)
+            if contracts:
+                # Handle missing department_name
+                for c in contracts:
+                    if 'department_name' not in c or not c['department_name']:
+                        if c.get('department_id'):
+                            dept_name = get_department_name(c['department_id'])
+                            c['department_name'] = dept_name if dept_name else 'Unassigned'
+                        else:
+                            c['department_name'] = 'Unassigned'
                 
-                if selected_contract:
-                    st.markdown(f"#### Editing: **{selected_contract['contract_title']}**")
-                    st.caption(f"Current Department: {selected_contract.get('department_name', 'Unassigned')}")
+                # Filter contracts by department if management
+                if st.session_state.user_role == "management":
+                    depts = sorted(set([c.get('department_name', 'Unassigned') for c in contracts]))
+                    dept_filter = st.selectbox("Filter by Department", ["All"] + depts)
+                    if dept_filter != "All":
+                        contracts = [c for c in contracts if c.get('department_name') == dept_filter]
+                
+                contract_options = {
+                    c["id"]: f"{c['contract_title']} - {c['vendor_name']} ({c.get('department_name', 'Unassigned')})" 
+                    for c in contracts
+                }
+                
+                selected_contract_id = st.selectbox(
+                    "Select Contract to Fully Edit", 
+                    list(contract_options.keys()), 
+                    format_func=lambda x: contract_options[x]
+                )
+                
+                if selected_contract_id:
+                    selected_contract = next((c for c in contracts if c["id"] == selected_contract_id), None)
                     
-                    with st.form("admin_full_edit_contract_form"):
-                        st.markdown("##### Basic Information")
-                        col1, col2 = st.columns(2)
+                    if selected_contract:
+                        st.markdown(f"#### Editing: **{selected_contract['contract_title']}**")
+                        st.caption(f"Current Department: {selected_contract.get('department_name', 'Unassigned')}")
                         
-                        with col1:
-                            edit_title = st.text_input("Contract Title*", value=selected_contract.get("contract_title", ""))
-                            edit_vendor = st.text_input("Vendor Name*", value=selected_contract.get("vendor_name", ""))
-                            edit_duration = st.selectbox(
-                                "Contract Duration*", 
-                                ["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"],
-                                index=["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"].index(
-                                    selected_contract.get("contract_duration", "1 year")
-                                ) if selected_contract.get("contract_duration") in ["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"] else 2
+                        with st.form("admin_full_edit_contract_form"):
+                            st.markdown("##### Basic Information")
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                edit_title = st.text_input("Contract Title*", value=selected_contract.get("contract_title", ""))
+                                edit_vendor = st.text_input("Vendor Name*", value=selected_contract.get("vendor_name", ""))
+                                edit_duration = st.selectbox(
+                                    "Contract Duration*", 
+                                    ["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"],
+                                    index=["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"].index(
+                                        selected_contract.get("contract_duration", "1 year")
+                                    ) if selected_contract.get("contract_duration") in ["3 months", "6 months", "1 year", "2 years", "3 years", "4 years", "5 years"] else 2
+                                )
+                                
+                            with col2:
+                                edit_start_date = st.date_input(
+                                    "Start Date*", 
+                                    value=datetime.strptime(selected_contract["start_date"], "%Y-%m-%d").date()
+                                )
+                                edit_end_date = st.date_input(
+                                    "End Date*", 
+                                    value=datetime.strptime(selected_contract["end_date"], "%Y-%m-%d").date()
+                                )
+                                edit_signed_date = st.date_input(
+                                    "Signed Date", 
+                                    value=datetime.strptime(selected_contract.get("signed_date", selected_contract["start_date"]), "%Y-%m-%d").date()
+                                )
+                            
+                            st.markdown("##### Financial Details")
+                            col3, col4 = st.columns(2)
+                            
+                            with col3:
+                                edit_contract_value = st.number_input(
+                                    "Contract Value (KES)*", 
+                                    min_value=0.0, 
+                                    step=10000.0, 
+                                    format="%.2f",
+                                    value=float(selected_contract.get("contract_value", 0))
+                                )
+                                edit_amount_spent = st.number_input(
+                                    "Amount Spent to Date (KES)", 
+                                    min_value=0.0, 
+                                    step=10000.0, 
+                                    format="%.2f",
+                                    value=float(selected_contract.get("amount_spent_to_date", 0))
+                                )
+                                
+                            with col4:
+                                edit_payment_terms = st.selectbox(
+                                    "Payment Terms*", 
+                                    ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"],
+                                    index=["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"].index(
+                                        selected_contract.get("payment_terms", "Monthly")
+                                    ) if selected_contract.get("payment_terms") in ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"] else 0
+                                )
+                                edit_auto_renewal = st.checkbox(
+                                    "Auto-renewal", 
+                                    value=selected_contract.get("auto_renewal", False)
+                                )
+                            
+                            st.markdown("##### Compliance & Performance")
+                            col5, col6 = st.columns(2)
+                            
+                            with col5:
+                                edit_compliance = st.selectbox(
+                                    "Compliance Status", 
+                                    ["Fully Compliant", "Partially Compliant", "Non-Compliant"],
+                                    index=["Fully Compliant", "Partially Compliant", "Non-Compliant"].index(
+                                        selected_contract.get("compliance_status", "Fully Compliant")
+                                    ) if selected_contract.get("compliance_status") in ["Fully Compliant", "Partially Compliant", "Non-Compliant"] else 0
+                                )
+                                edit_performance = st.slider(
+                                    "Vendor Performance Rating", 
+                                    0.0, 5.0, 
+                                    value=float(selected_contract.get("vendor_performance", 3.0)), 
+                                    step=0.5
+                                )
+                                
+                            with col6:
+                                edit_contract_url = st.text_input(
+                                    "Contract Document URL", 
+                                    value=selected_contract.get("contract_url", ""),
+                                    placeholder="https://..."
+                                )
+                                edit_breach_notes = st.text_area(
+                                    "Breach/Compliance Notes", 
+                                    value=selected_contract.get("breach_notes", ""),
+                                    height=80
+                                )
+                            
+                            st.markdown("##### Department Assignment")
+                            departments = get_cached_departments()
+                            dept_list = ["None"] + [d["name"] for d in departments]
+                            current_dept = selected_contract.get("department_name", "None")
+                            dept_index = dept_list.index(current_dept) if current_dept in dept_list else 0
+                            
+                            edit_department = st.selectbox(
+                                "Assign Contract to Department", 
+                                dept_list, 
+                                index=dept_index,
+                                help="Select which department this contract belongs to"
                             )
                             
-                        with col2:
-                            edit_start_date = st.date_input(
-                                "Start Date*", 
-                                value=datetime.strptime(selected_contract["start_date"], "%Y-%m-%d").date()
-                            )
-                            edit_end_date = st.date_input(
-                                "End Date*", 
-                                value=datetime.strptime(selected_contract["end_date"], "%Y-%m-%d").date()
-                            )
-                            edit_signed_date = st.date_input(
-                                "Signed Date", 
-                                value=datetime.strptime(selected_contract.get("signed_date", selected_contract["start_date"]), "%Y-%m-%d").date()
-                            )
-                        
-                        st.markdown("##### Financial Details")
-                        col3, col4 = st.columns(2)
-                        
-                        with col3:
-                            edit_contract_value = st.number_input(
-                                "Contract Value (KES)*", 
-                                min_value=0.0, 
-                                step=10000.0, 
-                                format="%.2f",
-                                value=float(selected_contract.get("contract_value", 0))
-                            )
-                            edit_amount_spent = st.number_input(
-                                "Amount Spent to Date (KES)", 
-                                min_value=0.0, 
-                                step=10000.0, 
-                                format="%.2f",
-                                value=float(selected_contract.get("amount_spent_to_date", 0))
-                            )
+                            st.markdown("---")
                             
-                        with col4:
-                            edit_payment_terms = st.selectbox(
-                                "Payment Terms*", 
-                                ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"],
-                                index=["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"].index(
-                                    selected_contract.get("payment_terms", "Monthly")
-                                ) if selected_contract.get("payment_terms") in ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"] else 0
-                            )
-                            edit_auto_renewal = st.checkbox(
-                                "Auto-renewal", 
-                                value=selected_contract.get("auto_renewal", False)
-                            )
-                        
-                        st.markdown("##### Compliance & Performance")
-                        col5, col6 = st.columns(2)
-                        
-                        with col5:
-                            edit_compliance = st.selectbox(
-                                "Compliance Status", 
-                                ["Fully Compliant", "Partially Compliant", "Non-Compliant"],
-                                index=["Fully Compliant", "Partially Compliant", "Non-Compliant"].index(
-                                    selected_contract.get("compliance_status", "Fully Compliant")
-                                ) if selected_contract.get("compliance_status") in ["Fully Compliant", "Partially Compliant", "Non-Compliant"] else 0
-                            )
-                            edit_performance = st.slider(
-                                "Vendor Performance Rating", 
-                                0.0, 5.0, 
-                                value=float(selected_contract.get("vendor_performance", 3.0)), 
-                                step=0.5
-                            )
+                            # Show multi-year indicator
+                            if selected_contract.get("is_multi_year"):
+                                st.info("📅 This is a **multi-year contract**. Edit the total value carefully.")
+                                years = get_contract_years(selected_contract_id)
+                                if years:
+                                    with st.expander("📅 View Multi-Year Breakdown", expanded=False):
+                                        year_data = []
+                                        for y in years:
+                                            year_data.append({
+                                                "Year": f"Year {y['year_number']}",
+                                                "Annual Value": f"KES {y.get('annual_value', 0):,.0f}",
+                                                "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
+                                                "Status": y.get('status', 'active')
+                                            })
+                                        df_years = pd.DataFrame(year_data)
+                                        st.dataframe(df_years, use_container_width=True, hide_index=True)
                             
-                        with col6:
-                            edit_contract_url = st.text_input(
-                                "Contract Document URL", 
-                                value=selected_contract.get("contract_url", ""),
-                                placeholder="https://..."
-                            )
-                            edit_breach_notes = st.text_area(
-                                "Breach/Compliance Notes", 
-                                value=selected_contract.get("breach_notes", ""),
-                                height=80
-                            )
-                        
-                        st.markdown("##### Department Assignment")
-                        departments = get_cached_departments()
-                        dept_list = ["None"] + [d["name"] for d in departments]
-                        current_dept = selected_contract.get("department_name", "None")
-                        dept_index = dept_list.index(current_dept) if current_dept in dept_list else 0
-                        
-                        edit_department = st.selectbox(
-                            "Assign Contract to Department", 
-                            dept_list, 
-                            index=dept_index,
-                            help="Select which department this contract belongs to"
-                        )
-                        
-                        st.markdown("---")
-                        
-                        # Show multi-year indicator
-                        if selected_contract.get("is_multi_year"):
-                            st.info("📅 This is a **multi-year contract**. Edit the total value carefully.")
-                            years = get_contract_years(selected_contract_id)
-                            if years:
-                                with st.expander("📅 View Multi-Year Breakdown", expanded=False):
-                                    year_data = []
-                                    for y in years:
-                                        year_data.append({
-                                            "Year": f"Year {y['year_number']}",
-                                            "Annual Value": f"KES {y.get('annual_value', 0):,.0f}",
-                                            "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
-                                            "Status": y.get('status', 'active')
-                                        })
-                                    df_years = pd.DataFrame(year_data)
-                                    st.dataframe(df_years, use_container_width=True, hide_index=True)
-                        
-                        # Submit button with better error handling
-                        submitted = st.form_submit_button("💾 Update All Contract Fields", use_container_width=True, type="primary")
-                        
-                        if submitted:
-                            # Validate required fields
-                            if not edit_title:
-                                st.error("❌ Contract Title is required")
-                            elif not edit_vendor:
-                                st.error("❌ Vendor Name is required")
-                            elif edit_contract_value <= 0:
-                                st.error("❌ Contract value must be greater than 0")
-                            else:
-                                try:
-                                    # Map department name to ID
-                                    dept_map = {d["name"]: d["id"] for d in departments}
-                                    dept_id = dept_map.get(edit_department) if edit_department != "None" else None
-                                    dept_name = edit_department if edit_department != "None" else "Unassigned"
-                                    
-                                    # Prepare update data with ALL fields
-                                    update_data = {
-                                        "contract_title": edit_title,
-                                        "vendor_name": edit_vendor,
-                                        "contract_duration": edit_duration,
-                                        "contract_value": float(edit_contract_value),
-                                        "total_contract_value": float(edit_contract_value),
-                                        "amount_spent_to_date": float(edit_amount_spent),
-                                        "start_date": edit_start_date.isoformat(),
-                                        "end_date": edit_end_date.isoformat(),
-                                        "signed_date": edit_signed_date.isoformat(),
-                                        "payment_terms": edit_payment_terms,
-                                        "auto_renewal": edit_auto_renewal,
-                                        "compliance_status": edit_compliance,
-                                        "vendor_performance": float(edit_performance),
-                                        "contract_url": edit_contract_url if edit_contract_url else None,
-                                        "breach_notes": edit_breach_notes if edit_breach_notes else None,
-                                        "department_id": dept_id,
-                                        "department_name": dept_name,
-                                        "is_multi_year": selected_contract.get("is_multi_year", False)
-                                    }
-                                    
-                                    # Show what we're updating
-                                    with st.spinner("Updating contract..."):
-                                        if update_contract_admin_full(selected_contract_id, update_data):
-                                            st.success("✅ Contract updated successfully with all fields!")
-                                            add_audit_log("FULL_UPDATE", "contract", selected_contract_id, 
-                                                         f"Admin full updated contract: {edit_title}")
-                                            st.balloons()
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ Failed to update contract. Please check the logs for details.")
-                                except Exception as e:
-                                    st.error(f"❌ Error: {str(e)}")
+                            # Submit button with better error handling
+                            submitted = st.form_submit_button("💾 Update All Contract Fields", use_container_width=True, type="primary")
+                            
+                            if submitted:
+                                # Validate required fields
+                                if not edit_title:
+                                    st.error("❌ Contract Title is required")
+                                elif not edit_vendor:
+                                    st.error("❌ Vendor Name is required")
+                                elif edit_contract_value <= 0:
+                                    st.error("❌ Contract value must be greater than 0")
+                                else:
+                                    try:
+                                        # Map department name to ID
+                                        dept_map = {d["name"]: d["id"] for d in departments}
+                                        dept_id = dept_map.get(edit_department) if edit_department != "None" else None
+                                        dept_name = edit_department if edit_department != "None" else "Unassigned"
+                                        
+                                        # Prepare update data with ALL fields
+                                        update_data = {
+                                            "contract_title": edit_title,
+                                            "vendor_name": edit_vendor,
+                                            "contract_duration": edit_duration,
+                                            "contract_value": float(edit_contract_value),
+                                            "total_contract_value": float(edit_contract_value),
+                                            "amount_spent_to_date": float(edit_amount_spent),
+                                            "start_date": edit_start_date.isoformat(),
+                                            "end_date": edit_end_date.isoformat(),
+                                            "signed_date": edit_signed_date.isoformat(),
+                                            "payment_terms": edit_payment_terms,
+                                            "auto_renewal": edit_auto_renewal,
+                                            "compliance_status": edit_compliance,
+                                            "vendor_performance": float(edit_performance),
+                                            "contract_url": edit_contract_url if edit_contract_url else None,
+                                            "breach_notes": edit_breach_notes if edit_breach_notes else None,
+                                            "department_id": dept_id,
+                                            "department_name": dept_name,
+                                            "is_multi_year": selected_contract.get("is_multi_year", False)
+                                        }
+                                        
+                                        # Show what we're updating
+                                        with st.spinner("Updating contract..."):
+                                            if update_contract_admin_full(selected_contract_id, update_data):
+                                                st.success("✅ Contract updated successfully with all fields!")
+                                                add_audit_log("FULL_UPDATE", "contract", selected_contract_id, 
+                                                             f"Admin full updated contract: {edit_title}")
+                                                st.balloons()
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Failed to update contract. Please check the logs for details.")
+                                    except Exception as e:
+                                        st.error(f"❌ Error: {str(e)}")
             else:
                 st.info("No contracts found to edit.")
         else:
-            st.info("No contracts found.")
-    else:
-        st.error("❌ You do not have permission to access this section. Admin/Management only.")
-
+            st.error("❌ You do not have permission to access this section. Admin/Management only.")
 # ============================================
 # POLICIES SECTION
 # ============================================
