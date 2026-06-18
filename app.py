@@ -545,7 +545,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                     activities_by_date[date_key] = []
                     serializable_activities_by_date[date_key] = []
                 
-                # Create serializable version of activity
+                # Create serializable version of activity with ALL fields
                 serializable_act = {
                     'planned_activity': str(activity.get('planned_activity', '')),
                     'status': str(activity.get('status', 'Pending')),
@@ -556,7 +556,13 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                     'end_date': str(activity.get('end_date', '')),
                     'strategic_pillar': str(activity.get('strategic_pillar', '')),
                     'comment': str(activity.get('comment', '')) if activity.get('comment') else '',
-                    'id': int(activity.get('id', 0)) if activity.get('id') else 0
+                    'id': int(activity.get('id', 0)) if activity.get('id') else 0,
+                    'key_result_area': str(activity.get('key_result_area', '')),
+                    'performance_indicator': str(activity.get('performance_indicator', '')),
+                    'annual_target': str(activity.get('annual_target', '')),
+                    'actual_achievement': float(activity.get('actual_achievement', 0)),
+                    'budget_allocation': float(activity.get('budget_allocation', 0)) if activity.get('budget_allocation') else 0,
+                    'activity_category': str(activity.get('activity_category', ''))
                 }
                 
                 activities_by_date[date_key].append(activity)
@@ -615,7 +621,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
             padding: 25px;
             border-radius: 16px;
             width: 90%;
-            max-width: 700px;
+            max-width: 750px;
             max-height: 80vh;
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
@@ -735,6 +741,20 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
             border: 1px solid #00843D;
             vertical-align: middle;
         }}
+        /* Progress bar in modal */
+        .modal-progress-bar {{
+            width: 100%;
+            height: 4px;
+            background: #E5E7EB;
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }}
+        .modal-progress-fill {{
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s;
+        }}
     </style>
     
     <div style="background: {'#ffffff' if not is_dark else '#1e293b'}; padding: 1rem; border-radius: 12px; border: 1px solid {'#e5e7eb' if not is_dark else '#334155'};">
@@ -813,22 +833,15 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                 
                 html += '</div>'
                 
-                # Show activities (max 3)
+                # Show activities (max 3 in calendar view)
                 for act in day_activities[:3]:
-                    # Escape activity title for JavaScript
-                    escaped_title = str(act["planned_activity"])[:50].replace("'", "\\'").replace('"', '&quot;')
-                    status = str(act.get("status", "Pending"))
-                    department = str(act.get("department_name", "Unknown"))
-                    progress = int(act.get("progress_percent", 0))
-                    due_date = str(act.get("due_date", ""))
-                    
-                    status_icon = "✅" if status == 'Done' else "🟡" if status == 'In Progress' else "🔴"
-                    html += f'<div class="calendar-event-item" onclick="event.stopPropagation(); showActivityDetail(\'{escaped_title}\', \'{status}\', \'{department}\', \'{progress}\', \'{due_date}\')" style="font-size: 0.6rem; margin-top: 3px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
+                    status_icon = "✅" if act.get('status') == 'Done' else "🟡" if act.get('status') == 'In Progress' else "🔴"
+                    html += f'<div style="font-size: 0.6rem; margin-top: 3px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;" onclick="event.stopPropagation(); openModal({day}, {year}, {month})">'
                     html += f'{status_icon} {str(act["planned_activity"])[:20]}...'
                     html += '</div>'
                 
                 if len(day_activities) > 3:
-                    html += f'<div style="font-size: 0.5rem; margin-top: 2px; color: {"#6b7280" if not is_dark else "#94a3b8"}; text-align: center;">+{len(day_activities)-3} more</div>'
+                    html += f'<div style="font-size: 0.5rem; margin-top: 2px; color: {"#6b7280" if not is_dark else "#94a3b8"}; text-align: center; cursor: pointer;" onclick="event.stopPropagation(); openModal({day}, {year}, {month})">+{len(day_activities)-3} more</div>'
                 
                 html += '</td>'
         html += '</tr>'
@@ -867,7 +880,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
     </div>
     
     <script>
-        // Store activities data for the modal - using serializable data
+        // Store ALL activities data for the modal - using serializable data
         var activitiesData = {json.dumps(serializable_activities_by_date)};
         var currentMonth = {month};
         var currentYear = {year};
@@ -882,7 +895,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
             
             document.getElementById("modalDate").textContent = dateStr;
             
-            // Get activities for this date
+            // Get ALL activities for this date
             var dayKey = day.toString();
             var activities = activitiesData[dayKey] || [];
             
@@ -892,10 +905,13 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
             }} else {{
                 modalSubtitle.textContent = activities.length + ' activity(ies) scheduled';
                 var html = '';
-                activities.forEach(function(act) {{
+                // Show ALL activities
+                activities.forEach(function(act, index) {{
                     var statusClass = act.status === 'Done' ? 'status-done' : (act.status === 'In Progress' ? 'status-progress' : 'status-pending');
                     var statusIcon = act.status === 'Done' ? '✅' : (act.status === 'In Progress' ? '🟡' : '🔴');
-                    html += '<div class="calendar-modal-activity">';
+                    var progressColor = act.progress_percent >= 100 ? '#10B981' : (act.progress_percent > 0 ? '#F59E0B' : '#EF4444');
+                    
+                    html += '<div class="calendar-modal-activity" style="border-left-color: ' + (act.status === 'Done' ? '#10B981' : act.status === 'In Progress' ? '#F59E0B' : '#EF4444') + ';">';
                     html += '<div class="calendar-modal-activity-title">' + statusIcon + ' ' + act.planned_activity + '</div>';
                     html += '<div class="calendar-modal-activity-detail">';
                     html += '<span>🏛️ ' + (act.department_name || 'Unknown') + '</span>';
@@ -905,9 +921,25 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                     if (act.strategic_pillar) {{
                         html += '<span>📌 ' + act.strategic_pillar.substring(0, 30) + '...</span>';
                     }}
+                    if (act.key_result_area) {{
+                        html += '<span>🎯 ' + act.key_result_area.substring(0, 25) + '...</span>';
+                    }}
+                    if (act.annual_target) {{
+                        html += '<span>🎯 Target: ' + act.annual_target + '</span>';
+                    }}
+                    if (act.actual_achievement) {{
+                        html += '<span>📈 Actual: ' + act.actual_achievement + '</span>';
+                    }}
+                    if (act.budget_allocation && act.budget_allocation > 0) {{
+                        html += '<span>💰 KES ' + act.budget_allocation.toLocaleString() + '</span>';
+                    }}
                     if (act.comment) {{
                         html += '<span>💬 ' + act.comment.substring(0, 50) + '...</span>';
                     }}
+                    html += '</div>';
+                    // Progress bar
+                    html += '<div class="modal-progress-bar">';
+                    html += '<div class="modal-progress-fill" style="width: ' + Math.min(act.progress_percent, 100) + '%; background: ' + progressColor + ';"></div>';
                     html += '</div>';
                     html += '</div>';
                 }});
@@ -921,12 +953,6 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
         function closeModal() {{
             document.getElementById("calendarModal").style.display = "none";
             document.body.style.overflow = "auto";
-        }}
-        
-        function showActivityDetail(title, status, department, progress, dueDate) {{
-            var statusEmoji = status === 'Done' ? '✅' : (status === 'In Progress' ? '🟡' : '🔴');
-            var msg = statusEmoji + ' ' + title + '\\nDepartment: ' + department + '\\nProgress: ' + progress + '%\\nDue: ' + dueDate;
-            alert(msg);
         }}
         
         // Close modal on Escape key
