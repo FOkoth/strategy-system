@@ -4601,7 +4601,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                 
                 # Display total
                 if total_value > 0:
-                    st.success(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
+                    st.success(f" **Total Contract Value: KES {total_value:,.2f}**")
                     st.info(f"📊 {len(years_data)} year(s) configured")
                     
                     # Show breakdown table
@@ -4680,14 +4680,14 @@ elif st.session_state.active_menu == "📄 Contracts":
                         milestone_input = st.text_area("Payment Milestones", placeholder="e.g., 30% upon signing, 40% at mid-term, 30% upon completion", height=80)
                         
                     else:  # One-time
-                        st.info(f"💰 One-time payment of KES {total_value:,.2f} due upon contract signing.")
+                        st.info(f" One-time payment of KES {total_value:,.2f} due upon contract signing.")
                 
                 # Store years_data in session state for form submission
                 st.session_state.contract_years_data = years_data
                         
             else:
                 # Single Year Contract
-                st.markdown("#### 💰 Contract Value")
+                st.markdown("####  Contract Value")
                 contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f", key="single_contract_value")
                 amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0, key="single_amount_spent")
                 
@@ -4696,20 +4696,20 @@ elif st.session_state.active_menu == "📄 Contracts":
                     st.markdown("#### 💳 Payment Schedule")
                     if payment_terms == "Monthly":
                         monthly = contract_value / 12
-                        st.info(f"💰 Monthly Payment: KES {monthly:,.2f}")
-                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
+                        st.info(f" Monthly Payment: KES {monthly:,.2f}")
+                        st.info(f" Total Annual Value: KES {contract_value:,.2f}")
                     elif payment_terms == "Quarterly":
                         quarterly = contract_value / 4
-                        st.info(f"💰 Quarterly Payment: KES {quarterly:,.2f}")
-                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
+                        st.info(f" Quarterly Payment: KES {quarterly:,.2f}")
+                        st.info(f" Total Annual Value: KES {contract_value:,.2f}")
                     elif payment_terms == "Bi-annually":
                         bi_annual = contract_value / 2
-                        st.info(f"💰 Bi-Annual Payment: KES {bi_annual:,.2f}")
-                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
+                        st.info(f" Bi-Annual Payment: KES {bi_annual:,.2f}")
+                        st.info(f" Total Annual Value: KES {contract_value:,.2f}")
                     elif payment_terms == "Annually":
-                        st.info(f"💰 Annual Payment: KES {contract_value:,.2f}")
+                        st.info(f" Annual Payment: KES {contract_value:,.2f}")
                     elif payment_terms == "One-time":
-                        st.info(f"💰 One-time Payment: KES {contract_value:,.2f}")
+                        st.info(f" One-time Payment: KES {contract_value:,.2f}")
             
             st.markdown("---")
             
