@@ -4375,6 +4375,10 @@ elif st.session_state.active_menu == "📄 Contracts":
         if contracts:
             df_contracts = pd.DataFrame(contracts)
             
+            # Handle missing department_name column
+            if 'department_name' not in df_contracts.columns:
+                df_contracts['department_name'] = 'Unassigned'
+            
             df_contracts['contract_value'] = pd.to_numeric(df_contracts.get('contract_value', 0), errors='coerce').fillna(0)
             df_contracts['amount_spent_to_date'] = pd.to_numeric(df_contracts.get('amount_spent_to_date', 0), errors='coerce').fillna(0)
             
@@ -4832,12 +4836,11 @@ elif st.session_state.active_menu == "📄 Contracts":
                             
                             # Map department name to ID
                             dept_id = st.session_state.user_dept
+                            dept_name = get_department_name(st.session_state.user_dept)
                             if department_id != "None":
                                 dept_map = {d["name"]: d["id"] for d in get_cached_departments()}
                                 dept_id = dept_map.get(department_id, st.session_state.user_dept)
-                            
-                            # Get department name
-                            dept_name = department_id if department_id != "None" else get_department_name(st.session_state.user_dept)
+                                dept_name = department_id
                             
                             contract_data = {
                                 "contract_title": contract_title,
@@ -4995,9 +4998,14 @@ elif st.session_state.active_menu == "📄 Contracts":
             contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
             
             if contracts:
+                # Handle missing department_name
+                for c in contracts:
+                    if 'department_name' not in c:
+                        c['department_name'] = 'Unassigned'
+                
                 # Filter contracts by department if management (they can see all)
                 if st.session_state.user_role == "management":
-                    depts = sorted(set([c.get('department_name', 'Unassigned') for c in contracts if c.get('department_name')]))
+                    depts = sorted(set([c.get('department_name', 'Unassigned') for c in contracts]))
                     dept_filter = st.selectbox("Filter by Department", ["All"] + depts)
                     if dept_filter != "All":
                         contracts = [c for c in contracts if c.get('department_name') == dept_filter]
