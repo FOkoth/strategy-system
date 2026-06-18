@@ -278,7 +278,7 @@ def calculate_progress_from_actual(annual_target, actual_achievement):
     except:
         return 0
 
-def is_target_exceeded(actual_achievement, annual_target):
+def is_target_exceeded(actual_achievement, annual_target): 
     if not actual_achievement or not annual_target:
         return False
     try:
