@@ -4299,7 +4299,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACTS SECTION
+# CONTRACT MANAGEMENT - FIXED MULTI-YEAR WITH SESSION STATE & DATES
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -4354,11 +4354,11 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown(f"**Start Date:** {contract['start_date']}")
                         st.markdown(f"**End Date:** {contract['end_date']}")
                         st.markdown(f"**Signed Date:** {contract.get('signed_date', 'N/A')}")
+                        st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
                     with col2:
                         st.markdown(f"**Contract Value:** KES {contract.get('contract_value', 0):,.0f}")
                         st.markdown(f"**Amount Spent:** KES {contract.get('amount_spent_to_date', 0):,.0f}")
                         st.markdown(f"**Utilization:** {contract.get('utilization_rate', 0):.1f}%")
-                        st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
                         st.markdown(f"**Compliance:** {contract.get('compliance_status', 'N/A')}")
                         st.markdown(f"**Vendor Rating:** ⭐ {contract.get('vendor_performance', 0)}/5")
                     
@@ -4367,6 +4367,24 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
                     if contract.get('breach_notes'):
                         st.warning(f"⚠️ **Breach Notes:** {contract['breach_notes']}")
+                    
+                    # Show multi-year details if applicable
+                    if contract.get('is_multi_year'):
+                        st.markdown("#### 📅 Multi-Year Breakdown")
+                        years = get_contract_years(contract['id'])
+                        if years:
+                            year_data = []
+                            for y in years:
+                                year_data.append({
+                                    "Year": f"Year {y['year_number']}",
+                                    "Start": y.get('year_start_date', 'N/A'),
+                                    "End": y.get('year_end_date', 'N/A'),
+                                    "Value": f"KES {y.get('annual_value', 0):,.0f}",
+                                    "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
+                                    "Status": y.get('status', 'active')
+                                })
+                            df_years = pd.DataFrame(year_data)
+                            st.dataframe(df_years, use_container_width=True, hide_index=True)
         else:
             st.info("No contracts found.")
     
@@ -4398,6 +4416,21 @@ elif st.session_state.active_menu == "📄 Contracts":
                         st.markdown("---")
                         if contract.get('contract_url'):
                             st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
+                        
+                        if contract.get('is_multi_year'):
+                            st.markdown("#### 📅 Multi-Year Breakdown")
+                            years = get_contract_years(contract['id'])
+                            if years:
+                                year_data = []
+                                for y in years:
+                                    year_data.append({
+                                        "Year": f"Year {y['year_number']}",
+                                        "Value": f"KES {y.get('annual_value', 0):,.0f}",
+                                        "Spent": f"KES {y.get('amount_spent_to_date', 0):,.0f}",
+                                        "Status": y.get('status', 'active')
+                                    })
+                                df_years = pd.DataFrame(year_data)
+                                st.dataframe(df_years, use_container_width=True, hide_index=True)
             else:
                 st.info("No active contracts.")
         else:
@@ -4444,6 +4477,10 @@ elif st.session_state.active_menu == "📄 Contracts":
         
         contract_type = st.radio("Contract Type", ["Single Year Contract", "Multi-Year Contract"], horizontal=True)
         
+        # Use session state to store year values
+        if "contract_year_values" not in st.session_state:
+            st.session_state.contract_year_values = {}
+        
         with st.form("new_contract_enhanced"):
             col1, col2 = st.columns(2)
             
@@ -4458,14 +4495,17 @@ elif st.session_state.active_menu == "📄 Contracts":
                 start_date = st.date_input("Start Date*", value=datetime.now().date())
                 end_date = st.date_input("End Date*")
                 signed_date = st.date_input("Signed Date", value=datetime.now().date())
-                payment_terms = st.selectbox("Payment Terms", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
+                payment_terms = st.selectbox("Payment Terms*", ["Monthly", "Quarterly", "Bi-annually", "Annually", "Milestone-based", "One-time"])
                 auto_renewal = st.checkbox("Auto-renewal")
             
+            st.markdown("---")
+            
+            # Multi-Year Contract Section - USING SESSION STATE
             if contract_type == "Multi-Year Contract":
-                st.markdown("---")
-                st.markdown("#### 📅 Contract Years Breakdown")
-                st.info("For multi-year contracts, please specify the value for each year")
+                st.markdown("#### 📅 Multi-Year Contract Breakdown")
+                st.info("Please enter the annual value for each year of the contract. The total contract value will be calculated automatically.")
                 
+                # Calculate number of years from duration
                 num_years = 1
                 if "2 years" in contract_duration:
                     num_years = 2
@@ -4476,40 +4516,202 @@ elif st.session_state.active_menu == "📄 Contracts":
                 elif "5 years" in contract_duration:
                     num_years = 5
                 
-                years_data = []
-                total_value = 0
+                st.markdown(f"**📆 Contract Duration: {num_years} year(s)**")
+                st.markdown("---")
                 
+                # Initialize session state for this contract
+                contract_key = f"contract_{contract_title}_{start_date}"
+                if contract_key not in st.session_state.contract_year_values:
+                    st.session_state.contract_year_values[contract_key] = {}
+                
+                # Initialize year start/end dates
+                year_start_dates = {}
+                year_end_dates = {}
+                
+                # Create dynamic year inputs with UNIQUE KEYS using session state
                 for year_num in range(1, num_years + 1):
-                    st.markdown(f"**Year {year_num}**")
+                    st.markdown(f"**📆 Year {year_num}**")
                     col_y1, col_y2, col_y3 = st.columns(3)
-                    with col_y1:
-                        year_value = st.number_input(f"Annual Value - Year {year_num} (KES)", 
-                                                      min_value=0.0, step=10000.0, format="%.2f", 
-                                                      key=f"year_value_{year_num}")
-                    with col_y2:
-                        year_start = st.date_input(f"Year {year_num} Start Date", 
-                                                   value=start_date if year_num == 1 else None,
-                                                   key=f"year_start_{year_num}")
-                    with col_y3:
-                        year_end = st.date_input(f"Year {year_num} End Date", 
-                                                 value=None,
-                                                 key=f"year_end_{year_num}")
                     
-                    if year_value > 0:
-                        total_value += year_value
+                    # Get current value from session state or default to 0
+                    current_value = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
+                    
+                    # Calculate default dates for each year
+                    if year_num == 1:
+                        default_start = start_date
+                    else:
+                        default_start = start_date + relativedelta(years=year_num-1)
+                    
+                    if year_num == num_years:
+                        default_end = end_date
+                    else:
+                        default_end = start_date + relativedelta(years=year_num)
+                    
+                    with col_y1:
+                        year_value = st.number_input(
+                            f"Annual Value - Year {year_num} (KES)*", 
+                            min_value=0.0, 
+                            step=10000.0, 
+                            format="%.2f", 
+                            value=current_value,
+                            key=f"year_value_{year_num}_{contract_key}",
+                            help=f"Enter the budget for Year {year_num}"
+                        )
+                        # Update session state
+                        st.session_state.contract_year_values[contract_key][f"year_{year_num}_value"] = year_value
+                    
+                    with col_y2:
+                        year_start = st.date_input(
+                            f"Year {year_num} Start Date", 
+                            value=default_start,
+                            key=f"year_start_{year_num}_{contract_key}"
+                        )
+                        year_start_dates[year_num] = year_start
+                    
+                    with col_y3:
+                        year_end = st.date_input(
+                            f"Year {year_num} End Date", 
+                            value=default_end,
+                            key=f"year_end_{year_num}_{contract_key}"
+                        )
+                        year_end_dates[year_num] = year_end
+                    
+                    st.markdown("---")
+                
+                # Calculate total from session state values
+                total_value = 0
+                years_data = []
+                for year_num in range(1, num_years + 1):
+                    year_val = st.session_state.contract_year_values[contract_key].get(f"year_{year_num}_value", 0.0)
+                    if year_val > 0:
+                        total_value += year_val
+                        
+                        # Get start and end dates for this year
+                        year_start = year_start_dates.get(year_num, start_date)
+                        year_end = year_end_dates.get(year_num, end_date)
+                        
                         years_data.append({
                             "year_number": year_num,
-                            "year_start_date": year_start.isoformat() if year_start else None,
-                            "year_end_date": year_end.isoformat() if year_end else None,
-                            "annual_value": year_value,
+                            "year_start_date": year_start.isoformat() if year_start else start_date.isoformat(),
+                            "year_end_date": year_end.isoformat() if year_end else end_date.isoformat(),
+                            "annual_value": year_val,
                             "amount_spent_to_date": 0,
                             "status": "active"
                         })
                 
-                st.info(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
+                # Display total
+                if total_value > 0:
+                    st.success(f"💰 **Total Contract Value: KES {total_value:,.2f}**")
+                    st.info(f"📊 {len(years_data)} year(s) configured")
+                    
+                    # Show breakdown table
+                    if years_data:
+                        df_years_preview = pd.DataFrame([
+                            {
+                                "Year": f"Year {y['year_number']}",
+                                "Annual Value": f"KES {y['annual_value']:,.2f}",
+                                "Start": y['year_start_date'],
+                                "End": y['year_end_date']
+                            } for y in years_data
+                        ])
+                        st.dataframe(df_years_preview, use_container_width=True, hide_index=True)
+                else:
+                    st.warning("⚠️ Please add values for each year (greater than 0)")
+                
+                # Calculate payment schedule based on payment terms
+                if total_value > 0 and payment_terms:
+                    st.markdown("#### 💳 Payment Schedule")
+                    
+                    if payment_terms == "Monthly":
+                        months_per_year = 12
+                        payment_data = []
+                        for y in years_data:
+                            if y['annual_value'] > 0:
+                                monthly = y['annual_value'] / months_per_year
+                                payment_data.append({
+                                    "Year": f"Year {y['year_number']}",
+                                    "Monthly Payment": f"KES {monthly:,.2f}",
+                                    "Annual Total": f"KES {y['annual_value']:,.2f}"
+                                })
+                        df_payment = pd.DataFrame(payment_data)
+                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
+                        
+                    elif payment_terms == "Quarterly":
+                        quarters_per_year = 4
+                        payment_data = []
+                        for y in years_data:
+                            if y['annual_value'] > 0:
+                                quarterly = y['annual_value'] / quarters_per_year
+                                payment_data.append({
+                                    "Year": f"Year {y['year_number']}",
+                                    "Quarterly Payment": f"KES {quarterly:,.2f}",
+                                    "Annual Total": f"KES {y['annual_value']:,.2f}"
+                                })
+                        df_payment = pd.DataFrame(payment_data)
+                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
+                        
+                    elif payment_terms == "Bi-annually":
+                        periods_per_year = 2
+                        payment_data = []
+                        for y in years_data:
+                            if y['annual_value'] > 0:
+                                bi_annual = y['annual_value'] / periods_per_year
+                                payment_data.append({
+                                    "Year": f"Year {y['year_number']}",
+                                    "Bi-Annual Payment": f"KES {bi_annual:,.2f}",
+                                    "Annual Total": f"KES {y['annual_value']:,.2f}"
+                                })
+                        df_payment = pd.DataFrame(payment_data)
+                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
+                        
+                    elif payment_terms == "Annually":
+                        payment_data = []
+                        for y in years_data:
+                            if y['annual_value'] > 0:
+                                payment_data.append({
+                                    "Year": f"Year {y['year_number']}",
+                                    "Annual Payment": f"KES {y['annual_value']:,.2f}"
+                                })
+                        df_payment = pd.DataFrame(payment_data)
+                        st.dataframe(df_payment, use_container_width=True, hide_index=True)
+                        
+                    elif payment_terms == "Milestone-based":
+                        st.info("📌 Milestone-based payment schedule requires manual entry of payment milestones.")
+                        milestone_input = st.text_area("Payment Milestones", placeholder="e.g., 30% upon signing, 40% at mid-term, 30% upon completion", height=80)
+                        
+                    else:  # One-time
+                        st.info(f"💰 One-time payment of KES {total_value:,.2f} due upon contract signing.")
+                
+                # Store years_data in session state for form submission
+                st.session_state.contract_years_data = years_data
+                        
             else:
-                contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f")
-                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0)
+                # Single Year Contract
+                st.markdown("#### 💰 Contract Value")
+                contract_value = st.number_input("Contract Value (KES)*", min_value=0.0, step=10000.0, format="%.2f", key="single_contract_value")
+                amount_spent_to_date = st.number_input("Amount Spent to Date (KES)", min_value=0.0, step=10000.0, format="%.2f", value=0.0, key="single_amount_spent")
+                
+                # Calculate payment schedule for single year
+                if contract_value > 0 and payment_terms:
+                    st.markdown("#### 💳 Payment Schedule")
+                    if payment_terms == "Monthly":
+                        monthly = contract_value / 12
+                        st.info(f"💰 Monthly Payment: KES {monthly:,.2f}")
+                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
+                    elif payment_terms == "Quarterly":
+                        quarterly = contract_value / 4
+                        st.info(f"💰 Quarterly Payment: KES {quarterly:,.2f}")
+                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
+                    elif payment_terms == "Bi-annually":
+                        bi_annual = contract_value / 2
+                        st.info(f"💰 Bi-Annual Payment: KES {bi_annual:,.2f}")
+                        st.info(f"💰 Total Annual Value: KES {contract_value:,.2f}")
+                    elif payment_terms == "Annually":
+                        st.info(f"💰 Annual Payment: KES {contract_value:,.2f}")
+                    elif payment_terms == "One-time":
+                        st.info(f"💰 One-time Payment: KES {contract_value:,.2f}")
+            
+            st.markdown("---")
             
             col3, col4 = st.columns(2)
             
@@ -4524,17 +4726,32 @@ elif st.session_state.active_menu == "📄 Contracts":
                 department_id = st.selectbox("Department", ["None"] + [d["name"] for d in get_cached_departments()])
                 breach_notes = st.text_area("Breach/Compliance Notes", height=80)
             
-            if st.form_submit_button("Save Contract", use_container_width=True):
-                if contract_title and vendor_name and contract_duration:
-                    if contract_type == "Multi-Year Contract" and not years_data:
-                        st.error("Please add at least one year with valid value")
-                    elif contract_type == "Single Year Contract" and contract_value <= 0:
-                        st.error("Please enter a valid contract value")
-                    else:
-                        if contract_type == "Multi-Year Contract":
+            # Submit button
+            submitted = st.form_submit_button("Save Contract", use_container_width=True)
+            
+            if submitted:
+                if not contract_title or not vendor_name or not contract_duration:
+                    st.error("❌ Please fill all required fields (*)")
+                else:
+                    if contract_type == "Multi-Year Contract":
+                        # Get years data from session state
+                        years_data = st.session_state.get("contract_years_data", [])
+                        
+                        # Validate that all years have values > 0
+                        valid_years = [y for y in years_data if y['annual_value'] > 0]
+                        if not valid_years or len(valid_years) != num_years:
+                            st.error("❌ Please add valid values for all years (greater than 0)")
+                        else:
+                            # Calculate totals
                             total_value = sum(y['annual_value'] for y in years_data)
                             total_spent = sum(y.get('amount_spent_to_date', 0) for y in years_data)
                             utilization = (total_spent / total_value * 100) if total_value > 0 else 0
+                            
+                            # Map department name to ID
+                            dept_id = st.session_state.user_dept
+                            if department_id != "None":
+                                dept_map = {d["name"]: d["id"] for d in get_cached_departments()}
+                                dept_id = dept_map.get(department_id, st.session_state.user_dept)
                             
                             contract_data = {
                                 "contract_title": contract_title,
@@ -4554,15 +4771,33 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 "contract_url": contract_url if contract_url else None,
                                 "breach_notes": breach_notes if breach_notes else None,
                                 "is_multi_year": True,
-                                "department_id": st.session_state.user_dept
+                                "department_id": dept_id
                             }
                             
                             success, message = add_multi_year_contract(contract_data, years_data)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.balloons()
+                                # Clear session state
+                                st.session_state.contract_year_values = {}
+                                st.session_state.contract_years_data = []
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                    else:
+                        if contract_value <= 0:
+                            st.error("❌ Please enter a valid contract value (greater than 0)")
                         else:
                             end_date_obj = end_date
                             days_left = (end_date_obj - datetime.now().date()).days
                             status = "active" if days_left > 30 else ("expiring_soon" if days_left > 0 else "expired")
                             utilization = (amount_spent_to_date / contract_value * 100) if contract_value > 0 else 0
+                            
+                            # Map department name to ID
+                            dept_id = st.session_state.user_dept
+                            if department_id != "None":
+                                dept_map = {d["name"]: d["id"] for d in get_cached_departments()}
+                                dept_id = dept_map.get(department_id, st.session_state.user_dept)
                             
                             contract_data = {
                                 "contract_title": contract_title,
@@ -4585,18 +4820,15 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 "status": status,
                                 "days_remaining": days_left,
                                 "budget_alert": utilization >= 80,
-                                "department_id": st.session_state.user_dept
+                                "department_id": dept_id
                             }
                             success, message = add_enhanced_contract(contract_data)
-                        
-                        if success:
-                            st.success(f"✅ {message}")
-                            st.balloons()
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {message}")
-                else:
-                    st.error("Please fill all required fields (*)")
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
     
     with tab_update:
         st.markdown("### Update Existing Contract")
@@ -4664,6 +4896,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                 st.info("No updatable contracts found. Only active and expiring soon contracts can be updated.")
         else:
             st.info("No contracts found.")
+
 
 # ============================================
 # POLICIES SECTION
