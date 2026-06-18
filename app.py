@@ -237,6 +237,18 @@ def get_months_for_quarter(quarter):
         return ALL_MONTHS
     return QUARTER_MONTHS.get(quarter, ALL_MONTHS)
 
+def get_months_for_quarter_num(quarter):
+    """Get month numbers for a given quarter"""
+    if quarter == "Q1 (Jul-Sep)":
+        return [7, 8, 9]
+    elif quarter == "Q2 (Oct-Dec)":
+        return [10, 11, 12]
+    elif quarter == "Q3 (Jan-Mar)":
+        return [1, 2, 3]
+    elif quarter == "Q4 (Apr-Jun)":
+        return [4, 5, 6]
+    return []
+
 # ============================================
 # SESSION STATE FOR FILTERS & NAVIGATION
 # ============================================
@@ -278,7 +290,7 @@ def calculate_progress_from_actual(annual_target, actual_achievement):
     except:
         return 0
 
-def is_target_exceeded(actual_achievement, annual_target): 
+def is_target_exceeded(actual_achievement, annual_target):
     if not actual_achievement or not annual_target:
         return False
     try:
@@ -446,20 +458,60 @@ def calculate_risk_score(progress, days_left, total_days):
         return 10
 
 # ============================================
+# PILLAR PERFORMANCE SUMMARY FUNCTION
+# ============================================
+def generate_pillar_performance_summary(activities):
+    """Generate a high-level summary of pillar-wise performance"""
+    
+    pillar_data = {}
+    
+    for activity in activities:
+        pillar = activity.get('strategic_pillar', 'Uncategorized')
+        status = activity.get('status', 'Pending')
+        progress = activity.get('progress_percent', 0)
+        
+        if pillar not in pillar_data:
+            pillar_data[pillar] = {
+                'total': 0,
+                'completed': 0,
+                'in_progress': 0,
+                'pending': 0,
+                'total_progress': 0,
+                'activities': []
+            }
+        
+        pillar_data[pillar]['total'] += 1
+        pillar_data[pillar]['total_progress'] += progress
+        pillar_data[pillar]['activities'].append(activity)
+        
+        if status == 'Done':
+            pillar_data[pillar]['completed'] += 1
+        elif status == 'In Progress':
+            pillar_data[pillar]['in_progress'] += 1
+        else:
+            pillar_data[pillar]['pending'] += 1
+    
+    # Calculate averages and create summary
+    summary = []
+    for pillar, data in pillar_data.items():
+        avg_progress = data['total_progress'] / data['total'] if data['total'] > 0 else 0
+        completion_rate = (data['completed'] / data['total'] * 100) if data['total'] > 0 else 0
+        
+        summary.append({
+            'Pillar': pillar,
+            'Total': data['total'],
+            'Completed': data['completed'],
+            'In Progress': data['in_progress'],
+            'Pending': data['pending'],
+            'Avg Progress': round(avg_progress, 1),
+            'Completion Rate': round(completion_rate, 1)
+        })
+    
+    return pd.DataFrame(summary)
+
+# ============================================
 # ENHANCED CALENDAR VIEW WITH CLICK FUNCTIONALITY
 # ============================================
-def get_months_for_quarter_num(quarter):
-    """Get month numbers for a given quarter"""
-    if quarter == "Q1 (Jul-Sep)":
-        return [7, 8, 9]
-    elif quarter == "Q2 (Oct-Dec)":
-        return [10, 11, 12]
-    elif quarter == "Q3 (Jan-Mar)":
-        return [1, 2, 3]
-    elif quarter == "Q4 (Apr-Jun)":
-        return [4, 5, 6]
-    return []
-
 def generate_calendar_html(activities, year, month, quarter_filter="All"):
     """Generate HTML for month calendar view with quarter filtering, start/end markers, and clickable activities"""
     cal = calendar.monthcalendar(year, month)
@@ -481,14 +533,34 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
     start_dates = {}
     end_dates = {}
     
+    # Create serializable activity data for JSON
+    serializable_activities_by_date = {}
+    
     for activity in filtered_activities:
         if activity.get('due_date'):
             due_date = pd.to_datetime(activity['due_date']).date()
             if due_date.year == year and due_date.month == month:
-                date_key = due_date.day
+                date_key = str(due_date.day)
                 if date_key not in activities_by_date:
                     activities_by_date[date_key] = []
+                    serializable_activities_by_date[date_key] = []
+                
+                # Create serializable version of activity
+                serializable_act = {
+                    'planned_activity': str(activity.get('planned_activity', '')),
+                    'status': str(activity.get('status', 'Pending')),
+                    'department_name': str(activity.get('department_name', 'Unknown')),
+                    'progress_percent': int(activity.get('progress_percent', 0)),
+                    'due_date': str(activity.get('due_date', '')),
+                    'start_date': str(activity.get('start_date', '')),
+                    'end_date': str(activity.get('end_date', '')),
+                    'strategic_pillar': str(activity.get('strategic_pillar', '')),
+                    'comment': str(activity.get('comment', '')) if activity.get('comment') else '',
+                    'id': int(activity.get('id', 0)) if activity.get('id') else 0
+                }
+                
                 activities_by_date[date_key].append(activity)
+                serializable_activities_by_date[date_key].append(serializable_act)
         
         # Track start and end dates
         if activity.get('start_date'):
@@ -701,7 +773,8 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
             if day == 0:
                 html += f'<td style="padding: 8px; border: 1px solid {"#e5e7eb" if not is_dark else "#475569"}; vertical-align: top; height: 85px; background-color: {"#f9fafb" if not is_dark else "#0f172a"};"></td>'
             else:
-                day_activities = activities_by_date.get(day, [])
+                date_key = str(day)
+                day_activities = activities_by_date.get(date_key, [])
                 is_start = day in start_dates
                 is_end = day in end_dates
                 has_activities = len(day_activities) > 0
@@ -743,15 +816,15 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                 # Show activities (max 3)
                 for act in day_activities[:3]:
                     # Escape activity title for JavaScript
-                    escaped_title = act["planned_activity"][:50].replace("'", "\\'").replace('"', '&quot;')
-                    status = act.get("status", "Pending")
-                    department = act.get("department_name", "Unknown")
-                    progress = act.get("progress_percent", 0)
-                    due_date = act.get("due_date", "")
+                    escaped_title = str(act["planned_activity"])[:50].replace("'", "\\'").replace('"', '&quot;')
+                    status = str(act.get("status", "Pending"))
+                    department = str(act.get("department_name", "Unknown"))
+                    progress = int(act.get("progress_percent", 0))
+                    due_date = str(act.get("due_date", ""))
                     
                     status_icon = "✅" if status == 'Done' else "🟡" if status == 'In Progress' else "🔴"
                     html += f'<div class="calendar-event-item" onclick="event.stopPropagation(); showActivityDetail(\'{escaped_title}\', \'{status}\', \'{department}\', \'{progress}\', \'{due_date}\')" style="font-size: 0.6rem; margin-top: 3px; padding: 2px 6px; background-color: #00843D; color: white; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'
-                    html += f'{status_icon} {act["planned_activity"][:20]}...'
+                    html += f'{status_icon} {str(act["planned_activity"])[:20]}...'
                     html += '</div>'
                 
                 if len(day_activities) > 3:
@@ -794,11 +867,10 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
     </div>
     
     <script>
-        // Store activities data for the modal
-        var activitiesData = {json.dumps({str(k): v for k, v in activities_by_date.items()})};
+        // Store activities data for the modal - using serializable data
+        var activitiesData = {json.dumps(serializable_activities_by_date)};
         var currentMonth = {month};
         var currentYear = {year};
-        var monthNames = {json.dumps(calendar.month_name[1:])};
         
         function openModal(day, year, month) {{
             var modal = document.getElementById("calendarModal");
@@ -1847,7 +1919,7 @@ def bulk_upload_work_plans(df, department_id, department_name, user_id):
                 errors.append(f"Row {idx+2}: Failed to insert")
         except Exception as e:
             error_count += 1
-            errors.append(f"Row {idx+2}: {str(e)}") 
+            errors.append(f"Row {idx+2}: {str(e)}")
     
     return success_count, error_count, errors
 
@@ -1865,7 +1937,7 @@ if "authenticated" not in st.session_state:
     st.session_state.user_dept_name = ""
 
 # ============================================
-# CUSTOM CSS (WITH FIXED DROPDOWN VISIBILITY)
+# CUSTOM CSS (WITH FIXED DROPDOWN VISIBILITY AND LOGIN PAGE)
 # ============================================
 if st.session_state.theme == "light":
     THEME_CSS = f"""
@@ -2177,14 +2249,20 @@ if st.session_state.theme == "light":
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #000000 !important; font-size: 0.7rem; }}
         
-        /* LOGIN PAGE - FIXED CENTERING */
+        /* FIXED LOGIN PAGE - CLEAN, CENTERED, NO HEADROOM */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80vh;
+            min-height: 100vh;
             padding: 1rem;
-            background: transparent;
+            background: {HELB_WHITE};
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
         }}
         .login-container {{
             background: #ffffff;
@@ -2299,7 +2377,6 @@ if st.session_state.theme == "light":
                 font-size: 0.6rem !important;
             }}
             .login-wrapper {{
-                min-height: 60vh !important;
                 padding: 0.5rem !important;
             }}
             .login-container {{
@@ -2603,14 +2680,20 @@ else:
         .dataframe th {{ background-color: {HELB_GREEN} !important; color: white !important; font-size: 0.7rem; }}
         .dataframe td {{ color: #FFFFFF !important; font-size: 0.7rem; }}
         
-        /* LOGIN PAGE - FIXED CENTERING - DARK THEME */
+        /* FIXED LOGIN PAGE - CLEAN, CENTERED, NO HEADROOM - DARK THEME */
         .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80vh;
+            min-height: 100vh;
             padding: 1rem;
-            background: transparent;
+            background: #1a1a2e;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
         }}
         .login-container {{
             background: #1e293b;
@@ -2725,7 +2808,6 @@ else:
                 font-size: 0.6rem !important;
             }}
             .login-wrapper {{
-                min-height: 60vh !important;
                 padding: 0.5rem !important;
             }}
             .login-container {{
@@ -2742,7 +2824,7 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - FIXED CENTERING
+# LOGIN PAGE - FIXED WITH POSITION FIXED
 # ============================================
 if not st.session_state.authenticated:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
@@ -3216,7 +3298,59 @@ if st.session_state.active_menu == "📋 Work Plans":
             
             # Quick stats below calendar
             st.markdown("---")
+            
+            # Pillar Performance Summary for Management - RESTORED
+            st.markdown("### 📊 Pillar Performance Summary")
+            st.markdown("High-level overview of implementation progress by strategic pillar")
+            
+            pillar_df = generate_pillar_performance_summary(filtered_plans)
+            
+            if not pillar_df.empty:
+                # Display pillar performance as cards
+                cols = st.columns(min(len(pillar_df), 5))
+                for idx, (_, row) in enumerate(pillar_df.iterrows()):
+                    col_idx = idx % len(cols)
+                    with cols[col_idx]:
+                        pillar_name = row['Pillar'].split('. ')[-1] if '. ' in row['Pillar'] else row['Pillar']
+                        # Determine progress color
+                        progress_color = "#10B981" if row['Completion Rate'] >= 75 else "#F59E0B" if row['Completion Rate'] >= 40 else "#EF4444"
+                        st.markdown(f"""
+                        <div style="background: {HELB_GREEN}10; border-radius: 10px; padding: 0.8rem; border: 1px solid {HELB_GREEN}30; margin-bottom: 0.5rem;">
+                            <div style="font-size: 0.65rem; font-weight: 600; color: {HELB_GREEN};">{pillar_name[:30]}</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #1F2937;">{row['Completion Rate']}%</div>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem; flex-wrap: wrap;">
+                                <span style="font-size: 0.55rem; background: #10B98120; padding: 0.1rem 0.4rem; border-radius: 8px;">✅ {row['Completed']}</span>
+                                <span style="font-size: 0.55rem; background: #F59E0B20; padding: 0.1rem 0.4rem; border-radius: 8px;">🟡 {row['In Progress']}</span>
+                                <span style="font-size: 0.55rem; background: #EF444420; padding: 0.1rem 0.4rem; border-radius: 8px;">⏳ {row['Pending']}</span>
+                            </div>
+                            <div style="margin-top: 0.3rem; height: 4px; background: #E5E7EB; border-radius: 2px; overflow: hidden;">
+                                <div style="width: {row['Completion Rate']}%; height: 100%; background: {progress_color}; border-radius: 2px; transition: width 0.5s;"></div>
+                            </div>
+                            <div style="font-size: 0.5rem; color: #6B7280; margin-top: 0.2rem;">Total: {row['Total']} activities</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                # Display detailed table
+                with st.expander("📋 View Detailed Pillar Performance Table", expanded=False):
+                    st.dataframe(pillar_df, use_container_width=True, hide_index=True)
+                    
+                    # Create a bar chart visualization
+                    fig = px.bar(pillar_df, x='Pillar', y='Completion Rate', 
+                                 color='Completion Rate', 
+                                 color_continuous_scale='Greens',
+                                 text='Completion Rate',
+                                 title="Pillar Completion Rates")
+                    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+                    fig.update_layout(height=300, margin=dict(l=20, r=20, t=40, b=20))
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("No pillar data available for the selected period.")
+            
+            # Date Activity Details (popup info)
+            st.markdown("---")
+            st.markdown("### 📅 Date Activity Details")
             st.info("💡 Click on any date or activity in the calendar above to see all activities for that day in a popup window.")
+            
         else:
             st.info("No activities to display. Please add work plan activities with start and end dates.")
     
