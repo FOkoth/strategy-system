@@ -5011,10 +5011,10 @@ elif st.session_state.active_menu == "📄 Contracts":
             st.info("No contracts found.")
     
     with tab_admin_edit:
-    st.markdown("### 🔧 Admin: Full Contract Edit")
-    st.warning("⚠️ This section is for **Admin/Management** only. You can edit **ALL** contract fields here.")
+        st.markdown("### 🔧 Admin: Full Contract Edit")
+        st.warning("⚠️ This section is for **Admin/Management** only. You can edit **ALL** contract fields here.")
     
-    if st.session_state.user_role in ["admin", "management"]:
+        if st.session_state.user_role in ["admin", "management"]:
         contracts = get_cached_contracts(st.session_state.user_role, st.session_state.user_dept)
         
         if contracts:
