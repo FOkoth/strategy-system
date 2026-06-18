@@ -5004,7 +5004,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                                     add_audit_log("UPDATE", "contract", selected_contract_id, f"User updated contract: spent={new_amount_spent}, compliance={new_compliance}")
                                     st.rerun()
                                 else:
-                                    st.error("Failed to update contract")
+                                    st.error("❌ Failed to update contract")
             else:
                 st.info("No updatable contracts found. Only active and expiring soon contracts can be updated.")
         else:
