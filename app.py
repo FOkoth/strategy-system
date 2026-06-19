@@ -2893,87 +2893,99 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - FIXED
+# LOGIN PAGE - FIXED & WORKING
 # ============================================
 if not st.session_state.authenticated:
-    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+    # Center using Streamlit columns (like Payment system)
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    
-    st.markdown('<div class="login-header">', unsafe_allow_html=True)
-    
-    if LOGO_BASE64:
-        st.markdown(f'''
-        <div class="login-logo">
-            <img src="data:image/png;base64,{LOGO_BASE64}" style="width: 65px; height: auto; background: transparent;">
+    with col2:
+        # Add some top padding for breathing room
+        st.markdown('<div style="padding-top: 1rem;"></div>', unsafe_allow_html=True)
+        
+        # Logo display
+        if LOGO_BASE64:
+            st.image(
+                f"data:image/png;base64,{LOGO_BASE64}", 
+                width=100,
+                use_container_width=False
+            )
+        else:
+            st.markdown('<div style="font-size: 3rem; text-align: center;">🏦</div>', unsafe_allow_html=True)
+        
+        # Title section
+        st.markdown("""
+        <div style='text-align: center; margin: 0.5rem 0 1rem 0;'>
+            <h1 style='color: #00843D; font-size: 1.3rem; font-weight: 700; margin: 0;'>
+                HIGHER EDUCATION LOANS BOARD
+            </h1>
+            <p style='color: #6B7280; font-size: 0.75rem; margin: 0.25rem 0 0 0;'>
+                Strategy Performance Management System
+            </p>
+            <div style='height: 2px; background: #FFB81C; width: 40px; margin: 0.5rem auto; border-radius: 2px;'></div>
         </div>
-        ''', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="login-logo" style="font-size: 2.5rem;">🏦</div>', unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <h1 class="login-title">HIGHER EDUCATION LOANS BOARD</h1>
-    <p class="login-subtitle">Strategy Performance Management System</p>
-    <div class="login-divider"></div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="login-body">', unsafe_allow_html=True)
-    
-    with st.form("login_form"):
-        username = st.text_input("Username", placeholder="Enter your username", key="login_username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+        """, unsafe_allow_html=True)
         
-        submitted = st.form_submit_button("Sign In", use_container_width=True)
-        
-        if submitted:
-            if username and password:
-                result = supabase.table("users").select("*").eq("username", username.lower()).execute()
-                if result.data:
-                    user = result.data[0]
-                    if (password == user["password_hash"] or 
-                        hash_password(password) == user["password_hash"] or
-                        user["password_hash"] == "password123"):
-                        dept_name = get_department_name(user["department_id"])
-                        is_strategy_dept = dept_name == "Strategy"
-                        
-                        st.session_state.authenticated = True
-                        st.session_state.user = user
-                        
-                        if is_strategy_dept and user["role"] != "admin":
-                            st.session_state.user_role = "management"
-                        else:
-                            st.session_state.user_role = user["role"]
+        # Login Form
+        with st.form("login_form"):
+            username = st.text_input(
+                "Username", 
+                placeholder="Enter your username",
+                key="login_username"
+            )
+            password = st.text_input(
+                "Password", 
+                type="password", 
+                placeholder="Enter your password",
+                key="login_password"
+            )
+            
+            submitted = st.form_submit_button("Sign In", use_container_width=True)
+            
+            if submitted:
+                if username and password:
+                    # Your existing authentication logic here
+                    result = supabase.table("users").select("*").eq("username", username.lower()).execute()
+                    if result.data:
+                        user = result.data[0]
+                        if (password == user["password_hash"] or 
+                            hash_password(password) == user["password_hash"] or
+                            user["password_hash"] == "password123"):
+                            dept_name = get_department_name(user["department_id"])
+                            is_strategy_dept = dept_name == "Strategy"
                             
-                        st.session_state.user_dept = user["department_id"]
-                        st.session_state.user_name = user["username"]
-                        st.session_state.user_fullname = user["full_name"]
-                        st.session_state.user_id = user["id"]
-                        st.session_state.user_dept_name = dept_name
-                        
-                        add_audit_log("LOGIN", "session", None, f"User logged in (Strategy Dept: {is_strategy_dept})")
-                        st.rerun()
+                            st.session_state.authenticated = True
+                            st.session_state.user = user
+                            st.session_state.user_role = "management" if is_strategy_dept and user["role"] != "admin" else user["role"]
+                            st.session_state.user_dept = user["department_id"]
+                            st.session_state.user_name = user["username"]
+                            st.session_state.user_fullname = user["full_name"]
+                            st.session_state.user_id = user["id"]
+                            st.session_state.user_dept_name = dept_name
+                            
+                            add_audit_log("LOGIN", "session", None, f"User logged in")
+                            st.rerun()
+                        else:
+                            st.error("❌ Invalid password")
                     else:
-                        st.error("❌ Invalid password")
+                        st.error("❌ User not found")
                 else:
-                    st.error("❌ User not found")
-            else:
-                st.warning("Please enter both username and password")
+                    st.warning("Please enter both username and password")
+        
+        # Footer
+        st.markdown("""
+        <div style='text-align: center; padding: 0.75rem 0 0.25rem 0; border-top: 1px solid #E5E7EB; margin-top: 1rem;'>
+            <p style='font-size: 0.55rem; color: #9CA3AF; margin: 0;'>
+                © 2025 HELB - Higher Education Loans Board
+            </p>
+            <p style='font-size: 0.55rem; color: #9CA3AF; margin: 2px 0;'>
+                Secure System Access
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <div class="login-footer">
-        <p>© 2025 HELB - Higher Education Loans Board</p>
-        <p>Secure System Access</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Stop execution to prevent showing the rest of the app
     st.stop()
-
 # ============================================
 # MAIN APPLICATION HEADER
 # ============================================
