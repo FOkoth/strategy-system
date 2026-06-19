@@ -2893,17 +2893,14 @@ else:
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ============================================
-# LOGIN PAGE - FIXED & WORKING
-# ============================================
-# ============================================
-# LOGIN PAGE - WITH GREEN HEADER & GREEN BUTTON
+# LOGIN PAGE - PERFECT GREEN HEADER & GREEN BUTTON
 # ============================================
 if not st.session_state.authenticated:
     # Center using Streamlit columns
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        # Main container with green header
+        # Main container with green header covering logo AND title
         st.markdown("""
         <div style='
             background: white;
@@ -2912,7 +2909,7 @@ if not st.session_state.authenticated:
             overflow: hidden;
             margin: 1rem 0;
         '>
-            <!-- GREEN HEADER -->
+            <!-- GREEN HEADER - Covers Logo, Title, and Subtitle -->
             <div style='
                 background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
                 padding: 2rem 1.5rem 1.5rem 1.5rem;
@@ -2920,7 +2917,7 @@ if not st.session_state.authenticated:
             '>
         """, unsafe_allow_html=True)
         
-        # Centered Logo
+        # Centered Logo (inside green header)
         st.markdown('<div style="display: flex; justify-content: center; margin-bottom: 0.75rem;">', unsafe_allow_html=True)
         if LOGO_BASE64:
             st.markdown(f'''
@@ -2931,7 +2928,7 @@ if not st.session_state.authenticated:
             st.markdown('<div style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Title and Subtitle (White text on Green background)
+        # Title and Subtitle (ALL inside green header with white/gold text)
         st.markdown("""
             <h1 style='
                 color: white !important;
@@ -2976,11 +2973,10 @@ if not st.session_state.authenticated:
                 key="login_password"
             )
             
-            # This will use the green button CSS
+            # This will use the green button CSS below
             submitted = st.form_submit_button(
                 "Sign In", 
-                use_container_width=True,
-                type="primary"  # This triggers primary button styling
+                use_container_width=True
             )
             
             if submitted:
