@@ -1206,10 +1206,9 @@ def get_cached_contracts(user_role, user_dept):
         else:
             result = supabase.table("contracts").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
         
-        # Handle missing department_name
+        # Handle missing department_name - don't try to update the table, just handle in code
         for contract in result.data:
             if 'department_name' not in contract or not contract['department_name']:
-                # Try to get department name from department_id
                 if contract.get('department_id'):
                     dept_name = get_department_name(contract['department_id'])
                     contract['department_name'] = dept_name if dept_name else 'Unassigned'
@@ -1472,7 +1471,7 @@ def update_contract_admin_full(contract_id, data):
         # Add updated_at timestamp
         data['updated_at'] = datetime.now().isoformat()
         
-        # Ensure department_name is set
+        # Ensure department_name is set - don't try to update the table, just handle in code
         if 'department_name' not in data or not data['department_name']:
             if data.get('department_id'):
                 dept_name = get_department_name(data['department_id'])
@@ -3082,9 +3081,8 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-
 # ============================================
-# WORK PLANS MODULE
+# WORK PLANS MODULE - COMPLETE
 # ============================================
 if st.session_state.active_menu == "📋 Work Plans":
     if st.session_state.user_role in ["admin", "management"]:
@@ -4371,7 +4369,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACT MANAGEMENT - FULL ADMIN EDITING
+# CONTRACT MANAGEMENT - UPDATED WITH FULL ADMIN EDITING
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -5231,6 +5229,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                 st.info("No contracts found to edit.")
         else:
             st.error("❌ You do not have permission to access this section. Admin/Management only.")
+
 # ============================================
 # POLICIES SECTION
 # ============================================
@@ -5814,8 +5813,13 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
         all_contracts = get_cached_contracts("admin", None)
         if all_contracts:
             df_contracts_admin = pd.DataFrame(all_contracts)
+            # Handle missing department_name
+            if 'department_name' not in df_contracts_admin.columns:
+                df_contracts_admin['department_name'] = 'Unassigned'
             display_cols = ['contract_title', 'vendor_name', 'contract_value', 'amount_spent_to_date', 'status', 'end_date', 'compliance_status', 'vendor_performance', 'department_name', 'is_multi_year']
-            st.dataframe(df_contracts_admin[display_cols], use_container_width=True, hide_index=True)
+            # Only show columns that exist
+            available_cols = [col for col in display_cols if col in df_contracts_admin.columns]
+            st.dataframe(df_contracts_admin[available_cols], use_container_width=True, hide_index=True)
     
     with admin_tabs[3]:
         st.markdown("### 📋 Work Plan Management")
