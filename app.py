@@ -2895,38 +2895,74 @@ st.markdown(THEME_CSS, unsafe_allow_html=True)
 # ============================================
 # LOGIN PAGE - FIXED & WORKING
 # ============================================
+# ============================================
+# LOGIN PAGE - WITH GREEN HEADER & GREEN BUTTON
+# ============================================
 if not st.session_state.authenticated:
-    # Center using Streamlit columns (like Payment system)
+    # Center using Streamlit columns
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        # Add some top padding for breathing room
-        st.markdown('<div style="padding-top: 1rem;"></div>', unsafe_allow_html=True)
-        
-        # Logo display
-        if LOGO_BASE64:
-            st.image(
-                f"data:image/png;base64,{LOGO_BASE64}", 
-                width=100,
-                use_container_width=False
-            )
-        else:
-            st.markdown('<div style="font-size: 3rem; text-align: center;">🏦</div>', unsafe_allow_html=True)
-        
-        # Title section
+        # Main container with green header
         st.markdown("""
-        <div style='text-align: center; margin: 0.5rem 0 1rem 0;'>
-            <h1 style='color: #00843D; font-size: 1.3rem; font-weight: 700; margin: 0;'>
-                HIGHER EDUCATION LOANS BOARD
-            </h1>
-            <p style='color: #6B7280; font-size: 0.75rem; margin: 0.25rem 0 0 0;'>
-                Strategy Performance Management System
-            </p>
-            <div style='height: 2px; background: #FFB81C; width: 40px; margin: 0.5rem auto; border-radius: 2px;'></div>
+        <div style='
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin: 1rem 0;
+        '>
+            <!-- GREEN HEADER -->
+            <div style='
+                background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+                padding: 2rem 1.5rem 1.5rem 1.5rem;
+                text-align: center;
+            '>
+        """, unsafe_allow_html=True)
+        
+        # Centered Logo
+        st.markdown('<div style="display: flex; justify-content: center; margin-bottom: 0.75rem;">', unsafe_allow_html=True)
+        if LOGO_BASE64:
+            st.markdown(f'''
+                <img src="data:image/png;base64,{LOGO_BASE64}" 
+                     style="width: 70px; height: auto; background: transparent;">
+            ''', unsafe_allow_html=True)
+        else:
+            st.markdown('<div style="font-size: 3rem;">🏦</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Title and Subtitle (White text on Green background)
+        st.markdown("""
+            <h1 style='
+                color: white !important;
+                font-size: 1.2rem;
+                font-weight: 700;
+                margin: 0.25rem 0 0.1rem 0;
+                text-align: center;
+                letter-spacing: 0.5px;
+            '>HIGHER EDUCATION LOANS BOARD</h1>
+            <p style='
+                color: #FFB81C !important;
+                font-size: 0.7rem;
+                text-align: center;
+                margin: 0.25rem 0 0 0;
+                font-weight: 500;
+            '>Strategy Performance Management System</p>
+            <div style='
+                height: 2px;
+                background: #FFB81C;
+                width: 40px;
+                margin: 0.5rem auto 0;
+                border-radius: 2px;
+            '></div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Login Form
+        # Login Form Body (White background)
+        st.markdown("""
+        <div style='padding: 1.5rem 1.5rem 1rem 1.5rem;'>
+        """, unsafe_allow_html=True)
+        
         with st.form("login_form"):
             username = st.text_input(
                 "Username", 
@@ -2940,11 +2976,16 @@ if not st.session_state.authenticated:
                 key="login_password"
             )
             
-            submitted = st.form_submit_button("Sign In", use_container_width=True)
+            # This will use the green button CSS
+            submitted = st.form_submit_button(
+                "Sign In", 
+                use_container_width=True,
+                type="primary"  # This triggers primary button styling
+            )
             
             if submitted:
                 if username and password:
-                    # Your existing authentication logic here
+                    # Your existing authentication logic
                     result = supabase.table("users").select("*").eq("username", username.lower()).execute()
                     if result.data:
                         user = result.data[0]
@@ -2974,17 +3015,27 @@ if not st.session_state.authenticated:
         
         # Footer
         st.markdown("""
-        <div style='text-align: center; padding: 0.75rem 0 0.25rem 0; border-top: 1px solid #E5E7EB; margin-top: 1rem;'>
-            <p style='font-size: 0.55rem; color: #9CA3AF; margin: 0;'>
-                © 2025 HELB - Higher Education Loans Board
-            </p>
-            <p style='font-size: 0.55rem; color: #9CA3AF; margin: 2px 0;'>
-                Secure System Access
-            </p>
+        </div>
+        <div style='
+            text-align: center;
+            padding: 0.75rem;
+            border-top: 1px solid #E5E7EB;
+            background: #F9FAFB;
+        '>
+            <p style='
+                font-size: 0.55rem;
+                color: #9CA3AF;
+                margin: 0;
+            '>© 2025 HELB - Higher Education Loans Board</p>
+            <p style='
+                font-size: 0.55rem;
+                color: #9CA3AF;
+                margin: 2px 0;
+            '>Secure System Access</p>
+        </div>
         </div>
         """, unsafe_allow_html=True)
     
-    # Stop execution to prevent showing the rest of the app
     st.stop()
 # ============================================
 # MAIN APPLICATION HEADER
