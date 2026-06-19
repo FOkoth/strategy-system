@@ -4371,7 +4371,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
     st.success(f"👋 Welcome, {st.session_state.user_fullname}!")
 
 # ============================================
-# CONTRACT MANAGEMENT - UPDATED WITH FULL ADMIN EDITING
+# CONTRACT MANAGEMENT - FULL ADMIN EDITING
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -5792,7 +5792,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
                                             "department_name": dept_name,
                                             "updated_at": datetime.now().isoformat()
                                         }
-                                        if update_contract_admin(selected_contract_id, update_data):
+                                        if update_contract_admin_full(selected_contract_id, update_data):
                                             st.success("✅ Contract updated successfully!")
                                             st.rerun()
                                         else:
