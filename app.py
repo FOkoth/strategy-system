@@ -34,98 +34,166 @@ HELB_GRAY = "#F9FAFB"
 HELB_BLACK = "#000000"
 
 # ============================================
-# COUNTDOWN TIMER CSS
+# COUNTDOWN TIMER CSS - PROFESSIONAL STYLING
 # ============================================
 COUNTDOWN_CSS = """
-    .countdown-container {
+    /* Main Countdown Container */
+    .countdown-wrapper {
         background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
         border-radius: 16px;
-        padding: 1.5rem 2rem;
+        padding: 1.2rem 2rem;
         margin: 0.5rem 0 1.5rem 0;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 132, 61, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 132, 61, 0.25);
         position: relative;
         overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .countdown-container::before {
+    
+    /* Animated Background Glow */
+    .countdown-wrapper::before {
         content: '';
         position: absolute;
         top: -50%;
         left: -50%;
         width: 200%;
         height: 200%;
-        background: radial-gradient(circle, rgba(255, 184, 28, 0.1) 0%, transparent 70%);
-        animation: pulseGlow 3s ease-in-out infinite;
+        background: radial-gradient(circle at 30% 50%, rgba(255, 184, 28, 0.08) 0%, transparent 60%),
+                    radial-gradient(circle at 70% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
+        animation: countdownPulse 4s ease-in-out infinite;
     }
-    @keyframes pulseGlow {
-        0%, 100% { transform: scale(1); opacity: 0.5; }
-        50% { transform: scale(1.1); opacity: 1; }
+    
+    @keyframes countdownPulse {
+        0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.5; }
+        50% { transform: scale(1.05) rotate(2deg); opacity: 1; }
     }
-    .countdown-title {
-        color: #FFFFFF;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
+    
+    /* Top Section - Title and Status */
+    .countdown-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         position: relative;
         z-index: 1;
-        letter-spacing: 0.5px;
+        margin-bottom: 0.8rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
-    .countdown-title span { color: #FFB81C; }
+    
+    .countdown-title {
+        color: #FFFFFF;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .countdown-title span {
+        color: #FFB81C;
+        font-weight: 700;
+    }
+    
+    .countdown-status {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.8rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        color: #FFFFFF;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(4px);
+    }
+    
+    .countdown-status.urgent {
+        background: rgba(239, 68, 68, 0.3);
+        border-color: rgba(239, 68, 68, 0.4);
+        color: #FCA5A5;
+    }
+    
+    .countdown-status.warning {
+        background: rgba(245, 158, 11, 0.3);
+        border-color: rgba(245, 158, 11, 0.4);
+        color: #FCD34D;
+    }
+    
+    .countdown-status.success {
+        background: rgba(16, 185, 129, 0.3);
+        border-color: rgba(16, 185, 129, 0.4);
+        color: #6EE7B7;
+    }
+    
+    /* Timer Grid */
     .countdown-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 1rem;
         position: relative;
         z-index: 1;
-        max-width: 600px;
-        margin: 0 auto;
+        max-width: 500px;
+        margin: 0 auto 0.8rem auto;
     }
+    
     .countdown-item {
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.12);
         border-radius: 12px;
-        padding: 0.5rem 0.25rem;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: transform 0.3s ease;
+        padding: 0.6rem 0.3rem;
+        text-align: center;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s ease;
     }
-    .countdown-item:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.2); }
+    
+    .countdown-item:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.18);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
     .countdown-number {
         font-size: 2rem;
         font-weight: 700;
         color: #FFFFFF;
-        line-height: 1.2;
+        line-height: 1.1;
         font-variant-numeric: tabular-nums;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+    
     .countdown-label {
-        font-size: 0.55rem;
+        font-size: 0.5rem;
         text-transform: uppercase;
         color: #FFB81C;
         font-weight: 600;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
+        margin-top: 0.1rem;
     }
+    
+    /* Progress Bar */
     .countdown-progress {
-        margin-top: 0.75rem;
         position: relative;
         z-index: 1;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
+        max-width: 500px;
+        margin: 0 auto;
     }
+    
     .countdown-progress-bar {
         width: 100%;
         height: 6px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
         overflow: hidden;
         position: relative;
     }
+    
     .countdown-progress-fill {
         height: 100%;
         background: linear-gradient(90deg, #FFB81C, #FFB81C);
-        border-radius: 3px;
-        transition: width 1s ease;
+        border-radius: 4px;
+        transition: width 1.5s ease;
         position: relative;
+        box-shadow: 0 0 10px rgba(255, 184, 28, 0.3);
     }
+    
     .countdown-progress-fill::after {
         content: '';
         position: absolute;
@@ -133,52 +201,106 @@ COUNTDOWN_CSS = """
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
         animation: shimmer 2s infinite;
     }
+    
     @keyframes shimmer {
         0% { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
     }
+    
     .countdown-progress-text {
         display: flex;
         justify-content: space-between;
-        font-size: 0.6rem;
-        color: rgba(255, 255, 255, 0.8);
-        margin-top: 0.25rem;
+        font-size: 0.55rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 0.3rem;
     }
+    
     .countdown-progress-text span:last-child {
         color: #FFB81C;
         font-weight: 600;
     }
-    .countdown-details {
+    
+    /* Footer Details */
+    .countdown-footer {
         display: flex;
         justify-content: center;
         gap: 1.5rem;
-        margin-top: 0.5rem;
+        margin-top: 0.6rem;
         position: relative;
         z-index: 1;
         flex-wrap: wrap;
+        padding-top: 0.6rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
+    
     .countdown-detail-item {
-        font-size: 0.65rem;
-        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.6rem;
+        color: rgba(255, 255, 255, 0.75);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
     }
+    
     .countdown-detail-item strong {
         color: #FFB81C;
         font-weight: 700;
+        font-size: 0.7rem;
     }
+    
+    /* Responsive */
     @media (max-width: 768px) {
+        .countdown-wrapper {
+            padding: 0.8rem 1rem;
+        }
         .countdown-grid {
             grid-template-columns: repeat(4, 1fr);
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
-        .countdown-number { font-size: 1.2rem; }
-        .countdown-label { font-size: 0.45rem; }
-        .countdown-container { padding: 1rem; }
-        .countdown-title { font-size: 0.75rem; }
-        .countdown-details { gap: 0.75rem; }
-        .countdown-detail-item { font-size: 0.55rem; }
+        .countdown-number {
+            font-size: 1.3rem;
+        }
+        .countdown-label {
+            font-size: 0.4rem;
+            letter-spacing: 0.5px;
+        }
+        .countdown-title {
+            font-size: 0.7rem;
+        }
+        .countdown-status {
+            font-size: 0.55rem;
+            padding: 0.15rem 0.6rem;
+        }
+        .countdown-footer {
+            gap: 0.8rem;
+        }
+        .countdown-detail-item {
+            font-size: 0.5rem;
+        }
+        .countdown-detail-item strong {
+            font-size: 0.6rem;
+        }
+        .countdown-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .countdown-grid {
+            gap: 0.25rem;
+        }
+        .countdown-number {
+            font-size: 1rem;
+        }
+        .countdown-item {
+            padding: 0.4rem 0.2rem;
+        }
+        .countdown-label {
+            font-size: 0.35rem;
+        }
     }
 """
 # ============================================
@@ -217,39 +339,77 @@ def get_financial_year_countdown():
     }
 
 def display_countdown_timer():
-    """Display the financial year countdown timer"""
+    """Display the financial year countdown timer with professional styling"""
     countdown = get_financial_year_countdown()
     
     if countdown['expired']:
         st.markdown("""
-        <div class='countdown-container'>
-            <div class='countdown-title'>📅 FINANCIAL YEAR 2026/2027 HAS ENDED</div>
-            <div style='color: #FFB81C; font-size: 1.2rem; font-weight: 700; position: relative; z-index: 1;'>
-                🎯 Time to review and plan for the next financial year
+        <div class='countdown-wrapper'>
+            <div class='countdown-header'>
+                <div class='countdown-title'>📅 FINANCIAL YEAR 2026/2027</div>
+                <span class='countdown-status expired'>⏰ COMPLETED</span>
+            </div>
+            <div style='text-align: center; padding: 0.5rem; position: relative; z-index: 1;'>
+                <div style='color: #FFB81C; font-size: 1.1rem; font-weight: 700;'>
+                    🎯 Time to review and plan for the next financial year
+                </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         return
     
-    urgency_text = "🔴 URGENT - Less than 30 days remaining!" if countdown['days'] <= 30 else "🟡 WARNING - Less than 3 months remaining!" if countdown['days'] <= 90 else "🟢 On Track"
+    # Determine urgency
+    if countdown['days'] <= 30:
+        status_class = "urgent"
+        status_icon = "🔴"
+        status_text = "URGENT - Less than 30 days!"
+    elif countdown['days'] <= 90:
+        status_class = "warning"
+        status_icon = "🟡"
+        status_text = "WARNING - Less than 3 months!"
+    else:
+        status_class = "success"
+        status_icon = "🟢"
+        status_text = "On Track"
     
-    days, hours, minutes, seconds = str(countdown['days']).zfill(2), str(countdown['hours']).zfill(2), str(countdown['minutes']).zfill(2), str(countdown['seconds']).zfill(2)
+    # Format numbers
+    days = str(countdown['days']).zfill(2)
+    hours = str(countdown['hours']).zfill(2)
+    minutes = str(countdown['minutes']).zfill(2)
+    seconds = str(countdown['seconds']).zfill(2)
     percentage_elapsed = countdown['percentage_elapsed']
     
     st.markdown(f"""
-    <div class='countdown-container'>
-        <div class='countdown-title'>
-            ⏰ TIME REMAINING UNTIL FINANCIAL YEAR END <span>JUNE 30, 2027</span>
-            <div style='font-size: 0.65rem; font-weight: 400; color: rgba(255,255,255,0.8); margin-top: 0.2rem;'>
-                {urgency_text}
+    <div class='countdown-wrapper'>
+        <!-- Header -->
+        <div class='countdown-header'>
+            <div class='countdown-title'>
+                ⏰ TIME REMAINING: <span>JUNE 30, 2027</span>
+            </div>
+            <span class='countdown-status {status_class}'>{status_icon} {status_text}</span>
+        </div>
+        
+        <!-- Timer Grid -->
+        <div class='countdown-grid'>
+            <div class='countdown-item'>
+                <div class='countdown-number'>{days}</div>
+                <div class='countdown-label'>Days</div>
+            </div>
+            <div class='countdown-item'>
+                <div class='countdown-number'>{hours}</div>
+                <div class='countdown-label'>Hours</div>
+            </div>
+            <div class='countdown-item'>
+                <div class='countdown-number'>{minutes}</div>
+                <div class='countdown-label'>Minutes</div>
+            </div>
+            <div class='countdown-item'>
+                <div class='countdown-number'>{seconds}</div>
+                <div class='countdown-label'>Seconds</div>
             </div>
         </div>
-        <div class='countdown-grid'>
-            <div class='countdown-item'><div class='countdown-number'>{days}</div><div class='countdown-label'>Days</div></div>
-            <div class='countdown-item'><div class='countdown-number'>{hours}</div><div class='countdown-label'>Hours</div></div>
-            <div class='countdown-item'><div class='countdown-number'>{minutes}</div><div class='countdown-label'>Minutes</div></div>
-            <div class='countdown-item'><div class='countdown-number'>{seconds}</div><div class='countdown-label'>Seconds</div></div>
-        </div>
+        
+        <!-- Progress Bar -->
         <div class='countdown-progress'>
             <div class='countdown-progress-bar'>
                 <div class='countdown-progress-fill' style='width: {percentage_elapsed:.1f}%;'></div>
@@ -260,7 +420,9 @@ def display_countdown_timer():
                 <span>Ending June 30, 2027</span>
             </div>
         </div>
-        <div class='countdown-details'>
+        
+        <!-- Footer Details -->
+        <div class='countdown-footer'>
             <span class='countdown-detail-item'>📅 <strong>{countdown['weeks']}</strong> Weeks Remaining</span>
             <span class='countdown-detail-item'>📆 <strong>{countdown['months']}</strong> Months Remaining</span>
             <span class='countdown-detail-item'>⏱️ <strong>{int(countdown['total_seconds']):,}</strong> Seconds Remaining</span>
