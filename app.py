@@ -381,18 +381,15 @@ def display_countdown_timer():
     # Fix: Ensure percentage doesn't go negative
     percentage_elapsed = max(0, countdown['percentage_elapsed'])
     
-    # Build the HTML as a single string
+    # Build the HTML as a single string - NO COMMENTS
     countdown_html = f'''
     <div class='countdown-wrapper'>
-        <!-- Header -->
         <div class='countdown-header'>
             <div class='countdown-title'>
                 ⏰ TIME REMAINING: <span>JUNE 30, 2027</span>
             </div>
             <span class='countdown-status {status_class}'>{status_icon} {status_text}</span>
         </div>
-        
-        <!-- Timer Grid -->
         <div class='countdown-grid'>
             <div class='countdown-item'>
                 <div class='countdown-number'>{days}</div>
@@ -411,8 +408,6 @@ def display_countdown_timer():
                 <div class='countdown-label'>Seconds</div>
             </div>
         </div>
-        
-        <!-- Progress Bar -->
         <div class='countdown-progress'>
             <div class='countdown-progress-bar'>
                 <div class='countdown-progress-fill' style='width: {percentage_elapsed:.1f}%;'></div>
@@ -423,8 +418,6 @@ def display_countdown_timer():
                 <span>Ending June 30, 2027</span>
             </div>
         </div>
-        
-        <!-- Footer Details -->
         <div class='countdown-footer'>
             <span class='countdown-detail-item'>📅 <strong>{countdown['weeks']}</strong> Weeks Remaining</span>
             <span class='countdown-detail-item'>📆 <strong>{countdown['months']}</strong> Months Remaining</span>
@@ -433,7 +426,6 @@ def display_countdown_timer():
     </div>
     '''
     
-    # Use st.markdown with unsafe_allow_html=True
     st.markdown(countdown_html, unsafe_allow_html=True)
 # ============================================
 # THEME MANAGEMENT
