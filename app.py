@@ -3523,18 +3523,51 @@ if st.session_state.active_menu == "📋 Work Plans":
                     filtered_gantt = filtered_gantt[filtered_gantt['Department'] == selected_dept_gantt]
                 
                 if not filtered_gantt.empty:
+                    # Create Gantt chart with HELB Gold and Green colors
                     fig = px.timeline(
                         filtered_gantt, 
                         x_start="Start", 
                         x_end="Finish", 
                         y="Activity",
                         color="Progress",
-                        color_continuous_scale="Viridis",
+                        color_continuous_scale=["#FFB81C", "#00843D"],  # HELB Gold to Green
                         hover_data=["Department", "Status"],
                         title="Activity Timeline"
                     )
-                    fig.update_yaxes(autorange="reversed")
-                    fig.update_layout(height=500, margin=dict(l=0, r=0, t=40, b=0))
+                    
+                    # Apply theme-aware styling
+                    is_dark = st.session_state.theme == "dark"
+                    fig.update_layout(
+                        height=500, 
+                        margin=dict(l=0, r=0, t=40, b=0),
+                        plot_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
+                        paper_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
+                        font_color='#FFFFFF' if is_dark else '#1F2937',
+                        coloraxis_colorbar=dict(
+                            title="Progress %",
+                            tickfont=dict(color='#FFFFFF' if is_dark else '#1F2937'),
+                            title_font=dict(color='#FFFFFF' if is_dark else '#1F2937')
+                        )
+                    )
+                    
+                    # Update trace for better visibility
+                    fig.update_traces(
+                        marker=dict(
+                            line=dict(width=1, color='#FFB81C' if is_dark else '#00843D')
+                        )
+                    )
+                    
+                    # Update axes
+                    fig.update_xaxes(
+                        gridcolor='rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.1)',
+                        tickfont_color='#FFFFFF' if is_dark else '#1F2937'
+                    )
+                    fig.update_yaxes(
+                        gridcolor='rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.1)',
+                        tickfont_color='#FFFFFF' if is_dark else '#1F2937',
+                        autorange="reversed"
+                    )
+                    
                     st.plotly_chart(fig, use_container_width=True)
                     
                     st.markdown("#### Quarterly Activity Summary")
@@ -3542,7 +3575,33 @@ if st.session_state.active_menu == "📋 Work Plans":
                     quarter_summary = filtered_gantt.groupby('Quarter').size().reset_index(name='Count')
                     quarter_names = {1: "Q3 (Jan-Mar)", 2: "Q4 (Apr-Jun)", 3: "Q1 (Jul-Sep)", 4: "Q2 (Oct-Dec)"}
                     quarter_summary['Quarter Name'] = quarter_summary['Quarter'].map(quarter_names)
-                    fig2 = px.bar(quarter_summary, x='Quarter Name', y='Count', title="Activities by Quarter", color='Count', color_continuous_scale='Greens')
+                    
+                    # Use HELB Gold to Green for the bar chart
+                    fig2 = px.bar(
+                        quarter_summary, 
+                        x='Quarter Name', 
+                        y='Count', 
+                        title="Activities by Quarter", 
+                        color='Count', 
+                        color_continuous_scale=["#FFB81C", "#00843D"]
+                    )
+                    
+                    fig2.update_layout(
+                        height=300,
+                        plot_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
+                        paper_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
+                        font_color='#FFFFFF' if is_dark else '#1F2937'
+                    )
+                    
+                    fig2.update_xaxes(
+                        gridcolor='rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.1)',
+                        tickfont_color='#FFFFFF' if is_dark else '#1F2937'
+                    )
+                    fig2.update_yaxes(
+                        gridcolor='rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.1)',
+                        tickfont_color='#FFFFFF' if is_dark else '#1F2937'
+                    )
+                    
                     st.plotly_chart(fig2, use_container_width=True)
                 else:
                     st.info("No activities found for the selected filters")
