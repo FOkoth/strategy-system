@@ -379,8 +379,8 @@ def display_countdown_timer():
     seconds = str(countdown['seconds']).zfill(2)
     percentage_elapsed = max(0, countdown['percentage_elapsed'])
     
-    # Main Container
-    st.markdown(f"""
+    # Build the complete HTML as one string
+    countdown_html = f'''
     <div style='
         background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
         border-radius: 16px;
@@ -389,7 +389,6 @@ def display_countdown_timer():
         box-shadow: 0 8px 32px rgba(0, 132, 61, 0.25);
         border: 1px solid rgba(255, 255, 255, 0.1);
     '>
-        <!-- Header -->
         <div style='
             display: flex;
             justify-content: space-between;
@@ -416,139 +415,116 @@ def display_countdown_timer():
                 border: 1px solid {status_color}40;
             '>{status_icon} {status_text}</span>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Use Streamlit columns for the timer cards
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown(f"""
+        
         <div style='
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 0.8rem 0.3rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 0.8rem;
         '>
             <div style='
-                font-size: 2.2rem;
-                font-weight: 700;
-                color: #FFFFFF;
-                line-height: 1.1;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            '>{days}</div>
+                background: rgba(255, 255, 255, 0.12);
+                backdrop-filter: blur(8px);
+                border-radius: 12px;
+                padding: 0.8rem 0.3rem;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                transition: all 0.3s ease;
+            '>
+                <div style='
+                    font-size: 2.2rem;
+                    font-weight: 700;
+                    color: #FFFFFF;
+                    line-height: 1.1;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                '>{days}</div>
+                <div style='
+                    font-size: 0.55rem;
+                    text-transform: uppercase;
+                    color: #FFB81C;
+                    font-weight: 600;
+                    letter-spacing: 0.8px;
+                    margin-top: 0.1rem;
+                '>Days</div>
+            </div>
             <div style='
-                font-size: 0.55rem;
-                text-transform: uppercase;
-                color: #FFB81C;
-                font-weight: 600;
-                letter-spacing: 0.8px;
-                margin-top: 0.1rem;
-            '>Days</div>
+                background: rgba(255, 255, 255, 0.12);
+                backdrop-filter: blur(8px);
+                border-radius: 12px;
+                padding: 0.8rem 0.3rem;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                transition: all 0.3s ease;
+            '>
+                <div style='
+                    font-size: 2.2rem;
+                    font-weight: 700;
+                    color: #FFFFFF;
+                    line-height: 1.1;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                '>{hours}</div>
+                <div style='
+                    font-size: 0.55rem;
+                    text-transform: uppercase;
+                    color: #FFB81C;
+                    font-weight: 600;
+                    letter-spacing: 0.8px;
+                    margin-top: 0.1rem;
+                '>Hours</div>
+            </div>
+            <div style='
+                background: rgba(255, 255, 255, 0.12);
+                backdrop-filter: blur(8px);
+                border-radius: 12px;
+                padding: 0.8rem 0.3rem;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                transition: all 0.3s ease;
+            '>
+                <div style='
+                    font-size: 2.2rem;
+                    font-weight: 700;
+                    color: #FFFFFF;
+                    line-height: 1.1;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                '>{minutes}</div>
+                <div style='
+                    font-size: 0.55rem;
+                    text-transform: uppercase;
+                    color: #FFB81C;
+                    font-weight: 600;
+                    letter-spacing: 0.8px;
+                    margin-top: 0.1rem;
+                '>Minutes</div>
+            </div>
+            <div style='
+                background: rgba(255, 255, 255, 0.12);
+                backdrop-filter: blur(8px);
+                border-radius: 12px;
+                padding: 0.8rem 0.3rem;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                transition: all 0.3s ease;
+            '>
+                <div style='
+                    font-size: 2.2rem;
+                    font-weight: 700;
+                    color: #FFFFFF;
+                    line-height: 1.1;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                '>{seconds}</div>
+                <div style='
+                    font-size: 0.55rem;
+                    text-transform: uppercase;
+                    color: #FFB81C;
+                    font-weight: 600;
+                    letter-spacing: 0.8px;
+                    margin-top: 0.1rem;
+                '>Seconds</div>
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div style='
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 0.8rem 0.3rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        '>
-            <div style='
-                font-size: 2.2rem;
-                font-weight: 700;
-                color: #FFFFFF;
-                line-height: 1.1;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            '>{hours}</div>
-            <div style='
-                font-size: 0.55rem;
-                text-transform: uppercase;
-                color: #FFB81C;
-                font-weight: 600;
-                letter-spacing: 0.8px;
-                margin-top: 0.1rem;
-            '>Hours</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div style='
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 0.8rem 0.3rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        '>
-            <div style='
-                font-size: 2.2rem;
-                font-weight: 700;
-                color: #FFFFFF;
-                line-height: 1.1;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            '>{minutes}</div>
-            <div style='
-                font-size: 0.55rem;
-                text-transform: uppercase;
-                color: #FFB81C;
-                font-weight: 600;
-                letter-spacing: 0.8px;
-                margin-top: 0.1rem;
-            '>Minutes</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-        <div style='
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 0.8rem 0.3rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        '>
-            <div style='
-                font-size: 2.2rem;
-                font-weight: 700;
-                color: #FFFFFF;
-                line-height: 1.1;
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            '>{seconds}</div>
-            <div style='
-                font-size: 0.55rem;
-                text-transform: uppercase;
-                color: #FFB81C;
-                font-weight: 600;
-                letter-spacing: 0.8px;
-                margin-top: 0.1rem;
-            '>Seconds</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Progress Bar and Footer
-    st.markdown(f"""
-    <div style='
-        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
-        border-radius: 0 0 16px 16px;
-        padding: 0.2rem 1.5rem 1rem 1.5rem;
-        margin: -0.5rem 0 1.5rem 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    '>
-        <!-- Progress Bar -->
-        <div style='max-width: 500px; margin: 0.5rem auto 0.3rem auto;'>
+        
+        <div style='max-width: 500px; margin: 0 auto 0.3rem auto;'>
             <div style='
                 width: 100%;
                 height: 6px;
@@ -579,7 +555,6 @@ def display_countdown_timer():
             </div>
         </div>
         
-        <!-- Footer Details -->
         <div style='
             display: flex;
             justify-content: center;
@@ -612,7 +587,10 @@ def display_countdown_timer():
             '>⏱️ <strong style='color: #FFB81C; font-weight: 700; font-size: 0.7rem;'>{int(countdown['total_seconds']):,}</strong> Seconds Remaining</span>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    '''
+    
+    # Single st.markdown call with ALL the HTML
+    st.markdown(countdown_html, unsafe_allow_html=True)
 # ============================================
 # THEME MANAGEMENT
 # ============================================
