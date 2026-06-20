@@ -6978,6 +6978,6 @@ elif st.session_state.active_menu == "🏢 Enterprise View" and st.session_state
 st.markdown("---")
 st.markdown("""
 <div class='footer'>
-    <p>© 2025 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
+    <p>© 2026 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
 </div>
 """, unsafe_allow_html=True)
