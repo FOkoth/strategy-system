@@ -339,94 +339,280 @@ def get_financial_year_countdown():
     }
 
 def display_countdown_timer():
-    """Display the financial year countdown timer with professional styling"""
+    """Display the financial year countdown timer using Streamlit columns and cards"""
     countdown = get_financial_year_countdown()
     
     if countdown['expired']:
         st.markdown("""
-        <div class='countdown-wrapper'>
-            <div class='countdown-header'>
-                <div class='countdown-title'>📅 FINANCIAL YEAR 2026/2027</div>
-                <span class='countdown-status expired'>⏰ COMPLETED</span>
-            </div>
-            <div style='text-align: center; padding: 0.5rem; position: relative; z-index: 1;'>
-                <div style='color: #FFB81C; font-size: 1.1rem; font-weight: 700;'>
-                    🎯 Time to review and plan for the next financial year
-                </div>
-            </div>
+        <div style='background: linear-gradient(135deg, #00843D 0%, #00529B 100%); 
+                    border-radius: 16px; padding: 1.5rem; text-align: center; 
+                    margin: 0.5rem 0 1.5rem 0;'>
+            <h3 style='color: white; margin: 0;'>📅 FINANCIAL YEAR 2026/2027 HAS ENDED</h3>
+            <p style='color: #FFB81C; font-size: 1.1rem; font-weight: 700; margin: 0.5rem 0 0 0;'>
+                🎯 Time to review and plan for the next financial year
+            </p>
         </div>
         """, unsafe_allow_html=True)
         return
     
     # Determine urgency
     if countdown['days'] <= 30:
-        status_class = "urgent"
         status_icon = "🔴"
         status_text = "URGENT - Less than 30 days!"
+        status_color = "#FCA5A5"
+        bg_color = "rgba(239, 68, 68, 0.2)"
     elif countdown['days'] <= 90:
-        status_class = "warning"
         status_icon = "🟡"
         status_text = "WARNING - Less than 3 months!"
+        status_color = "#FCD34D"
+        bg_color = "rgba(245, 158, 11, 0.2)"
     else:
-        status_class = "success"
         status_icon = "🟢"
         status_text = "On Track"
+        status_color = "#6EE7B7"
+        bg_color = "rgba(16, 185, 129, 0.2)"
     
     # Format numbers
-    days = str(countdown['days']).zfill(2)
+    days = str(countdown['days'])
     hours = str(countdown['hours']).zfill(2)
     minutes = str(countdown['minutes']).zfill(2)
     seconds = str(countdown['seconds']).zfill(2)
-    
-    # Fix: Ensure percentage doesn't go negative
     percentage_elapsed = max(0, countdown['percentage_elapsed'])
     
-    # Build the HTML as a single string - NO COMMENTS
-    countdown_html = f'''
-    <div class='countdown-wrapper'>
-        <div class='countdown-header'>
-            <div class='countdown-title'>
-                ⏰ TIME REMAINING: <span>JUNE 30, 2027</span>
+    # Main Container
+    st.markdown(f"""
+    <div style='
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+        border-radius: 16px;
+        padding: 1.2rem 1.5rem 1rem 1.5rem;
+        margin: 0.5rem 0 1.5rem 0;
+        box-shadow: 0 8px 32px rgba(0, 132, 61, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    '>
+        <!-- Header -->
+        <div style='
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        '>
+            <div style='
+                color: #FFFFFF;
+                font-size: 0.9rem;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+            '>
+                ⏰ TIME REMAINING: <span style='color: #FFB81C;'>JUNE 30, 2027</span>
             </div>
-            <span class='countdown-status {status_class}'>{status_icon} {status_text}</span>
+            <span style='
+                background: {bg_color};
+                color: {status_color};
+                font-size: 0.7rem;
+                font-weight: 600;
+                padding: 0.2rem 0.8rem;
+                border-radius: 20px;
+                border: 1px solid {status_color}40;
+            '>{status_icon} {status_text}</span>
         </div>
-        <div class='countdown-grid'>
-            <div class='countdown-item'>
-                <div class='countdown-number'>{days}</div>
-                <div class='countdown-label'>Days</div>
-            </div>
-            <div class='countdown-item'>
-                <div class='countdown-number'>{hours}</div>
-                <div class='countdown-label'>Hours</div>
-            </div>
-            <div class='countdown-item'>
-                <div class='countdown-number'>{minutes}</div>
-                <div class='countdown-label'>Minutes</div>
-            </div>
-            <div class='countdown-item'>
-                <div class='countdown-number'>{seconds}</div>
-                <div class='countdown-label'>Seconds</div>
-            </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Use Streamlit columns for the timer cards
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div style='
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        '>
+            <div style='
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{days}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Days</div>
         </div>
-        <div class='countdown-progress'>
-            <div class='countdown-progress-bar'>
-                <div class='countdown-progress-fill' style='width: {percentage_elapsed:.1f}%;'></div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div style='
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        '>
+            <div style='
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{hours}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Hours</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div style='
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        '>
+            <div style='
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{minutes}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Minutes</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div style='
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        '>
+            <div style='
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{seconds}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Seconds</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Progress Bar and Footer
+    st.markdown(f"""
+    <div style='
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+        border-radius: 0 0 16px 16px;
+        padding: 0.2rem 1.5rem 1rem 1.5rem;
+        margin: -0.5rem 0 1.5rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    '>
+        <!-- Progress Bar -->
+        <div style='max-width: 500px; margin: 0.5rem auto 0.3rem auto;'>
+            <div style='
+                width: 100%;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 4px;
+                overflow: hidden;
+                position: relative;
+            '>
+                <div style='
+                    width: {percentage_elapsed:.1f}%;
+                    height: 100%;
+                    background: linear-gradient(90deg, #FFB81C, #FFB81C);
+                    border-radius: 4px;
+                    transition: width 1.5s ease;
+                    box-shadow: 0 0 10px rgba(255, 184, 28, 0.3);
+                '></div>
             </div>
-            <div class='countdown-progress-text'>
+            <div style='
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.55rem;
+                color: rgba(255, 255, 255, 0.7);
+                margin-top: 0.3rem;
+            '>
                 <span>FY 2026/2027 Started</span>
-                <span>{percentage_elapsed:.1f}% Elapsed</span>
+                <span style='color: #FFB81C; font-weight: 600;'>{percentage_elapsed:.1f}% Elapsed</span>
                 <span>Ending June 30, 2027</span>
             </div>
         </div>
-        <div class='countdown-footer'>
-            <span class='countdown-detail-item'>📅 <strong>{countdown['weeks']}</strong> Weeks Remaining</span>
-            <span class='countdown-detail-item'>📆 <strong>{countdown['months']}</strong> Months Remaining</span>
-            <span class='countdown-detail-item'>⏱️ <strong>{int(countdown['total_seconds']):,}</strong> Seconds Remaining</span>
+        
+        <!-- Footer Details -->
+        <div style='
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        '>
+            <span style='
+                font-size: 0.6rem;
+                color: rgba(255, 255, 255, 0.75);
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            '>📅 <strong style='color: #FFB81C; font-weight: 700; font-size: 0.7rem;'>{countdown['weeks']}</strong> Weeks Remaining</span>
+            <span style='
+                font-size: 0.6rem;
+                color: rgba(255, 255, 255, 0.75);
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            '>📆 <strong style='color: #FFB81C; font-weight: 700; font-size: 0.7rem;'>{countdown['months']}</strong> Months Remaining</span>
+            <span style='
+                font-size: 0.6rem;
+                color: rgba(255, 255, 255, 0.75);
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            '>⏱️ <strong style='color: #FFB81C; font-weight: 700; font-size: 0.7rem;'>{int(countdown['total_seconds']):,}</strong> Seconds Remaining</span>
         </div>
     </div>
-    '''
-    
-    st.markdown(countdown_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 # ============================================
 # THEME MANAGEMENT
 # ============================================
