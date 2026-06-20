@@ -377,9 +377,12 @@ def display_countdown_timer():
     hours = str(countdown['hours']).zfill(2)
     minutes = str(countdown['minutes']).zfill(2)
     seconds = str(countdown['seconds']).zfill(2)
-    percentage_elapsed = countdown['percentage_elapsed']
     
-    st.markdown(f"""
+    # Fix: Ensure percentage doesn't go negative
+    percentage_elapsed = max(0, countdown['percentage_elapsed'])
+    
+    # Build the HTML as a single string
+    countdown_html = f'''
     <div class='countdown-wrapper'>
         <!-- Header -->
         <div class='countdown-header'>
@@ -428,7 +431,10 @@ def display_countdown_timer():
             <span class='countdown-detail-item'>⏱️ <strong>{int(countdown['total_seconds']):,}</strong> Seconds Remaining</span>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    '''
+    
+    # Use st.markdown with unsafe_allow_html=True
+    st.markdown(countdown_html, unsafe_allow_html=True)
 # ============================================
 # THEME MANAGEMENT
 # ============================================
