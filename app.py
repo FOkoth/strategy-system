@@ -4041,13 +4041,25 @@ if st.session_state.active_menu == "📋 Work Plans":
             col_chart1, col_chart2 = st.columns(2)
             with col_chart1:
                 st.markdown("#### Status Distribution")
-                status_counts = df['status'].value_counts().reset_index()
+                # Create status groups with correct colors
+                df['status_group'] = df['calculated_progress'].apply(
+                    lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
+                )
+                status_counts = df['status_group'].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
+                
+                # Define correct colors: Red for Not Started, Gold for In Progress, Green for Completed
+                color_map = {
+                    'Completed': '#00843D',      # HELB Green
+                    'In Progress': '#FFB81C',    # HELB Gold
+                    'Not Started': '#EF4444'     # Red
+                }
+                
                 fig = go.Figure(data=[go.Pie(
                     labels=status_counts['Status'],
                     values=status_counts['Count'],
                     hole=0.4,
-                    marker=dict(colors=[HELB_GREEN, HELB_GOLD, "#dc2626", "#6b7280"]),
+                    marker=dict(colors=[color_map.get(s, '#808080') for s in status_counts['Status']]),
                     textinfo='label+percent',
                     textposition='auto'
                 )])
@@ -4060,7 +4072,7 @@ if st.session_state.active_menu == "📋 Work Plans":
                 pillar_progress.columns = ['Pillar', 'Progress %']
                 pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
                 fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
-                            color='Progress %', color_continuous_scale='Greens',
+                            color='Progress %', color_continuous_scale=["#FFB81C", "#00843D"],
                             text='Progress %')
                 fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
                 fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
@@ -4071,7 +4083,7 @@ if st.session_state.active_menu == "📋 Work Plans":
             dept_progress.columns = ['Department', 'Progress %']
             dept_progress = dept_progress.sort_values('Progress %', ascending=True)
             fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
-                        color='Progress %', color_continuous_scale='Greens',
+                        color='Progress %', color_continuous_scale=["#FFB81C", "#00843D"],
                         text='Progress %')
             fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
             fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
@@ -4083,7 +4095,7 @@ if st.session_state.active_menu == "📋 Work Plans":
                 category_stats = df['activity_category'].value_counts().reset_index()
                 category_stats.columns = ['Category', 'Count']
                 fig = px.bar(category_stats, x='Category', y='Count',
-                            color='Count', color_discrete_sequence=[HELB_GREEN],
+                            color='Count', color_discrete_sequence=['#00843D'],
                             text='Count')
                 fig.update_traces(textposition='outside')
                 fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
@@ -4103,10 +4115,10 @@ if st.session_state.active_menu == "📋 Work Plans":
                     
                     fig = go.Figure()
                     fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
-                                         name='Activities', marker_color=HELB_GREEN,
+                                         name='Activities', marker_color='#00843D',
                                          text=quarterly_data['Activities'], textposition='outside'))
                     fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
-                                             name='Avg Progress %', marker_color=HELB_GOLD,
+                                             name='Avg Progress %', marker_color='#FFB81C',
                                              line=dict(width=3), yaxis='y2'))
                     fig.update_layout(
                         height=350,
@@ -4145,7 +4157,6 @@ if st.session_state.active_menu == "📋 Work Plans":
                 st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
         else:
             st.info("No data available for the selected period.")
-
 # ============================================
 # DASHBOARD
 # ============================================
