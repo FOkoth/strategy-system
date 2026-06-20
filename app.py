@@ -34,6 +34,240 @@ HELB_GRAY = "#F9FAFB"
 HELB_BLACK = "#000000"
 
 # ============================================
+# COUNTDOWN TIMER CSS
+# ============================================
+COUNTDOWN_CSS = """
+    .countdown-container {
+        background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        margin: 0.5rem 0 1.5rem 0;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 132, 61, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    .countdown-container::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 184, 28, 0.1) 0%, transparent 70%);
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 1; }
+    }
+    .countdown-title {
+        color: #FFFFFF;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+        letter-spacing: 0.5px;
+    }
+    .countdown-title span { color: #FFB81C; }
+    .countdown-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        position: relative;
+        z-index: 1;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .countdown-item {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 0.5rem 0.25rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.3s ease;
+    }
+    .countdown-item:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.2); }
+    .countdown-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+    }
+    .countdown-label {
+        font-size: 0.55rem;
+        text-transform: uppercase;
+        color: #FFB81C;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .countdown-progress {
+        margin-top: 0.75rem;
+        position: relative;
+        z-index: 1;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .countdown-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+    }
+    .countdown-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #FFB81C, #FFB81C);
+        border-radius: 3px;
+        transition: width 1s ease;
+        position: relative;
+    }
+    .countdown-progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    .countdown-progress-text {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.6rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 0.25rem;
+    }
+    .countdown-progress-text span:last-child {
+        color: #FFB81C;
+        font-weight: 600;
+    }
+    .countdown-details {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+        position: relative;
+        z-index: 1;
+        flex-wrap: wrap;
+    }
+    .countdown-detail-item {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    .countdown-detail-item strong {
+        color: #FFB81C;
+        font-weight: 700;
+    }
+    @media (max-width: 768px) {
+        .countdown-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        .countdown-number { font-size: 1.2rem; }
+        .countdown-label { font-size: 0.45rem; }
+        .countdown-container { padding: 1rem; }
+        .countdown-title { font-size: 0.75rem; }
+        .countdown-details { gap: 0.75rem; }
+        .countdown-detail-item { font-size: 0.55rem; }
+    }
+"""
+# ============================================
+# FINANCIAL YEAR COUNTDOWN FUNCTIONS
+# ============================================
+def get_financial_year_countdown():
+    """Calculate time remaining until June 30, 2027"""
+    target_date = datetime(2027, 6, 30, 23, 59, 59)
+    now = datetime.now()
+    diff = target_date - now
+    
+    if diff.total_seconds() <= 0:
+        return {
+            'days': 0, 'hours': 0, 'minutes': 0, 'seconds': 0,
+            'weeks': 0, 'months': 0, 'total_seconds': 0,
+            'expired': True, 'percentage_elapsed': 100
+        }
+    
+    total_seconds = diff.total_seconds()
+    days = diff.days
+    hours = diff.seconds // 3600
+    minutes = (diff.seconds % 3600) // 60
+    seconds = diff.seconds % 60
+    weeks = days // 7
+    months = days // 30
+    
+    fy_start = datetime(2026, 7, 1, 0, 0, 0)
+    fy_total_days = (target_date - fy_start).days
+    fy_elapsed_days = (now - fy_start).days
+    percentage_elapsed = (fy_elapsed_days / fy_total_days) * 100 if fy_total_days > 0 else 0
+    
+    return {
+        'days': days, 'hours': hours, 'minutes': minutes, 'seconds': seconds,
+        'weeks': weeks, 'months': months, 'total_seconds': total_seconds,
+        'expired': False, 'percentage_elapsed': min(percentage_elapsed, 100)
+    }
+
+def display_countdown_timer():
+    """Display the financial year countdown timer"""
+    countdown = get_financial_year_countdown()
+    
+    if countdown['expired']:
+        st.markdown("""
+        <div class='countdown-container'>
+            <div class='countdown-title'>📅 FINANCIAL YEAR 2026/2027 HAS ENDED</div>
+            <div style='color: #FFB81C; font-size: 1.2rem; font-weight: 700; position: relative; z-index: 1;'>
+                🎯 Time to review and plan for the next financial year
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+    
+    urgency_text = "🔴 URGENT - Less than 30 days remaining!" if countdown['days'] <= 30 else "🟡 WARNING - Less than 3 months remaining!" if countdown['days'] <= 90 else "🟢 On Track"
+    
+    days, hours, minutes, seconds = str(countdown['days']).zfill(2), str(countdown['hours']).zfill(2), str(countdown['minutes']).zfill(2), str(countdown['seconds']).zfill(2)
+    percentage_elapsed = countdown['percentage_elapsed']
+    
+    st.markdown(f"""
+    <div class='countdown-container'>
+        <div class='countdown-title'>
+            ⏰ TIME REMAINING UNTIL FINANCIAL YEAR END <span>JUNE 30, 2027</span>
+            <div style='font-size: 0.65rem; font-weight: 400; color: rgba(255,255,255,0.8); margin-top: 0.2rem;'>
+                {urgency_text}
+            </div>
+        </div>
+        <div class='countdown-grid'>
+            <div class='countdown-item'><div class='countdown-number'>{days}</div><div class='countdown-label'>Days</div></div>
+            <div class='countdown-item'><div class='countdown-number'>{hours}</div><div class='countdown-label'>Hours</div></div>
+            <div class='countdown-item'><div class='countdown-number'>{minutes}</div><div class='countdown-label'>Minutes</div></div>
+            <div class='countdown-item'><div class='countdown-number'>{seconds}</div><div class='countdown-label'>Seconds</div></div>
+        </div>
+        <div class='countdown-progress'>
+            <div class='countdown-progress-bar'>
+                <div class='countdown-progress-fill' style='width: {percentage_elapsed:.1f}%;'></div>
+            </div>
+            <div class='countdown-progress-text'>
+                <span>FY 2026/2027 Started</span>
+                <span>{percentage_elapsed:.1f}% Elapsed</span>
+                <span>Ending June 30, 2027</span>
+            </div>
+        </div>
+        <div class='countdown-details'>
+            <span class='countdown-detail-item'>📅 <strong>{countdown['weeks']}</strong> Weeks Remaining</span>
+            <span class='countdown-detail-item'>📆 <strong>{countdown['months']}</strong> Months Remaining</span>
+            <span class='countdown-detail-item'>⏱️ <strong>{int(countdown['total_seconds']):,}</strong> Seconds Remaining</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+# ============================================
 # THEME MANAGEMENT
 # ============================================
 if "theme" not in st.session_state:
@@ -3034,7 +3268,7 @@ if not st.session_state.authenticated:
     
     st.stop()
 # ============================================
-# MAIN APPLICATION HEADER
+# MAIN APPLICATION HEADER WITH COUNTDOWN
 # ============================================
 col_header, col_theme, col_refresh = st.columns([4, 1, 1])
 with col_header:
@@ -3051,6 +3285,9 @@ with col_header:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Display countdown timer
+    display_countdown_timer()
 
 with col_theme:
     theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
