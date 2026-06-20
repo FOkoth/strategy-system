@@ -3482,7 +3482,7 @@ if st.session_state.active_menu == "📋 Work Plans":
         else:
             st.info("No activities to display. Please add work plan activities with start and end dates.")
     
-    with tab_gantt:
+        with tab_gantt:
         st.markdown("### 📅 Work Plan Gantt Chart")
         st.markdown("Visualize all activities by month and quarter")
         
@@ -3490,13 +3490,28 @@ if st.session_state.active_menu == "📋 Work Plans":
             gantt_data = []
             for plan in filtered_plans:
                 if plan.get('start_date') and plan.get('end_date'):
+                    # Determine status color based on progress
+                    progress = plan.get('progress_percent', 0)
+                    if progress == 0:
+                        status_color = "#EF4444"  # Red for pending
+                        status_label = "Pending"
+                    elif progress >= 100:
+                        status_color = "#00843D"  # HELB Green for completed
+                        status_label = "Completed"
+                    else:
+                        status_color = "#FFB81C"  # HELB Gold for in progress
+                        status_label = "In Progress"
+                    
                     gantt_data.append({
                         "Activity": plan['planned_activity'][:50] + "..." if len(plan['planned_activity']) > 50 else plan['planned_activity'],
                         "Start": plan['start_date'],
                         "Finish": plan['end_date'],
                         "Department": plan.get('department_name', 'Unknown'),
-                        "Progress": plan.get('progress_percent', 0),
-                        "Status": plan.get('status', 'Pending')
+                        "Progress": progress,
+                        "Status": plan.get('status', 'Pending'),
+                        "Status_Color": status_color,
+                        "Status_Label": status_label,
+                        "Progress_Display": f"{progress}%"
                     })
             
             if gantt_data:
@@ -3523,16 +3538,20 @@ if st.session_state.active_menu == "📋 Work Plans":
                     filtered_gantt = filtered_gantt[filtered_gantt['Department'] == selected_dept_gantt]
                 
                 if not filtered_gantt.empty:
-                    # Create Gantt chart with HELB Gold and Green colors
+                    # Create Gantt chart with status-based colors
                     fig = px.timeline(
                         filtered_gantt, 
                         x_start="Start", 
                         x_end="Finish", 
                         y="Activity",
-                        color="Progress",
-                        color_continuous_scale=["#FFB81C", "#00843D"],  # HELB Gold to Green
-                        hover_data=["Department", "Status"],
-                        title="Activity Timeline"
+                        color="Status_Label",
+                        color_discrete_map={
+                            "Pending": "#EF4444",      # Red for pending
+                            "In Progress": "#FFB81C",  # HELB Gold for in progress
+                            "Completed": "#00843D"     # HELB Green for completed
+                        },
+                        hover_data=["Department", "Progress_Display", "Status"],
+                        title="Activity Timeline - Status Based Colors"
                     )
                     
                     # Apply theme-aware styling
@@ -3543,17 +3562,21 @@ if st.session_state.active_menu == "📋 Work Plans":
                         plot_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
                         paper_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
                         font_color='#FFFFFF' if is_dark else '#1F2937',
-                        coloraxis_colorbar=dict(
-                            title="Progress %",
-                            tickfont=dict(color='#FFFFFF' if is_dark else '#1F2937'),
-                            title_font=dict(color='#FFFFFF' if is_dark else '#1F2937')
+                        legend=dict(
+                            title="Status",
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="center",
+                            x=0.5,
+                            font_color='#FFFFFF' if is_dark else '#1F2937'
                         )
                     )
                     
                     # Update trace for better visibility
                     fig.update_traces(
                         marker=dict(
-                            line=dict(width=1, color='#FFB81C' if is_dark else '#00843D')
+                            line=dict(width=1, color='rgba(0,0,0,0.2)')
                         )
                     )
                     
@@ -3570,27 +3593,66 @@ if st.session_state.active_menu == "📋 Work Plans":
                     
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    st.markdown("#### Quarterly Activity Summary")
-                    filtered_gantt['Quarter'] = pd.to_datetime(filtered_gantt['Start']).dt.quarter
-                    quarter_summary = filtered_gantt.groupby('Quarter').size().reset_index(name='Count')
-                    quarter_names = {1: "Q3 (Jan-Mar)", 2: "Q4 (Apr-Jun)", 3: "Q1 (Jul-Sep)", 4: "Q2 (Oct-Dec)"}
-                    quarter_summary['Quarter Name'] = quarter_summary['Quarter'].map(quarter_names)
+                    # Status Legend
+                    st.markdown("""
+                    <div style="display: flex; gap: 2rem; padding: 0.5rem; justify-content: center; background: rgba(0,0,0,0.05); border-radius: 8px; margin: 0.5rem 0;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #EF4444; border-radius: 4px;"></div>
+                            <span style="font-size: 0.8rem;">🔴 Pending (0%)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #FFB81C; border-radius: 4px;"></div>
+                            <span style="font-size: 0.8rem;">🟡 In Progress (1-99%)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #00843D; border-radius: 4px;"></div>
+                            <span style="font-size: 0.8rem;">✅ Completed (100%)</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
-                    # Use HELB Gold to Green for the bar chart
+                    st.markdown("#### Quarterly Activity Summary")
+                    
+                    # Calculate quarters with proper ordering
+                    filtered_gantt['Quarter_Num'] = pd.to_datetime(filtered_gantt['Start']).dt.quarter
+                    
+                    # Map to proper quarter names in order
+                    quarter_map = {
+                        1: "Q3 (Jan-Mar)",
+                        2: "Q4 (Apr-Jun)", 
+                        3: "Q1 (Jul-Sep)",
+                        4: "Q2 (Oct-Dec)"
+                    }
+                    filtered_gantt['Quarter_Name'] = filtered_gantt['Quarter_Num'].map(quarter_map)
+                    
+                    # Group by quarter
+                    quarter_summary = filtered_gantt.groupby(['Quarter_Num', 'Quarter_Name']).size().reset_index(name='Count')
+                    
+                    # Sort by quarter number (1, 2, 3, 4)
+                    quarter_summary = quarter_summary.sort_values('Quarter_Num')
+                    
+                    # Create bar chart with proper order
                     fig2 = px.bar(
                         quarter_summary, 
-                        x='Quarter Name', 
+                        x='Quarter_Name', 
                         y='Count', 
-                        title="Activities by Quarter", 
-                        color='Count', 
-                        color_continuous_scale=["#FFB81C", "#00843D"]
+                        title="Activities by Quarter (Sorted Q1→Q4)",
+                        color='Count',
+                        color_continuous_scale=["#FFB81C", "#00843D"],
+                        text='Count'
                     )
+                    
+                    fig2.update_traces(textposition='outside')
                     
                     fig2.update_layout(
                         height=300,
                         plot_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
                         paper_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
-                        font_color='#FFFFFF' if is_dark else '#1F2937'
+                        font_color='#FFFFFF' if is_dark else '#1F2937',
+                        xaxis=dict(
+                            categoryarray=['Q3 (Jan-Mar)', 'Q4 (Apr-Jun)', 'Q1 (Jul-Sep)', 'Q2 (Oct-Dec)'],
+                            categoryorder='array'
+                        )
                     )
                     
                     fig2.update_xaxes(
@@ -3603,6 +3665,61 @@ if st.session_state.active_menu == "📋 Work Plans":
                     )
                     
                     st.plotly_chart(fig2, use_container_width=True)
+                    
+                    # Additional breakdown by status per quarter
+                    st.markdown("#### Quarterly Status Breakdown")
+                    
+                    status_by_quarter = filtered_gantt.groupby(['Quarter_Name', 'Status_Label']).size().reset_index(name='Count')
+                    status_by_quarter['Quarter_Num'] = status_by_quarter['Quarter_Name'].map({v: k for k, v in quarter_map.items()})
+                    status_by_quarter = status_by_quarter.sort_values('Quarter_Num')
+                    
+                    fig3 = px.bar(
+                        status_by_quarter,
+                        x='Quarter_Name',
+                        y='Count',
+                        color='Status_Label',
+                        color_discrete_map={
+                            "Pending": "#EF4444",
+                            "In Progress": "#FFB81C",
+                            "Completed": "#00843D"
+                        },
+                        title="Status Distribution by Quarter",
+                        barmode='stack',
+                        text='Count'
+                    )
+                    
+                    fig3.update_traces(textposition='inside')
+                    
+                    fig3.update_layout(
+                        height=350,
+                        plot_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
+                        paper_bgcolor='rgba(0,0,0,0)' if is_dark else 'rgba(255,255,255,0.8)',
+                        font_color='#FFFFFF' if is_dark else '#1F2937',
+                        xaxis=dict(
+                            categoryarray=['Q3 (Jan-Mar)', 'Q4 (Apr-Jun)', 'Q1 (Jul-Sep)', 'Q2 (Oct-Dec)'],
+                            categoryorder='array'
+                        ),
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="center",
+                            x=0.5,
+                            font_color='#FFFFFF' if is_dark else '#1F2937'
+                        )
+                    )
+                    
+                    fig3.update_xaxes(
+                        gridcolor='rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.1)',
+                        tickfont_color='#FFFFFF' if is_dark else '#1F2937'
+                    )
+                    fig3.update_yaxes(
+                        gridcolor='rgba(255,255,255,0.1)' if is_dark else 'rgba(0,0,0,0.1)',
+                        tickfont_color='#FFFFFF' if is_dark else '#1F2937'
+                    )
+                    
+                    st.plotly_chart(fig3, use_container_width=True)
+                    
                 else:
                     st.info("No activities found for the selected filters")
             else:
