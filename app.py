@@ -1466,7 +1466,7 @@ def generate_calendar_html(activities, year, month, quarter_filter="All"):
                         html += '<span>📈 Actual: ' + act.actual_achievement + '</span>';
                     }}
                     if (act.budget_allocation && act.budget_allocation > 0) {{
-                        html += '<span>💰 KES ' + act.budget_allocation.toLocaleString() + '</span>';
+                        html += '<span> KES ' + act.budget_allocation.toLocaleString() + '</span>';
                     }}
                     if (act.comment) {{
                         html += '<span>💬 ' + act.comment.substring(0, 50) + '...</span>';
@@ -4559,7 +4559,7 @@ if st.session_state.active_menu == "📋 Work Plans":
                 total_budget = df['budget_allocation'].fillna(0).sum()
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL BUDGET</div>
+                    <div class='kpi-label'> TOTAL BUDGET</div>
                     <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
                     <div class='kpi-sub'>Total Budget Allocation</div>
                 </div>
@@ -4946,7 +4946,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
             with col1:
                 st.markdown(f"""
                 <div class='kpi-card'>
-                    <div class='kpi-label'>💰 TOTAL VALUE</div>
+                    <div class='kpi-label'>TOTAL VALUE</div>
                     <div class='kpi-value'>KES {total_value/1e6:.1f}M</div>
                     <div class='kpi-sub'>Contract Value</div>
                 </div>
@@ -5190,7 +5190,7 @@ elif st.session_state.active_menu == "📄 Contracts":
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("💰 Total Contract Value", f"KES {total_value:,.0f}")
+                st.metric(" Total Contract Value", f"KES {total_value:,.0f}")
             with col2:
                 st.metric("💸 Total Spent", f"KES {total_spent:,.0f}", delta=f"{overall_utilization:.0f}% utilized")
             with col3:
