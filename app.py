@@ -625,7 +625,7 @@ else:
 
 st.set_page_config(
     page_title="HELB Strategy Performance System",
-    page_icon="🏦",
+    page_icon="HELB Logo.png",  # <-- Use the file path directly
     layout="wide",
     initial_sidebar_state="expanded"
 )
