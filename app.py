@@ -3482,7 +3482,7 @@ if st.session_state.active_menu == "📋 Work Plans":
         else:
             st.info("No activities to display. Please add work plan activities with start and end dates.")
     
-        with tab_gantt:
+    with tab_gantt:
         st.markdown("### 📅 Work Plan Gantt Chart")
         st.markdown("Visualize all activities by month and quarter")
         
