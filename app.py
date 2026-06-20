@@ -412,126 +412,122 @@ def display_countdown_timer():
     </div>
     """, unsafe_allow_html=True)
     
-    # TIMER CARDS - Using Streamlit columns with containers
-    col1, col2, col3, col4 = st.columns(4)
+    # TIMER CARDS - Full width using Streamlit columns with no gap
+    col1, col2, col3, col4 = st.columns(4, gap="small")
     
     with col1:
-        with st.container():
-            st.markdown(f"""
+        st.markdown(f"""
+        <div style='
+            background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        '>
             <div style='
-                background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
-                padding: 0.8rem 0.3rem;
-                text-align: center;
-                border-left: 1px solid rgba(255, 255, 255, 0.1);
-                border-right: 1px solid rgba(255, 255, 255, 0.05);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            '>
-                <div style='
-                    font-size: 2.2rem;
-                    font-weight: 700;
-                    color: #FFFFFF;
-                    line-height: 1.1;
-                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                '>{days}</div>
-                <div style='
-                    font-size: 0.55rem;
-                    text-transform: uppercase;
-                    color: #FFB81C;
-                    font-weight: 600;
-                    letter-spacing: 0.8px;
-                    margin-top: 0.1rem;
-                '>Days</div>
-            </div>
-            """, unsafe_allow_html=True)
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{days}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Days</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        with st.container():
-            st.markdown(f"""
+        st.markdown(f"""
+        <div style='
+            background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        '>
             <div style='
-                background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
-                padding: 0.8rem 0.3rem;
-                text-align: center;
-                border-left: 1px solid rgba(255, 255, 255, 0.05);
-                border-right: 1px solid rgba(255, 255, 255, 0.05);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            '>
-                <div style='
-                    font-size: 2.2rem;
-                    font-weight: 700;
-                    color: #FFFFFF;
-                    line-height: 1.1;
-                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                '>{hours}</div>
-                <div style='
-                    font-size: 0.55rem;
-                    text-transform: uppercase;
-                    color: #FFB81C;
-                    font-weight: 600;
-                    letter-spacing: 0.8px;
-                    margin-top: 0.1rem;
-                '>Hours</div>
-            </div>
-            """, unsafe_allow_html=True)
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{hours}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Hours</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        with st.container():
-            st.markdown(f"""
+        st.markdown(f"""
+        <div style='
+            background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        '>
             <div style='
-                background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
-                padding: 0.8rem 0.3rem;
-                text-align: center;
-                border-left: 1px solid rgba(255, 255, 255, 0.05);
-                border-right: 1px solid rgba(255, 255, 255, 0.05);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            '>
-                <div style='
-                    font-size: 2.2rem;
-                    font-weight: 700;
-                    color: #FFFFFF;
-                    line-height: 1.1;
-                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                '>{minutes}</div>
-                <div style='
-                    font-size: 0.55rem;
-                    text-transform: uppercase;
-                    color: #FFB81C;
-                    font-weight: 600;
-                    letter-spacing: 0.8px;
-                    margin-top: 0.1rem;
-                '>Minutes</div>
-            </div>
-            """, unsafe_allow_html=True)
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{minutes}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Minutes</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col4:
-        with st.container():
-            st.markdown(f"""
+        st.markdown(f"""
+        <div style='
+            background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
+            padding: 0.8rem 0.3rem;
+            text-align: center;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        '>
             <div style='
-                background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
-                padding: 0.8rem 0.3rem;
-                text-align: center;
-                border-left: 1px solid rgba(255, 255, 255, 0.05);
-                border-right: 1px solid rgba(255, 255, 255, 0.1);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            '>
-                <div style='
-                    font-size: 2.2rem;
-                    font-weight: 700;
-                    color: #FFFFFF;
-                    line-height: 1.1;
-                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                '>{seconds}</div>
-                <div style='
-                    font-size: 0.55rem;
-                    text-transform: uppercase;
-                    color: #FFB81C;
-                    font-weight: 600;
-                    letter-spacing: 0.8px;
-                    margin-top: 0.1rem;
-                '>Seconds</div>
-            </div>
-            """, unsafe_allow_html=True)
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            '>{seconds}</div>
+            <div style='
+                font-size: 0.55rem;
+                text-transform: uppercase;
+                color: #FFB81C;
+                font-weight: 600;
+                letter-spacing: 0.8px;
+                margin-top: 0.1rem;
+            '>Seconds</div>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # PROGRESS BAR AND FOOTER
+    # PROGRESS BAR - Full width
     st.markdown(f"""
     <div style='
         background: linear-gradient(135deg, #00843D 0%, #00529B 100%);
@@ -540,8 +536,9 @@ def display_countdown_timer():
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-top: none;
         margin-bottom: 1.5rem;
+        width: 100%;
     '>
-        <div style='max-width: 500px; margin: 0 auto;'>
+        <div style='max-width: 600px; margin: 0 auto;'>
             <div style='
                 width: 100%;
                 height: 6px;
@@ -571,31 +568,6 @@ def display_countdown_timer():
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # FOOTER DETAILS - Using Streamlit columns instead of HTML
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric(
-            label="📅 Weeks Remaining",
-            value=f"{countdown['weeks']} weeks",
-            delta=None
-        )
-    
-    with col2:
-        st.metric(
-            label="📆 Months Remaining", 
-            value=f"{countdown['months']} months",
-            delta=None
-        )
-    
-    with col3:
-        st.metric(
-            label="⏱️ Seconds Remaining",
-            value=f"{int(countdown['total_seconds']):,}",
-            delta=None
-        )
 # ============================================
 # THEME MANAGEMENT
 # ============================================
