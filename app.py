@@ -5844,6 +5844,7 @@ elif st.session_state.active_menu == "📄 Contracts":
                     st.info("No multi-year data available")
         else:
             st.info("No multi-year contracts found")
+
     
     with tab_admin:
         st.markdown("### 🔧 Admin Full Contract Edit")
@@ -5933,15 +5934,11 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 status_options = ["active", "expiring_soon", "expired"]
                                 current_status = selected.get("status", "active")
                                 
-                                # Handle any status value safely
+                                # If the status is not in our list, default to 'active'
                                 if current_status not in status_options:
-                                    if current_status in ["completed", "done", "Complete", "Done"]:
-                                        current_status = "active"
-                                    elif current_status in ["pending", "Pending"]:
-                                        current_status = "active"
-                                    else:
-                                        current_status = "active"
+                                    current_status = "active"
                                 
+                                # Get the index safely
                                 try:
                                     status_index = status_options.index(current_status)
                                 except ValueError:
@@ -6047,7 +6044,6 @@ elif st.session_state.active_menu == "📄 Contracts":
                 st.info("No contracts found")
         else:
             st.error("❌ You do not have permission to access this section. Admin/Management only.")
-
 # ============================================
 # POLICIES SECTION
 # ============================================
