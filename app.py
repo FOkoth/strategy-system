@@ -6581,7 +6581,7 @@ elif st.session_state.active_menu == "⚙️ Admin Panel" and st.session_state.u
                                     edit_value = st.number_input("Contract Value", value=float(selected_contract.get("contract_value", 0)))
                                     edit_spent = st.number_input("Amount Spent", value=float(selected_contract.get("amount_spent_to_date", 0)))
                                     edit_end_date = st.date_input("End Date", value=datetime.strptime(selected_contract["end_date"], "%Y-%m-%d").date())
-                                    edit_status = st.selectbox("Status", ["active", "expiring_soon", "expired"], index=["active", "expiring_soon", "expired"].index(selected_contract.get("status", "active")))
+                                    edit_status = st.selectbox("Status", ["active", "expiring_soon", "expired"], index=["active", "expiring_soon", "expired"].index(selected_contract.get("status", "active"))) 
                                     edit_compliance = st.selectbox("Compliance Status", ["Fully Compliant", "Partially Compliant", "Non-Compliant"], 
                                                                   index=["Fully Compliant", "Partially Compliant", "Non-Compliant"].index(selected_contract.get("compliance_status", "Fully Compliant")))
                                     edit_performance = st.slider("Vendor Performance", 0.0, 5.0, float(selected_contract.get("vendor_performance", 3.0)), 0.5)
