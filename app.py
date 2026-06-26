@@ -41,6 +41,26 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ============================================
+# DATABASE FUNCTIONS
+# ============================================
+@st.cache_resource
+def init_supabase():
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        return create_client(url, key)
+    except Exception as e:
+        print(f"Failed to initialize Supabase: {e}")
+        return None
+
+supabase = init_supabase()
+
+# Add this check right after supabase initialization
+if supabase is None:
+    st.error("❌ Database connection failed. Please check your Supabase configuration.")
+    st.stop()
+    
+# ============================================
 # COUNTDOWN TIMER CSS - PROFESSIONAL STYLING
 # ============================================
 COUNTDOWN_CSS = """
@@ -1732,13 +1752,26 @@ def get_department_name(dept_id):
 @st.cache_data(ttl=120)
 def get_cached_work_plans(user_role, user_dept):
     try:
+        # Check if supabase is initialized
         if supabase is None:
+            print("Supabase is not initialized in get_cached_work_plans")
             return []
+        
+        # Check if user_role and user_dept are valid
+        if user_role is None:
+            print("user_role is None in get_cached_work_plans")
+            return []
+        
         if user_role in ["admin", "management"]:
             result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
         else:
+            # user_dept might be None for some users
+            if user_dept is None:
+                print("user_dept is None for non-admin user")
+                return []
             result = supabase.table("work_plan").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
-        return result.data
+        
+        return result.data if result.data else []
     except Exception as e:
         print(f"Failed to get work plans: {e}")
         return []
@@ -1748,15 +1781,23 @@ def get_cached_contracts(user_role, user_dept):
     """Get contracts with proper caching and department names"""
     try:
         if supabase is None:
+            print("Supabase is not initialized in get_cached_contracts")
+            return []
+        
+        if user_role is None:
+            print("user_role is None in get_cached_contracts")
             return []
         
         # Get contracts
         if user_role in ["admin", "management"]:
             result = supabase.table("contracts").select("*").order("created_at", desc=True).execute()
         else:
+            if user_dept is None:
+                print("user_dept is None for non-admin user in get_cached_contracts")
+                return []
             result = supabase.table("contracts").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
         
-        contracts = result.data
+        contracts = result.data if result.data else []
         
         # Only fetch department names once and cache them
         dept_cache = {}
@@ -1774,17 +1815,46 @@ def get_cached_contracts(user_role, user_dept):
     except Exception as e:
         print(f"Failed to get contracts: {e}")
         return []
-def get_work_plans():
-    return get_cached_work_plans(st.session_state.user_role, st.session_state.user_dept)
 
-def add_work_plan(data):
+@st.cache_data(ttl=120)
+def get_cached_policies(user_role, user_dept):
     try:
-        supabase.table("work_plan").insert(data).execute()
-        st.cache_data.clear()
-        add_audit_log("CREATE", "work_plan", None, f"Added work plan: {data.get('planned_activity', '')[:50]}")
-        return True
-    except:
-        return False
+        if supabase is None:
+            print("Supabase is not initialized in get_cached_policies")
+            return []
+        
+        if user_role is None:
+            print("user_role is None in get_cached_policies")
+            return []
+        
+        if user_role in ["admin", "management"]:
+            result = supabase.table("policies").select("*").execute()
+        else:
+            if user_dept is None:
+                print("user_dept is None for non-admin user in get_cached_policies")
+                return []
+            result = supabase.table("policies").select("*").eq("department_id", user_dept).execute()
+        
+        return result.data if result.data else []
+    except Exception as e:
+        print(f"Failed to get policies: {e}")
+        return []
+def get_work_plans():
+    """Get work plans with proper error handling"""
+    try:
+        # Check if session state has required attributes
+        if not hasattr(st.session_state, 'user_role') or not hasattr(st.session_state, 'user_dept'):
+            return []
+        
+        # Check if supabase is initialized
+        if supabase is None:
+            print("Supabase is not initialized")
+            return []
+        
+        return get_cached_work_plans(st.session_state.user_role, st.session_state.user_dept)
+    except Exception as e:
+        print(f"Error in get_work_plans: {e}")
+        return []
 
 def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status, comment=None):
     try:
