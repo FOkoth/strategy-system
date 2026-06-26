@@ -1730,14 +1730,15 @@ def get_department_name(dept_id):
 # WORK PLAN FUNCTIONS
 # ============================================
 @st.cache_data(ttl=120)
-def get_cached_work_plans(user_role, user_dept):
+def get_cached_policies(user_role, user_dept):
     try:
         if user_role in ["admin", "management"]:
-            result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
+            result = supabase.table("policies").select("*").execute()
         else:
-            result = supabase.table("work_plan").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
+            result = supabase.table("policies").select("*").eq("department_id", user_dept).execute()
         return result.data
-    except:
+    except Exception as e:
+        print(f"Failed to get policies: {e}")  # Changed from logger.error to print
         return []
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
@@ -1769,7 +1770,7 @@ def get_cached_contracts(user_role, user_dept):
         
         return contracts
     except Exception as e:
-        logger.error(f"Failed to get contracts: {e}")
+        print(f"Failed to get contracts: {e}")  # Changed from logger.error to print
         return []
 
 def get_work_plans():
