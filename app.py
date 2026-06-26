@@ -21,7 +21,14 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 import hashlib
 import calendar
+import logging 
 
+# ============================================
+# LOGGING CONFIGURATION - ADD THIS SECTION
+# ============================================
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 # ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
