@@ -5334,7 +5334,7 @@ elif st.session_state.active_menu == "📊 Dashboard":
 
 
 # ============================================
-# CONTRACT MANAGEMENT - COMPLETE FIXED SECTION
+# CONTRACT MANAGEMENT - OPTIMIZED FOR SPEED
 # ============================================
 elif st.session_state.active_menu == "📄 Contracts":
     st.subheader("Contract Management")
@@ -5455,106 +5455,126 @@ elif st.session_state.active_menu == "📄 Contracts":
                     or search_lower in c.get('department_name', '').lower()
                 ]
             
-            # Add pagination - show 15 contracts per page
-            items_per_page = 15
-            total_items = len(filtered_contracts)
-            total_pages = (total_items // items_per_page) + (1 if total_items % items_per_page > 0 else 0)
+            # ============================================================
+            # SPEED OPTIMIZATION: Show as table instead of expanders
+            # ============================================================
+            st.markdown("#### Contract List")
             
-            if total_pages > 1:
-                col_page1, col_page2 = st.columns([3, 1])
-                with col_page1:
-                    page = st.selectbox("Page", range(1, total_pages + 1), key="contract_page")
-                with col_page2:
-                    st.caption(f"Showing {min(items_per_page, total_items)} of {total_items}")
-                start_idx = (page - 1) * items_per_page
-                end_idx = min(start_idx + items_per_page, total_items)
-                displayed_contracts = filtered_contracts[start_idx:end_idx]
-            else:
-                displayed_contracts = filtered_contracts
-            
-            # Display contracts in a more efficient way - using a single container
-            with st.container():
-                # Use a simpler display for large lists
-                if len(displayed_contracts) > 20:
-                    # For many contracts, show as a table first
-                    st.markdown("#### Quick View")
-                    table_data = []
-                    for contract in displayed_contracts:
-                        status = contract.get('status', 'pending')
-                        status_icon = get_contract_status_display(status, contract.get('days_remaining'))['icon']
-                        table_data.append({
-                            "Title": contract['contract_title'][:40] + "..." if len(contract['contract_title']) > 40 else contract['contract_title'],
-                            "Vendor": contract['vendor_name'][:30] + "..." if len(contract['vendor_name']) > 30 else contract['vendor_name'],
-                            "Status": f"{status_icon} {status}",
-                            "Value": f"KES {contract.get('contract_value', 0):,.0f}" if not contract.get('is_service_based', False) else "N/A",
-                            "End Date": contract.get('end_date', 'N/A')
-                        })
-                    df_quick = pd.DataFrame(table_data)
-                    st.dataframe(df_quick, use_container_width=True, hide_index=True)
-                    st.markdown("---")
-                    st.markdown("#### Detailed View (Click to expand)")
+            # Prepare data for display - build all at once
+            table_data = []
+            for contract in filtered_contracts:
+                status = contract.get('status', 'pending')
+                status_info = get_contract_status_display(status, contract.get('days_remaining'))
                 
-                # Display contracts with expanders
-                for contract in displayed_contracts:
-                    status = contract.get('status', 'pending')
-                    status_class = {
-                        'active': 'status-active',
-                        'completed': 'status-completed',
-                        'expiring_soon': 'status-expiring',
-                        'expired': 'status-expired'
-                    }.get(status, 'status-active')
+                # Format value
+                if contract.get('is_service_based', False):
+                    value_display = "Service-Based"
+                else:
+                    value_display = f"KES {contract.get('contract_value', 0):,.0f}"
+                
+                # Format utilization
+                util = contract.get('utilization_rate', 0)
+                if util >= 80:
+                    util_display = f"🟡 {util:.0f}%"
+                elif util >= 50:
+                    util_display = f"🟢 {util:.0f}%"
+                else:
+                    util_display = f"{util:.0f}%"
+                
+                table_data.append({
+                    "Title": contract['contract_title'][:50] + "..." if len(contract['contract_title']) > 50 else contract['contract_title'],
+                    "Vendor": contract['vendor_name'][:30] + "..." if len(contract['vendor_name']) > 30 else contract['vendor_name'],
+                    "Department": contract.get('department_name', 'Unassigned'),
+                    "Value": value_display,
+                    "Utilization": util_display,
+                    "Status": f"{status_info['icon']} {status_info['label']}",
+                    "End Date": contract.get('end_date', 'N/A'),
+                    "ID": contract.get('id', 0)  # Hidden column for reference
+                })
+            
+            # Convert to DataFrame for display
+            df_contracts = pd.DataFrame(table_data)
+            
+            # Remove ID column from display
+            display_cols = ['Title', 'Vendor', 'Department', 'Value', 'Utilization', 'Status', 'End Date']
+            st.dataframe(
+                df_contracts[display_cols], 
+                use_container_width=True, 
+                hide_index=True,
+                height=400
+            )
+            
+            st.markdown("---")
+            st.caption(f"Showing {len(filtered_contracts)} contracts. Click on a contract below for details.")
+            
+            # ============================================================
+            # DETAILED VIEW - Only show selected contract
+            # ============================================================
+            # Create a selectbox to choose which contract to view in detail
+            if filtered_contracts:
+                contract_options = {
+                    c.get('id', 0): f"{c.get('contract_title', 'Unknown')[:60]} - {c.get('vendor_name', 'Unknown')}" 
+                    for c in filtered_contracts
+                }
+                
+                selected_contract_id = st.selectbox(
+                    "Select Contract to View Details",
+                    list(contract_options.keys()),
+                    format_func=lambda x: contract_options.get(x, "Select a contract"),
+                    key="contract_detail_select"
+                )
+                
+                if selected_contract_id:
+                    selected_contract = next((c for c in filtered_contracts if c.get('id') == selected_contract_id), None)
                     
-                    status_info = get_contract_status_display(status, contract.get('days_remaining'))
-                    
-                    # Truncate long titles for the expander label
-                    title_display = contract['contract_title']
-                    if len(title_display) > 45:
-                        title_display = title_display[:45] + "..."
-                    
-                    with st.expander(f"{status_info['icon']} {title_display} - {contract['vendor_name']} ({status_info['label']})", expanded=False):
+                    if selected_contract:
+                        status = selected_contract.get('status', 'pending')
+                        status_info = get_contract_status_display(status, selected_contract.get('days_remaining'))
+                        
+                        st.markdown(f"### 📄 {selected_contract['contract_title']}")
+                        
                         col1, col2 = st.columns(2)
                         
                         with col1:
-                            st.markdown(f"**Contract Title:** {contract['contract_title']}")
-                            st.markdown(f"**<span class='vendor-name'>🏢 {contract['vendor_name']}</span>**", unsafe_allow_html=True)
-                            st.markdown(f"**Department:** {contract.get('department_name', 'Unassigned')}")
-                            st.markdown(f"**Duration:** {contract.get('contract_duration', 'N/A')}")
-                            st.markdown(f"**Start Date:** {contract['start_date']}")
-                            st.markdown(f"**End Date:** {contract['end_date']}")
-                            st.markdown(f"**Signed Date:** {contract.get('signed_date', 'N/A')}")
+                            st.markdown(f"**Vendor:** {selected_contract['vendor_name']}")
+                            st.markdown(f"**Department:** {selected_contract.get('department_name', 'Unassigned')}")
+                            st.markdown(f"**Duration:** {selected_contract.get('contract_duration', 'N/A')}")
+                            st.markdown(f"**Start Date:** {selected_contract.get('start_date', 'N/A')}")
+                            st.markdown(f"**End Date:** {selected_contract.get('end_date', 'N/A')}")
+                            st.markdown(f"**Signed Date:** {selected_contract.get('signed_date', 'N/A')}")
                         
                         with col2:
-                            if not contract.get('is_service_based', False):
-                                st.markdown(f"**Contract Value:** KES {contract.get('contract_value', 0):,.0f}")
-                                st.markdown(f"**Amount Spent:** KES {contract.get('amount_spent_to_date', 0):,.0f}")
-                                st.markdown(f"**Utilization:** {contract.get('utilization_rate', 0):.1f}%")
-                                if contract.get('budget_alert'):
+                            if not selected_contract.get('is_service_based', False):
+                                st.markdown(f"**Contract Value:** KES {selected_contract.get('contract_value', 0):,.0f}")
+                                st.markdown(f"**Amount Spent:** KES {selected_contract.get('amount_spent_to_date', 0):,.0f}")
+                                st.markdown(f"**Utilization:** {selected_contract.get('utilization_rate', 0):.1f}%")
+                                if selected_contract.get('budget_alert'):
                                     st.warning("⚠️ Budget Alert: Utilization exceeded 80%")
                             else:
                                 st.info("ℹ️ Service-Based Contract (No fixed value)")
                             
-                            st.markdown(f"**Payment Terms:** {contract.get('payment_terms', 'N/A')}")
-                            st.markdown(f"**Compliance:** {contract.get('compliance_status', 'N/A')}")
-                            st.markdown(f"**Vendor Rating:** ⭐ {contract.get('vendor_performance', 0)}/5")
+                            st.markdown(f"**Payment Terms:** {selected_contract.get('payment_terms', 'N/A')}")
+                            st.markdown(f"**Compliance:** {selected_contract.get('compliance_status', 'N/A')}")
+                            st.markdown(f"**Vendor Rating:** ⭐ {selected_contract.get('vendor_performance', 0)}/5")
                             st.markdown(f"**Status:** {status_info['icon']} {status_info['label']}")
                         
                         st.markdown("---")
-                        if contract.get('contract_url'):
-                            st.markdown(f"📄 **Contract Document:** [View Document]({contract['contract_url']})", unsafe_allow_html=True)
-                        if contract.get('breach_notes'):
-                            st.warning(f"⚠️ **Breach Notes:** {contract['breach_notes']}")
+                        if selected_contract.get('contract_url'):
+                            st.markdown(f"📄 **Contract Document:** [View Document]({selected_contract['contract_url']})", unsafe_allow_html=True)
+                        if selected_contract.get('breach_notes'):
+                            st.warning(f"⚠️ **Breach Notes:** {selected_contract['breach_notes']}")
                         
-                        # Show multi-year breakdown if applicable
-                        if contract.get('is_multi_year'):
+                        # Show multi-year breakdown if applicable - ONLY fetch when selected
+                        if selected_contract.get('is_multi_year'):
                             st.markdown("#### 📅 Multi-Year Breakdown")
-                            years = get_contract_years(contract['id'])
+                            years = get_contract_years(selected_contract['id'])
                             if years:
                                 # Auto-update statuses
                                 for year in years:
                                     update_contract_year_status_auto(year['id'])
                                 
                                 # Refresh data
-                                years = get_contract_years(contract['id'])
+                                years = get_contract_years(selected_contract['id'])
                                 
                                 year_data = []
                                 for y in years:
