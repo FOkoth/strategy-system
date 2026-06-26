@@ -1733,36 +1733,36 @@ def get_cached_work_plans(user_role, user_dept):
     except:
         return []
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_cached_contracts(user_role, user_dept):
+    """Get contracts with proper caching and department names"""
     try:
+        if supabase is None:
+            return []
+        
+        # Get contracts
         if user_role in ["admin", "management"]:
             result = supabase.table("contracts").select("*").order("created_at", desc=True).execute()
         else:
             result = supabase.table("contracts").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
         
-        # Handle missing department_name - don't try to update the table, just handle in code
-        for contract in result.data:
+        contracts = result.data
+        
+        # Only fetch department names once and cache them
+        dept_cache = {}
+        for contract in contracts:
             if 'department_name' not in contract or not contract['department_name']:
                 if contract.get('department_id'):
-                    dept_name = get_department_name(contract['department_id'])
-                    contract['department_name'] = dept_name if dept_name else 'Unassigned'
+                    dept_id = contract['department_id']
+                    if dept_id not in dept_cache:
+                        dept_cache[dept_id] = get_department_name(dept_id)
+                    contract['department_name'] = dept_cache[dept_id] if dept_cache[dept_id] else 'Unassigned'
                 else:
                     contract['department_name'] = 'Unassigned'
         
-        return result.data
-    except:
-        return []
-
-@st.cache_data(ttl=120)
-def get_cached_policies(user_role, user_dept):
-    try:
-        if user_role in ["admin", "management"]:
-            result = supabase.table("policies").select("*").execute()
-        else:
-            result = supabase.table("policies").select("*").eq("department_id", user_dept).execute()
-        return result.data
-    except:
+        return contracts
+    except Exception as e:
+        logger.error(f"Failed to get contracts: {e}")
         return []
 
 def get_work_plans():
