@@ -5419,30 +5419,83 @@ elif st.session_state.active_menu == "📄 Contracts":
         "🔧 Admin Full Edit"
     ])
     
-    with tab_overview:
-        st.markdown("### All Contracts")
+with tab_overview:
+    st.markdown("### All Contracts")
+    
+    if contracts:
+        # Group contracts by status
+        active = [c for c in contracts if c.get('status') in ['active', 'completed']]
+        expiring = [c for c in contracts if c.get('status') == 'expiring_soon']
+        expired = [c for c in contracts if c.get('status') == 'expired']
         
-        if contracts:
-            # Group contracts by status
-            active = [c for c in contracts if c.get('status') in ['active', 'completed']]
-            expiring = [c for c in contracts if c.get('status') == 'expiring_soon']
-            expired = [c for c in contracts if c.get('status') == 'expired']
+        # Display counts with icons
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("📋 Total", len(contracts))
+        with col2:
+            st.metric("🟢 Active/Completed", len(active))
+        with col3:
+            st.metric("🟡 Expiring Soon", len(expiring))
+        with col4:
+            st.metric("🔴 Expired", len(expired))
+        
+        st.markdown("---")
+        
+        # Add search filter
+        search_term = st.text_input("🔍 Search Contracts", placeholder="Search by title, vendor, or department...", key="contract_search")
+        
+        # Filter contracts based on search
+        filtered_contracts = contracts
+        if search_term:
+            search_lower = search_term.lower()
+            filtered_contracts = [
+                c for c in contracts 
+                if search_lower in c.get('contract_title', '').lower() 
+                or search_lower in c.get('vendor_name', '').lower()
+                or search_lower in c.get('department_name', '').lower()
+            ]
+        
+        # Add pagination - show 15 contracts per page
+        items_per_page = 15
+        total_items = len(filtered_contracts)
+        total_pages = (total_items // items_per_page) + (1 if total_items % items_per_page > 0 else 0)
+        
+        if total_pages > 1:
+            col_page1, col_page2 = st.columns([3, 1])
+            with col_page1:
+                page = st.selectbox("Page", range(1, total_pages + 1), key="contract_page")
+            with col_page2:
+                st.caption(f"Showing {min(items_per_page, total_items)} of {total_items}")
+            start_idx = (page - 1) * items_per_page
+            end_idx = min(start_idx + items_per_page, total_items)
+            displayed_contracts = filtered_contracts[start_idx:end_idx]
+        else:
+            displayed_contracts = filtered_contracts
+        
+        # Display contracts in a more efficient way - using a single container
+        with st.container():
+            # Use a simpler display for large lists
+            if len(displayed_contracts) > 20:
+                # For many contracts, show as a table first
+                st.markdown("#### Quick View")
+                table_data = []
+                for contract in displayed_contracts:
+                    status = contract.get('status', 'pending')
+                    status_icon = get_contract_status_display(status, contract.get('days_remaining'))['icon']
+                    table_data.append({
+                        "Title": contract['contract_title'][:40] + "..." if len(contract['contract_title']) > 40 else contract['contract_title'],
+                        "Vendor": contract['vendor_name'][:30] + "..." if len(contract['vendor_name']) > 30 else contract['vendor_name'],
+                        "Status": f"{status_icon} {status}",
+                        "Value": f"KES {contract.get('contract_value', 0):,.0f}" if not contract.get('is_service_based', False) else "N/A",
+                        "End Date": contract.get('end_date', 'N/A')
+                    })
+                df_quick = pd.DataFrame(table_data)
+                st.dataframe(df_quick, use_container_width=True, hide_index=True)
+                st.markdown("---")
+                st.markdown("#### Detailed View (Click to expand)")
             
-            # Display counts with icons
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("📋 Total", len(contracts))
-            with col2:
-                st.metric("🟢 Active/Completed", len(active))
-            with col3:
-                st.metric("🟡 Expiring Soon", len(expiring))
-            with col4:
-                st.metric("🔴 Expired", len(expired))
-            
-            st.markdown("---")
-            
-            # Display contracts with color coding
-            for contract in contracts:
+            # Display contracts with expanders
+            for contract in displayed_contracts:
                 status = contract.get('status', 'pending')
                 status_class = {
                     'active': 'status-active',
@@ -5453,7 +5506,12 @@ elif st.session_state.active_menu == "📄 Contracts":
                 
                 status_info = get_contract_status_display(status, contract.get('days_remaining'))
                 
-                with st.expander(f"{status_info['icon']} {contract['contract_title']} - {contract['vendor_name']} ({status_info['label']})", expanded=False):
+                # Truncate long titles for the expander label
+                title_display = contract['contract_title']
+                if len(title_display) > 45:
+                    title_display = title_display[:45] + "..."
+                
+                with st.expander(f"{status_info['icon']} {title_display} - {contract['vendor_name']} ({status_info['label']})", expanded=False):
                     col1, col2 = st.columns(2)
                     
                     with col1:
@@ -5517,9 +5575,10 @@ elif st.session_state.active_menu == "📄 Contracts":
                                 })
                             df_years = pd.DataFrame(year_data)
                             st.dataframe(df_years, use_container_width=True, hide_index=True)
-            
-            # Export button
-            df = pd.DataFrame(contracts)
+        
+        # Export button
+        if filtered_contracts:
+            df = pd.DataFrame(filtered_contracts)
             pdf_buffer = generate_contracts_pdf_report(df, f"HELB Contracts Report - {datetime.now().strftime('%Y-%m-%d')}")
             st.download_button(
                 label="📄 Export to PDF",
@@ -5528,8 +5587,8 @@ elif st.session_state.active_menu == "📄 Contracts":
                 mime="application/pdf",
                 key="export_contracts_pdf"
             )
-        else:
-            st.info("No contracts found")
+    else:
+        st.info("No contracts found")
     
     with tab_add:
         st.markdown("### Add New Contract")
