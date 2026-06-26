@@ -24,12 +24,6 @@ import calendar
 import logging 
 
 # ============================================
-# LOGGING CONFIGURATION - ADD THIS SECTION
-# ============================================
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-# ============================================
 # HELB BRANDING CONFIGURATION
 # ============================================
 HELB_GREEN = "#00843D"
@@ -39,6 +33,12 @@ HELB_DARK = "#1F2937"
 HELB_WHITE = "#FFFFFF"
 HELB_GRAY = "#F9FAFB"
 HELB_BLACK = "#000000"
+
+# ============================================
+# LOGGING CONFIGURATION  <-- ADD THIS SECTION
+# ============================================
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ============================================
 # COUNTDOWN TIMER CSS - PROFESSIONAL STYLING
