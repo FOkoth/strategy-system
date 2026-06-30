@@ -1,3 +1,4 @@
+# STRATEGY_SYSTEM
 import streamlit as st
 from supabase import create_client
 import pandas as pd
@@ -973,176 +974,6 @@ def filter_policies_by_date(df, financial_year, quarter, month):
         }.get(month, 0)
         if month_num:
             df = df[df['expiry_month'] == month_num]
-    
-    return df
-# ============================================
-# DATA NORMALIZATION FUNCTIONS
-# ============================================
-
-def normalize_pillar_name(pillar):
-    """
-    Normalize strategic pillar names to standard format.
-    Handles variations like & vs and, extra spaces, etc.
-    """
-    if not pillar or pd.isna(pillar):
-        return "Uncategorized"
-    
-    # Convert to string and clean
-    pillar = str(pillar).strip()
-    
-    # Define mapping for variations
-    pillar_mapping = {
-        # Customer Excellence
-        "customer excellence": "1. Customer Excellence",
-        "customer excellence 1": "1. Customer Excellence",
-        "1 customer excellence": "1. Customer Excellence",
-        
-        # Financial Sustainability
-        "financial sustainability": "2. Financial Sustainability and Stewardship",
-        "financial sustainability and stewardship": "2. Financial Sustainability and Stewardship",
-        "2 financial sustainability": "2. Financial Sustainability and Stewardship",
-        "financial stewardship": "2. Financial Sustainability and Stewardship",
-        
-        # Innovation & Digital Transformation
-        "innovation & digital transformation": "3. Innovation and Digital Transformation",
-        "innovation and digital transformation": "3. Innovation and Digital Transformation",
-        "innovation & digital": "3. Innovation and Digital Transformation",
-        "innovation and digital": "3. Innovation and Digital Transformation",
-        "3 innovation": "3. Innovation and Digital Transformation",
-        "digital transformation": "3. Innovation and Digital Transformation",
-        
-        # Our People Centricity & Compliance
-        "our people centricity & compliance": "4. Our People Centricity and Compliance",
-        "our people centricity and compliance": "4. Our People Centricity and Compliance",
-        "people centricity": "4. Our People Centricity and Compliance",
-        "compliance": "4. Our People Centricity and Compliance",
-        "4 people": "4. Our People Centricity and Compliance",
-        
-        # Strategy
-        "strategy": "5. Strategy",
-        "5 strategy": "5. Strategy"
-    }
-    
-    # Check for direct matches (case insensitive)
-    pillar_lower = pillar.lower()
-    for key, value in pillar_mapping.items():
-        if key in pillar_lower or pillar_lower in key:
-            return value
-    
-    # Try to match by number prefix
-    import re
-    match = re.match(r'^(\d+)\.?\s*(.*)', pillar)
-    if match:
-        num = int(match.group(1))
-        if num == 1:
-            return "1. Customer Excellence"
-        elif num == 2:
-            return "2. Financial Sustainability and Stewardship"
-        elif num == 3:
-            return "3. Innovation and Digital Transformation"
-        elif num == 4:
-            return "4. Our People Centricity and Compliance"
-        elif num == 5:
-            return "5. Strategy"
-    
-    # If no match, try fuzzy matching
-    pillar_lower = pillar.lower().replace('&', 'and')
-    if 'customer' in pillar_lower or 'excellence' in pillar_lower:
-        return "1. Customer Excellence"
-    elif 'financial' in pillar_lower or 'sustainability' in pillar_lower or 'stewardship' in pillar_lower:
-        return "2. Financial Sustainability and Stewardship"
-    elif 'innovation' in pillar_lower or 'digital' in pillar_lower or 'transformation' in pillar_lower:
-        return "3. Innovation and Digital Transformation"
-    elif 'people' in pillar_lower or 'centricity' in pillar_lower or 'compliance' in pillar_lower:
-        return "4. Our People Centricity and Compliance"
-    elif 'strategy' in pillar_lower:
-        return "5. Strategy"
-    
-    # Return original if no match
-    return pillar
-
-def normalize_activity_category(category):
-    """
-    Normalize activity categories to standard format.
-    
-    Preserves THREE distinct categories:
-    1. SP Deliverable
-    2. PC Deliverable  
-    3. SP/PC Deliverable
-    
-    Only fixes pluralization and minor variations.
-    """
-    if not category or pd.isna(category):
-        return "SP Deliverable"
-    
-    category = str(category).strip()
-    category_lower = category.lower()
-    
-    # Check for SP/PC (BOTH) - highest priority
-    has_sp = 'sp' in category_lower
-    has_pc = 'pc' in category_lower
-    
-    if has_sp and has_pc:
-        return "SP/PC Deliverable"
-    
-    # Check for SP-only
-    if has_sp and not has_pc:
-        return "SP Deliverable"
-    
-    # Check for PC-only
-    if has_pc and not has_sp:
-        return "PC Deliverable"
-    
-    # Try to infer from context
-    if 'sp' in category_lower and 'pc' in category_lower:
-        return "SP/PC Deliverable"
-    elif 'sp' in category_lower:
-        return "SP Deliverable"
-    elif 'pc' in category_lower:
-        return "PC Deliverable"
-    
-    # Default fallback
-    return "SP Deliverable"
-
-def normalize_status(status):
-    """
-    Normalize status values.
-    """
-    if not status or pd.isna(status):
-        return "Pending"
-    
-    status = str(status).strip()
-    status_lower = status.lower()
-    
-    if status_lower in ['done', 'completed', 'complete', '100%', 'finished']:
-        return "Done"
-    elif status_lower in ['in progress', 'inprogress', 'progress', 'ongoing']:
-        return "In Progress"
-    elif status_lower in ['pending', 'not started', 'waiting', 'todo']:
-        return "Pending"
-    
-    return status
-
-def normalize_dataframe_columns(df):
-    """
-    Apply all normalizations to a DataFrame.
-    """
-    if df.empty:
-        return df
-    
-    df = df.copy()
-    
-    # Normalize strategic pillar
-    if 'strategic_pillar' in df.columns:
-        df['strategic_pillar'] = df['strategic_pillar'].apply(normalize_pillar_name)
-    
-    # Normalize activity category
-    if 'activity_category' in df.columns:
-        df['activity_category'] = df['activity_category'].apply(normalize_activity_category)
-    
-    # Normalize status
-    if 'status' in df.columns:
-        df['status'] = df['status'].apply(normalize_status)
     
     return df
 
@@ -4866,303 +4697,200 @@ if st.session_state.active_menu == "📋 Work Plans":
             except Exception as e:
                 st.error(f"Error reading file: {str(e)}")
     
-with tab_dashboard:
-    if filtered_plans:
-        df = pd.DataFrame(filtered_plans)
-        
-        # ============================================
-        # APPLY NORMALIZATION - FIXES DUPLICATE ISSUES
-        # ============================================
-        df = normalize_dataframe_columns(df)
-        
-        # Calculate progress
-        df['calculated_progress'] = df.apply(
-            lambda x: calculate_progress_from_actual(
-                x.get('annual_target', '0'), 
-                x.get('actual_achievement', 0)
-            ), 
-            axis=1
-        )
-        df['exceeded'] = df.apply(
-            lambda x: is_target_exceeded(
-                x.get('actual_achievement', 0), 
-                x.get('annual_target', '0')
-            ), 
-            axis=1
-        )
-        
-        total_activities = len(df)
-        completed_count = len(df[df['calculated_progress'] >= 100])
-        in_progress_count = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)])
-        not_started_count = len(df[df['calculated_progress'] == 0])
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
-                <div class='kpi-value'>{total_activities}</div>
-                <div class='kpi-sub'>All Activities</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col2:
-            completed_rate = (completed_count/total_activities*100) if total_activities > 0 else 0
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>✅ COMPLETED</div>
-                <div class='kpi-value'>{completed_count} ({completed_rate:.0f}%)</div>
-                <div class='progress-bar'><div class='progress-fill' style='width:{completed_rate}%;'></div></div>
-                <div class='kpi-sub'>Activities Completed</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col3:
-            in_progress_rate = (in_progress_count/total_activities*100) if total_activities > 0 else 0
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>🟡 IN PROGRESS</div>
-                <div class='kpi-value'>{in_progress_count} ({in_progress_rate:.0f}%)</div>
-                <div class='progress-bar'><div class='progress-fill' style='width:{in_progress_rate}%; background: {HELB_GOLD};'></div></div>
-                <div class='kpi-sub'>In Progress</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col4:
-            not_started_rate = (not_started_count/total_activities*100) if total_activities > 0 else 0
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>🔴 NOT STARTED</div>
-                <div class='kpi-value'>{not_started_count} ({not_started_rate:.0f}%)</div>
-                <div class='progress-bar'><div class='progress-fill' style='width:{not_started_rate}%; background: #dc2626;'></div></div>
-                <div class='kpi-sub'>Not Started</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        col_budget, col_exceeded = st.columns(2)
-        with col_budget:
-            total_budget = df['budget_allocation'].fillna(0).sum()
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>💰 TOTAL BUDGET</div>
-                <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
-                <div class='kpi-sub'>Total Budget Allocation</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col_exceeded:
-            exceeded_count = len(df[df['exceeded'] == True])
-            st.markdown(f"""
-            <div class='kpi-card'>
-                <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
-                <div class='kpi-value'>{exceeded_count}</div>
-                <div class='kpi-sub'>Exceeded Targets</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        col_chart1, col_chart2 = st.columns(2)
-        with col_chart1:
-            st.markdown("#### Status Distribution")
-            df['status_group'] = df['calculated_progress'].apply(
-                lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
-            )
-            status_counts = df['status_group'].value_counts().reset_index()
-            status_counts.columns = ['Status', 'Count']
+    with tab_dashboard:
+        if filtered_plans:
+            df = pd.DataFrame(filtered_plans)
+            df['calculated_progress'] = df.apply(lambda x: calculate_progress_from_actual(x.get('annual_target', '0'), x.get('actual_achievement', 0)), axis=1)
+            df['exceeded'] = df.apply(lambda x: is_target_exceeded(x.get('actual_achievement', 0), x.get('annual_target', '0')), axis=1)
             
-            color_map = {
-                'Completed': '#00843D',
-                'In Progress': '#FFB81C',
-                'Not Started': '#EF4444'
-            }
+            total_activities = len(df)
+            completed_count = len(df[df['calculated_progress'] >= 100])
+            in_progress_count = len(df[(df['calculated_progress'] > 0) & (df['calculated_progress'] < 100)])
+            not_started_count = len(df[df['calculated_progress'] == 0])
             
-            fig = go.Figure(data=[go.Pie(
-                labels=status_counts['Status'],
-                values=status_counts['Count'],
-                hole=0.4,
-                marker=dict(colors=[color_map.get(s, '#808080') for s in status_counts['Status']]),
-                textinfo='label+percent',
-                textposition='auto'
-            )])
-            fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col_chart2:
-            st.markdown("#### Progress by Strategic Pillar")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>📋 TOTAL ACTIVITIES</div>
+                    <div class='kpi-value'>{total_activities}</div>
+                    <div class='kpi-sub'>All Activities</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col2:
+                completed_rate = (completed_count/total_activities*100) if total_activities > 0 else 0
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>✅ COMPLETED</div>
+                    <div class='kpi-value'>{completed_count} ({completed_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{completed_rate}%;'></div></div>
+                    <div class='kpi-sub'>Activities Completed</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col3:
+                in_progress_rate = (in_progress_count/total_activities*100) if total_activities > 0 else 0
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🟡 IN PROGRESS</div>
+                    <div class='kpi-value'>{in_progress_count} ({in_progress_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{in_progress_rate}%; background: {HELB_GOLD};'></div></div>
+                    <div class='kpi-sub'>In Progress</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                not_started_rate = (not_started_count/total_activities*100) if total_activities > 0 else 0
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🔴 NOT STARTED</div>
+                    <div class='kpi-value'>{not_started_count} ({not_started_rate:.0f}%)</div>
+                    <div class='progress-bar'><div class='progress-fill' style='width:{not_started_rate}%; background: #dc2626;'></div></div>
+                    <div class='kpi-sub'>Not Started</div>
+                </div>
+                """, unsafe_allow_html=True)
             
-            # NORMALIZED PILLAR CHART - Now shows 5 clean bars
-            pillar_progress = df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
-            pillar_progress.columns = ['Pillar', 'Progress %']
+            st.markdown("---")
             
-            # Ensure proper ordering
-            pillar_order = [
-                "1. Customer Excellence",
-                "2. Financial Sustainability and Stewardship",
-                "3. Innovation and Digital Transformation",
-                "4. Our People Centricity and Compliance",
-                "5. Strategy"
-            ]
+            col_budget, col_exceeded = st.columns(2)
+            with col_budget:
+                total_budget = df['budget_allocation'].fillna(0).sum()
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'> TOTAL BUDGET</div>
+                    <div class='kpi-value'>KES {total_budget/1e6:.1f}M</div>
+                    <div class='kpi-sub'>Total Budget Allocation</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_exceeded:
+                exceeded_count = len(df[df['exceeded'] == True])
+                st.markdown(f"""
+                <div class='kpi-card'>
+                    <div class='kpi-label'>🏆 TARGETS EXCEEDED</div>
+                    <div class='kpi-value'>{exceeded_count}</div>
+                    <div class='kpi-sub'>Exceeded Targets</div>
+                </div>
+                """, unsafe_allow_html=True)
             
-            # Create complete data with zeros for missing pillars
-            pillar_dict = dict(zip(pillar_progress['Pillar'], pillar_progress['Progress %']))
-            complete_data = []
-            for pillar in pillar_order:
-                complete_data.append({
-                    'Pillar': pillar,
-                    'Progress %': pillar_dict.get(pillar, 0)
-                })
-            pillar_progress = pd.DataFrame(complete_data)
+            st.markdown("---")
             
-            fig = px.bar(
-                pillar_progress, 
-                y='Pillar', 
-                x='Progress %', 
-                orientation='h',
-                color='Progress %', 
-                color_continuous_scale=["#FFB81C", "#00843D"],
-                text='Progress %'
-            )
-            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-            fig.update_layout(
-                height=350, 
-                xaxis_title="Progress %", 
-                yaxis_title="", 
-                margin=dict(l=20, r=20, t=30, b=20)
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown("#### Department Performance")
-        dept_progress = df.groupby('department_name')['calculated_progress'].mean().reset_index()
-        dept_progress.columns = ['Department', 'Progress %']
-        dept_progress = dept_progress.sort_values('Progress %', ascending=True)
-        fig = px.bar(
-            dept_progress, 
-            y='Department', 
-            x='Progress %', 
-            orientation='h',
-            color='Progress %', 
-            color_continuous_scale=["#FFB81C", "#00843D"],
-            text='Progress %'
-        )
-        fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-        fig.update_layout(
-            height=max(400, len(dept_progress) * 30), 
-            xaxis_title="Progress %", 
-            yaxis_title="", 
-            margin=dict(l=20, r=20, t=30, b=20)
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        col_chart3, col_chart4 = st.columns(2)
-        with col_chart3:
-            st.markdown("#### Activity Category Breakdown")
-            
-            # NORMALIZED CATEGORY CHART - Now shows exactly 3 bars
-            category_stats = df['activity_category'].value_counts().reset_index()
-            category_stats.columns = ['Category', 'Count']
-            
-            # Ensure all three categories are shown
-            all_categories = ["SP Deliverable", "PC Deliverable", "SP/PC Deliverable"]
-            category_dict = dict(zip(category_stats['Category'], category_stats['Count']))
-            
-            complete_data = []
-            for cat in all_categories:
-                complete_data.append({
-                    'Category': cat,
-                    'Count': category_dict.get(cat, 0)
-                })
-            category_stats = pd.DataFrame(complete_data)
-            
-            fig = px.bar(
-                category_stats, 
-                x='Category', 
-                y='Count',
-                color='Count', 
-                color_discrete_sequence=['#00843D', '#FFB81C', '#00529B'],
-                text='Count'
-            )
-            fig.update_traces(textposition='outside')
-            fig.update_layout(
-                height=350, 
-                margin=dict(l=20, r=20, t=30, b=20),
-                xaxis_title="",
-                yaxis_title="Number of Activities"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Show summary counts
-            st.caption(f"📊 SP: {category_dict.get('SP Deliverable', 0)} | PC: {category_dict.get('PC Deliverable', 0)} | SP/PC: {category_dict.get('SP/PC Deliverable', 0)}")
-        
-        with col_chart4:
-            st.markdown("#### Quarterly Performance Trend")
-            if 'quarter' in df.columns:
-                quarterly_data = df.groupby('quarter').agg({
-                    'id': 'count',
-                    'calculated_progress': 'mean'
-                }).reset_index()
-                quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
-                quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
-                quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
-                quarterly_data = quarterly_data.sort_values('Quarter')
-                
-                fig = go.Figure()
-                fig.add_trace(go.Bar(
-                    x=quarterly_data['Quarter'], 
-                    y=quarterly_data['Activities'],
-                    name='Activities', 
-                    marker_color='#00843D',
-                    text=quarterly_data['Activities'], 
-                    textposition='outside'
-                ))
-                fig.add_trace(go.Scatter(
-                    x=quarterly_data['Quarter'], 
-                    y=quarterly_data['Avg Progress %'],
-                    name='Avg Progress %', 
-                    marker_color='#FFB81C',
-                    line=dict(width=3), 
-                    yaxis='y2'
-                ))
-                fig.update_layout(
-                    height=350,
-                    yaxis_title="Number of Activities",
-                    yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-                    margin=dict(l=20, r=60, t=30, b=20)
+            col_chart1, col_chart2 = st.columns(2)
+            with col_chart1:
+                st.markdown("#### Status Distribution")
+                # Create status groups with correct colors
+                df['status_group'] = df['calculated_progress'].apply(
+                    lambda x: 'Completed' if x >= 100 else ('In Progress' if x > 0 else 'Not Started')
                 )
+                status_counts = df['status_group'].value_counts().reset_index()
+                status_counts.columns = ['Status', 'Count']
+                
+                # Define correct colors: Red for Not Started, Gold for In Progress, Green for Completed
+                color_map = {
+                    'Completed': '#00843D',      # HELB Green
+                    'In Progress': '#FFB81C',    # HELB Gold
+                    'Not Started': '#EF4444'     # Red
+                }
+                
+                fig = go.Figure(data=[go.Pie(
+                    labels=status_counts['Status'],
+                    values=status_counts['Count'],
+                    hole=0.4,
+                    marker=dict(colors=[color_map.get(s, '#808080') for s in status_counts['Status']]),
+                    textinfo='label+percent',
+                    textposition='auto'
+                )])
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
                 st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown("### ⚠️ Priority Alerts")
-        col_alert1, col_alert2 = st.columns(2)
-        
-        df['days_left'] = (pd.to_datetime(df['due_date']) - pd.Timestamp.now()).dt.days
-        overdue_df = df[(df['days_left'] < 0) & (df['calculated_progress'] < 100)]
-        urgent_df = df[(df['days_left'] >= 0) & (df['days_left'] <= 14) & (df['calculated_progress'] < 80)]
-        
-        with col_alert1:
-            if not overdue_df.empty:
-                st.error(f"🔴 **{len(overdue_df)} Overdue Activities**")
-                for _, row in overdue_df.head(5).iterrows():
-                    st.markdown(f"- {row['planned_activity'][:50]}... (Due: {row['due_date']})")
-            else:
-                st.success("✅ No overdue activities")
-        
-        with col_alert2:
-            if not urgent_df.empty:
-                st.warning(f"🟡 **{len(urgent_df)} Urgent Activities**")
-                for _, row in urgent_df.head(5).iterrows():
-                    st.markdown(f"- {row['planned_activity'][:50]}... ({row['days_left']} days left)")
-            else:
-                st.success("✅ No urgent at-risk activities")
-        
-        with st.expander("📥 Export Data", expanded=False):
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                "📥 Download Work Plan Data", 
-                csv, 
-                f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", 
-                "text/csv"
-            )
-    else:
-        st.info("No data available for the selected period.")
+            
+            with col_chart2:
+                st.markdown("#### Progress by Strategic Pillar")
+                pillar_progress = df.groupby('strategic_pillar')['calculated_progress'].mean().reset_index()
+                pillar_progress.columns = ['Pillar', 'Progress %']
+                pillar_progress = pillar_progress.sort_values('Progress %', ascending=True)
+                fig = px.bar(pillar_progress, y='Pillar', x='Progress %', orientation='h',
+                            color='Progress %', color_continuous_scale=["#FFB81C", "#00843D"],
+                            text='Progress %')
+                fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+                fig.update_layout(height=350, xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("#### Department Performance")
+            dept_progress = df.groupby('department_name')['calculated_progress'].mean().reset_index()
+            dept_progress.columns = ['Department', 'Progress %']
+            dept_progress = dept_progress.sort_values('Progress %', ascending=True)
+            fig = px.bar(dept_progress, y='Department', x='Progress %', orientation='h',
+                        color='Progress %', color_continuous_scale=["#FFB81C", "#00843D"],
+                        text='Progress %')
+            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+            fig.update_layout(height=max(400, len(dept_progress) * 30), xaxis_title="Progress %", yaxis_title="", margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+            
+            col_chart3, col_chart4 = st.columns(2)
+            with col_chart3:
+                st.markdown("#### Activity Category Breakdown")
+                category_stats = df['activity_category'].value_counts().reset_index()
+                category_stats.columns = ['Category', 'Count']
+                fig = px.bar(category_stats, x='Category', y='Count',
+                            color='Count', color_discrete_sequence=['#00843D'],
+                            text='Count')
+                fig.update_traces(textposition='outside')
+                fig.update_layout(height=350, margin=dict(l=20, r=20, t=30, b=20))
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col_chart4:
+                st.markdown("#### Quarterly Performance Trend")
+                if 'quarter' in df.columns:
+                    quarterly_data = df.groupby('quarter').agg({
+                        'id': 'count',
+                        'calculated_progress': 'mean'
+                    }).reset_index()
+                    quarterly_data.columns = ['Quarter', 'Activities', 'Avg Progress %']
+                    quarter_order = ["Q1 (Jul-Sep)", "Q2 (Oct-Dec)", "Q3 (Jan-Mar)", "Q4 (Apr-Jun)"]
+                    quarterly_data['Quarter'] = pd.Categorical(quarterly_data['Quarter'], categories=quarter_order, ordered=True)
+                    quarterly_data = quarterly_data.sort_values('Quarter')
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(x=quarterly_data['Quarter'], y=quarterly_data['Activities'],
+                                         name='Activities', marker_color='#00843D',
+                                         text=quarterly_data['Activities'], textposition='outside'))
+                    fig.add_trace(go.Scatter(x=quarterly_data['Quarter'], y=quarterly_data['Avg Progress %'],
+                                             name='Avg Progress %', marker_color='#FFB81C',
+                                             line=dict(width=3), yaxis='y2'))
+                    fig.update_layout(
+                        height=350,
+                        yaxis_title="Number of Activities",
+                        yaxis2=dict(title="Avg Progress %", overlaying='y', side='right'),
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                        margin=dict(l=20, r=60, t=30, b=20)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("### ⚠️ Priority Alerts")
+            col_alert1, col_alert2 = st.columns(2)
+            
+            df['days_left'] = (pd.to_datetime(df['due_date']) - pd.Timestamp.now()).dt.days
+            overdue_df = df[(df['days_left'] < 0) & (df['calculated_progress'] < 100)]
+            urgent_df = df[(df['days_left'] >= 0) & (df['days_left'] <= 14) & (df['calculated_progress'] < 80)]
+            
+            with col_alert1:
+                if not overdue_df.empty:
+                    st.error(f"🔴 **{len(overdue_df)} Overdue Activities**")
+                    for _, row in overdue_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... (Due: {row['due_date']})")
+                else:
+                    st.success("✅ No overdue activities")
+            
+            with col_alert2:
+                if not urgent_df.empty:
+                    st.warning(f"🟡 **{len(urgent_df)} Urgent Activities**")
+                    for _, row in urgent_df.head(5).iterrows():
+                        st.markdown(f"- {row['planned_activity'][:50]}... ({row['days_left']} days left)")
+                else:
+                    st.success("✅ No urgent at-risk activities")
+            
+            with st.expander("📥 Export Data", expanded=False):
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download Work Plan Data", csv, f"work_plan_data_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
+        else:
+            st.info("No data available for the selected period.")
 # ============================================
 # DASHBOARD
 # ============================================
@@ -7463,3 +7191,4 @@ st.markdown("""
     <p>© 2026 HELB - Higher Education Loans Board | Strategy Performance Management System</p>
 </div>
 """, unsafe_allow_html=True)
+
