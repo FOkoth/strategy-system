@@ -1856,6 +1856,21 @@ def get_work_plans():
         print(f"Error in get_work_plans: {e}")
         return []
 
+def add_work_plan(data):
+    """Add a new work plan activity to the database"""
+    try:
+        if supabase is None:
+            print("Supabase is not initialized")
+            return False
+        
+        supabase.table("work_plan").insert(data).execute()
+        st.cache_data.clear()
+        add_audit_log("CREATE", "work_plan", None, f"Added work plan: {data.get('planned_activity', '')[:50]}")
+        return True
+    except Exception as e:
+        print(f"Failed to add work plan: {e}")
+        return False
+        
 def update_work_plan_progress(plan_id, actual_achievement, progress_percent, status, comment=None):
     try:
         progress_int = int(progress_percent) if progress_percent else 0
