@@ -1197,12 +1197,13 @@ def calculate_risk_score(progress, days_left, total_days):
 # PILLAR PERFORMANCE SUMMARY FUNCTION
 # ============================================
 def generate_pillar_performance_summary(activities):
-    """Generate a high-level summary of pillar-wise performance"""
+    """Generate a high-level summary of pillar-wise performance with standardized pillars"""
     
     pillar_data = {}
     
     for activity in activities:
-        pillar = activity.get('strategic_pillar', 'Uncategorized')
+        # STANDARDIZE the pillar name
+        pillar = standardize_pillar_name(activity.get('strategic_pillar', 'Uncategorized'))
         status = activity.get('status', 'Pending')
         progress = activity.get('progress_percent', 0)
         
@@ -1242,6 +1243,12 @@ def generate_pillar_performance_summary(activities):
             'Avg Progress': round(avg_progress, 1),
             'Completion Rate': round(completion_rate, 1)
         })
+    
+    # Sort by pillar number
+    try:
+        summary.sort(key=lambda x: int(x['Pillar'].split('.')[0]) if '.' in x['Pillar'] else 999)
+    except:
+        summary.sort(key=lambda x: x['Pillar'])
     
     return pd.DataFrame(summary)
 
@@ -1926,12 +1933,10 @@ def get_department_name(dept_id):
 @st.cache_data(ttl=120)
 def get_cached_work_plans(user_role, user_dept):
     try:
-        # Check if supabase is initialized
         if supabase is None:
             print("Supabase is not initialized in get_cached_work_plans")
             return []
         
-        # Check if user_role and user_dept are valid
         if user_role is None:
             print("user_role is None in get_cached_work_plans")
             return []
@@ -1939,13 +1944,20 @@ def get_cached_work_plans(user_role, user_dept):
         if user_role in ["admin", "management"]:
             result = supabase.table("work_plan").select("*").order("created_at", desc=True).execute()
         else:
-            # user_dept might be None for some users
             if user_dept is None:
                 print("user_dept is None for non-admin user")
                 return []
             result = supabase.table("work_plan").select("*").eq("department_id", user_dept).order("created_at", desc=True).execute()
         
-        return result.data if result.data else []
+        data = result.data if result.data else []
+        
+        # CLEAN THE DATA - Standardize pillars and categories
+        if data:
+            df = pd.DataFrame(data)
+            df = clean_work_plan_data(df)
+            data = df.to_dict('records')
+        
+        return data
     except Exception as e:
         print(f"Failed to get work plans: {e}")
         return []
