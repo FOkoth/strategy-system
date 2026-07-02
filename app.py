@@ -36,7 +36,180 @@ HELB_GRAY = "#F9FAFB"
 HELB_BLACK = "#000000"
 
 # ============================================
-# LOGGING CONFIGURATION  <-- ADD THIS SECTION
+# DATA STANDARDIZATION & CLEANING FUNCTIONS
+# ============================================
+
+# Define canonical pillar names - ONLY FOUR PILLARS
+CANONICAL_PILLARS = {
+    "1. Customer Excellence": "1. Customer Excellence",
+    "Customer Excellence": "1. Customer Excellence",
+    "customer excellence": "1. Customer Excellence",
+    "CUSTOMER EXCELLENCE": "1. Customer Excellence",
+    
+    "2. Financial Sustainability and Stewardship": "2. Financial Sustainability and Stewardship",
+    "Financial Sustainability and Stewardship": "2. Financial Sustainability and Stewardship",
+    "Financial Sustainability & Stewardship": "2. Financial Sustainability and Stewardship",
+    "financial sustainability": "2. Financial Sustainability and Stewardship",
+    
+    "3. Innovation and Digital Transformation": "3. Innovation and Digital Transformation",
+    "Innovation and Digital Transformation": "3. Innovation and Digital Transformation",
+    "Innovation & Digital Transformation": "3. Innovation and Digital Transformation",
+    "Innovation & Digital Transformation.": "3. Innovation and Digital Transformation",
+    "3. Innovation & Digital Transformation": "3. Innovation and Digital Transformation",
+    "innovation": "3. Innovation and Digital Transformation",
+    
+    "4. Our People Centricity and Compliance": "4. Our People Centricity and Compliance",
+    "Our People Centricity and Compliance": "4. Our People Centricity and Compliance",
+    "Our People Centricity & Compliance": "4. Our People Centricity and Compliance",
+    "People Centricity": "4. Our People Centricity and Compliance",
+    "people centricity": "4. Our People Centricity and Compliance",
+    
+    "5. Strategy": "5. Strategy",  # Keep for backward compatibility
+    "Strategy": "5. Strategy",
+}
+
+# Define canonical activity categories - ONLY TWO
+CANONICAL_CATEGORIES = {
+    "SP Deliverable": "SP Deliverable",
+    "sp deliverable": "SP Deliverable",
+    "SP": "SP Deliverable",
+    "SP/PC Deliverable": "SP Deliverable",  # Map to SP Deliverable
+    "sp/pc": "SP Deliverable",
+    "sp/pc deliverable": "SP Deliverable",
+    "sp pc deliverable": "SP Deliverable",
+    
+    "PC Deliverable": "PC Deliverable",
+    "pc deliverable": "PC Deliverable",
+    "PC": "PC Deliverable",
+    "pc": "PC Deliverable",
+}
+
+def standardize_pillar_name(pillar_name):
+    """
+    Standardize pillar names to canonical form.
+    Returns the canonical pillar name or original if not found.
+    """
+    if not pillar_name:
+        return "Uncategorized"
+    
+    # Clean the name first
+    cleaned = str(pillar_name).strip()
+    
+    # Try exact match first
+    if cleaned in CANONICAL_PILLARS:
+        return CANONICAL_PILLARS[cleaned]
+    
+    # Try case-insensitive match
+    cleaned_lower = cleaned.lower()
+    for key, canonical in CANONICAL_PILLARS.items():
+        if key.lower() == cleaned_lower:
+            return canonical
+    
+    # Try partial match for common patterns
+    if "customer" in cleaned_lower:
+        return "1. Customer Excellence"
+    elif "financial" in cleaned_lower or "sustainability" in cleaned_lower:
+        return "2. Financial Sustainability and Stewardship"
+    elif "innovation" in cleaned_lower or "digital" in cleaned_lower:
+        return "3. Innovation and Digital Transformation"
+    elif "people" in cleaned_lower or "centricity" in cleaned_lower:
+        return "4. Our People Centricity and Compliance"
+    elif "strategy" in cleaned_lower:
+        return "5. Strategy"
+    
+    return cleaned  # Return original if no match
+
+def standardize_activity_category(category):
+    """
+    Standardize activity categories to canonical form.
+    """
+    if not category:
+        return "SP Deliverable"  # Default
+    
+    cleaned = str(category).strip()
+    
+    # Try exact match
+    if cleaned in CANONICAL_CATEGORIES:
+        return CANONICAL_CATEGORIES[cleaned]
+    
+    # Try case-insensitive match
+    cleaned_lower = cleaned.lower()
+    for key, canonical in CANONICAL_CATEGORIES.items():
+        if key.lower() == cleaned_lower:
+            return canonical
+    
+    # Try partial match
+    if "sp" in cleaned_lower and "pc" in cleaned_lower:
+        return "SP Deliverable"
+    elif "sp" in cleaned_lower:
+        return "SP Deliverable"
+    elif "pc" in cleaned_lower:
+        return "PC Deliverable"
+    
+    return cleaned  # Return original if no match
+
+def clean_work_plan_data(df):
+    """
+    Clean and standardize work plan dataframe.
+    This ensures consistent pillar names and activity categories.
+    """
+    if df.empty:
+        return df
+    
+    df = df.copy()
+    
+    # Standardize pillars if column exists
+    if 'strategic_pillar' in df.columns:
+        df['strategic_pillar'] = df['strategic_pillar'].apply(standardize_pillar_name)
+    
+    # Standardize activity categories if column exists
+    if 'activity_category' in df.columns:
+        df['activity_category'] = df['activity_category'].apply(standardize_activity_category)
+    
+    # Also clean if there's a 'category' column (for policies, etc.)
+    if 'category' in df.columns:
+        # For policies, we don't standardize as they have their own categories
+        pass
+    
+    return df
+
+def get_unique_pillars(df):
+    """
+    Get unique canonical pillars from a dataframe.
+    Returns sorted list of pillar names.
+    """
+    if df.empty or 'strategic_pillar' not in df.columns:
+        return []
+    
+    # Clean and get unique values
+    pillars = df['strategic_pillar'].apply(standardize_pillar_name).unique()
+    
+    # Filter out None/empty
+    pillars = [p for p in pillars if p and p != "Uncategorized"]
+    
+    # Sort by pillar number if possible
+    try:
+        pillars.sort(key=lambda x: int(x.split('.')[0]) if '.' in x else 999)
+    except:
+        pillars.sort()
+    
+    return pillars
+
+def get_unique_categories(df):
+    """
+    Get unique canonical categories from a dataframe.
+    Returns sorted list of category names.
+    """
+    if df.empty or 'activity_category' not in df.columns:
+        return []
+    
+    categories = df['activity_category'].apply(standardize_activity_category).unique()
+    categories = [c for c in categories if c]
+    categories.sort()
+    
+    return categories
+# ============================================
+# LOGGING CONFIGURATION  
 # ============================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
