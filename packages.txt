@@ -1,5 +1,0 @@
-# Empty the file
-echo "" > packages.txt
-git add packages.txt
-git commit -m "Empty packages.txt to fix repository expiration"
-git push
